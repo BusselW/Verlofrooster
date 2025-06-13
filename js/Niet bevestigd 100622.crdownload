@@ -1,0 +1,677 @@
+/**
+ * Context Menu Logic voor Verlofrooster
+ * Beheert rechtsklik menu functionaliteit voor het bewerken en verwijderen van verlofaanvragen
+ */
+
+(function() {
+    'use strict';
+
+    // Globale variabelen voor context menu
+    let activeContextMenu = null;
+    let selectedItemData = null;
+    let selectedItemType = null;
+    let selectedCellElement = null;
+
+    /**
+     * Creëert de context menu HTML structuur
+     */
+    function createContextMenuHTML() {
+        const existingMenu = document.getElementById('rooster-context-menu');
+        if (existingMenu) {
+            existingMenu.remove();
+        }
+
+        const contextMenu = document.createElement('div');
+        contextMenu.id = 'rooster-context-menu';
+        contextMenu.className = 'fixed hidden bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 z-[9999] min-w-[180px]';
+        contextMenu.innerHTML = `
+            <button id="context-menu-edit" class="context-menu-item w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span>Bewerken</span>
+            </button>
+            <button id="context-menu-delete" class="context-menu-item w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 flex items-center space-x-2 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+                <span>Verwijderen</span>
+            </button>
+            <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+            <button id="context-menu-cancel" class="context-menu-item w-full text-left px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                <span>Annuleren</span>
+            </button>
+        `;
+
+        document.body.appendChild(contextMenu);
+        return contextMenu;
+    }
+
+    /**
+     * Toont het context menu op de juiste positie
+     */
+    function showContextMenu(event, itemData, itemType, cellElement) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        // Sla de geselecteerde data op
+        selectedItemData = itemData;
+        selectedItemType = itemType;
+        selectedCellElement = cellElement;
+
+        // Verberg eventueel bestaand menu
+        hideContextMenu();
+
+        // Creëer of haal het menu op
+        activeContextMenu = document.getElementById('rooster-context-menu') || createContextMenuHTML();
+
+        // Positioneer het menu
+        const x = event.clientX;
+        const y = event.clientY;
+
+        // Zorg ervoor dat het menu binnen het viewport blijft
+        activeContextMenu.style.left = `${x}px`;
+        activeContextMenu.style.top = `${y}px`;
+        activeContextMenu.classList.remove('hidden');
+
+        // Corrigeer positie als menu buiten viewport valt
+        setTimeout(() => {
+            const rect = activeContextMenu.getBoundingClientRect();
+            if (rect.right > window.innerWidth) {
+                activeContextMenu.style.left = `${window.innerWidth - rect.width - 10}px`;
+            }
+            if (rect.bottom > window.innerHeight) {
+                activeContextMenu.style.top = `${window.innerHeight - rect.height - 10}px`;
+            }
+        }, 0);
+
+        // Voeg event listeners toe aan menu items
+        setupContextMenuEventListeners();
+
+        // Voeg een click listener toe om het menu te sluiten bij klik erbuiten
+        document.addEventListener('click', handleClickOutside);
+        document.addEventListener('contextmenu', handleClickOutside);
+    }
+
+    /**
+     * Verbergt het context menu
+     */
+    function hideContextMenu() {
+        if (activeContextMenu) {
+            activeContextMenu.classList.add('hidden');
+            document.removeEventListener('click', handleClickOutside);
+            document.removeEventListener('contextmenu', handleClickOutside);
+        }
+    }
+
+    /**
+     * Handler voor klikken buiten het menu
+     */
+    function handleClickOutside(event) {
+        if (activeContextMenu && !activeContextMenu.contains(event.target)) {
+            hideContextMenu();
+        }
+    }
+
+    /**
+     * Setup event listeners voor context menu items
+     */
+    function setupContextMenuEventListeners() {
+        const editButton = document.getElementById('context-menu-edit');
+        const deleteButton = document.getElementById('context-menu-delete');
+        const cancelButton = document.getElementById('context-menu-cancel');
+
+        if (editButton) {
+            editButton.onclick = handleEditClick;
+        }
+        if (deleteButton) {
+            deleteButton.onclick = handleDeleteClick;
+        }
+        if (cancelButton) {
+            cancelButton.onclick = hideContextMenu;
+        }
+    }
+
+    /**
+     * Handler voor bewerken klik
+     */
+    async function handleEditClick() {
+        hideContextMenu();
+        
+        if (!selectedItemData || !selectedItemType) {
+            console.error('[ContextMenu] Geen item data beschikbaar voor bewerken');
+            return;
+        }
+
+        console.log('[ContextMenu] Bewerken geklikt voor:', selectedItemType, selectedItemData);
+
+        try {
+            switch (selectedItemType) {
+                case 'verlof':
+                    await openEditVerlofModal(selectedItemData);
+                    break;
+                case 'compensatie':
+                    await openEditCompensatieModal(selectedItemData);
+                    break;
+                case 'ziekte':
+                    await openEditZiekteModal(selectedItemData);
+                    break;
+                case 'zittingvrij':
+                    await openEditZittingvrijModal(selectedItemData);
+                    break;
+                default:
+                    console.warn('[ContextMenu] Onbekend item type:', selectedItemType);
+            }
+        } catch (error) {
+            console.error('[ContextMenu] Fout bij openen bewerkmodal:', error);
+            if (window.toonNotificatie) {
+                window.toonNotificatie('Fout bij openen bewerkvenster', 'error');
+            }
+        }
+    }
+
+    /**
+     * Handler voor verwijderen klik
+     */
+    async function handleDeleteClick() {
+        hideContextMenu();
+
+        if (!selectedItemData || !selectedItemType) {
+            console.error('[ContextMenu] Geen item data beschikbaar voor verwijderen');
+            return;
+        }
+
+        // Toon bevestigingsdialoog
+        const itemNaam = getItemDisplayName(selectedItemType, selectedItemData);
+        const bevestiging = confirm(`Weet u zeker dat u "${itemNaam}" wilt verwijderen?\n\nDeze actie kan niet ongedaan gemaakt worden.`);
+
+        if (!bevestiging) {
+            return;
+        }
+
+        console.log('[ContextMenu] Verwijderen bevestigd voor:', selectedItemType, selectedItemData);
+
+        try {
+            // Toon spinner
+            if (window.showSpinner) {
+                window.showSpinner('Verwijderen...');
+            }
+
+            await deleteItem(selectedItemType, selectedItemData);
+
+            // Verberg spinner
+            if (window.hideSpinner) {
+                window.hideSpinner();
+            }
+
+            // Toon succesmelding
+            if (window.toonNotificatie) {
+                window.toonNotificatie(`${itemNaam} is succesvol verwijderd`, 'success');
+            }
+
+            // Ververs het rooster
+            if (window.laadInitiëleData) {
+                await window.laadInitiëleData(false);
+            }
+
+        } catch (error) {
+            console.error('[ContextMenu] Fout bij verwijderen:', error);
+            
+            // Verberg spinner
+            if (window.hideSpinner) {
+                window.hideSpinner();
+            }
+
+            if (window.toonNotificatie) {
+                window.toonNotificatie(`Fout bij verwijderen: ${error.message}`, 'error');
+            }
+        }
+    }
+
+    /**
+     * Haalt een weergavenaam op voor een item
+     */
+    function getItemDisplayName(itemType, itemData) {
+        switch (itemType) {
+            case 'verlof':
+                return `Verlof ${itemData.Reden || ''} (${formatDate(itemData.StartDatum)} - ${formatDate(itemData.EindDatum)})`;
+            case 'compensatie':
+                return `Compensatie-uren (${formatDate(itemData.StartCompensatieUren)})`;
+            case 'ziekte':
+                return `Ziekmelding (${formatDate(itemData.StartDatum)})`;
+            case 'zittingvrij':
+                return `Zittingvrij (${formatDate(itemData.ZittingsVrijeDagTijd)})`;
+            default:
+                return 'Item';
+        }
+    }
+
+    /**
+     * Formatteert een datum voor weergave
+     */
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('nl-NL');
+    }
+
+    /**
+     * Opent de bewerkmodal voor verlof
+     */
+    async function openEditVerlofModal(verlofItem) {
+        // Check of de verlof modal functie beschikbaar is
+        if (!window.openVerlofAanvraagModal) {
+            throw new Error('Verlof modal functie niet beschikbaar');
+        }
+
+        // Stel de geselecteerde datum in op de startdatum van het verlof
+        const geselecteerdeDatum = new Date(verlofItem.StartDatum);
+        
+        // Zoek de medewerker gegevens
+        const medewerkerGegevens = {
+            Username: verlofItem.MedewerkerID,
+            loginNaam: verlofItem.MedewerkerID,
+            Naam: verlofItem.Medewerker,
+            Title: verlofItem.Medewerker,
+            Id: verlofItem.ID
+        };
+
+        // Open de modal in bewerkingsmodus
+        window.verlofModalBewerkingsmodus = true;
+        window.verlofModalBewerkItem = verlofItem;
+        
+        await window.openVerlofAanvraagModal(geselecteerdeDatum, medewerkerGegevens);
+    }
+
+    /**
+     * Opent de bewerkmodal voor compensatie
+     */
+    async function openEditCompensatieModal(compensatieItem) {
+        if (!window.openCompensatieUrenModal) {
+            throw new Error('Compensatie modal functie niet beschikbaar');
+        }
+
+        const medewerkerGegevens = {
+            Username: compensatieItem.MedewerkerID,
+            Naam: compensatieItem.Medewerker,
+            Id: compensatieItem.ID
+        };
+
+        const geselecteerdeDatum = new Date(compensatieItem.StartCompensatieUren);
+
+        // Stel bewerkingsmodus in
+        window.compensatieModalBewerkingsmodus = true;
+        window.compensatieModalBewerkItem = compensatieItem;
+
+        await window.openCompensatieUrenModal(medewerkerGegevens, geselecteerdeDatum);
+    }
+
+    /**
+     * Opent de bewerkmodal voor ziekte
+     */
+    async function openEditZiekteModal(ziekteItem) {
+        if (!window.openZiekBeterMeldenModal) {
+            throw new Error('Ziekte modal functie niet beschikbaar');
+        }
+
+        const medewerkerGegevens = {
+            Username: ziekteItem.MedewerkerID,
+            Naam: ziekteItem.Medewerker,
+            Id: ziekteItem.ID
+        };
+
+        const geselecteerdeDatum = new Date(ziekteItem.StartDatum);
+        const typeMelding = ziekteItem.Reden === 'Beter' ? 'beter' : 'ziek';
+
+        // Stel bewerkingsmodus in
+        window.ziekteModalBewerkingsmodus = true;
+        window.ziekteModalBewerkItem = ziekteItem;
+
+        await window.openZiekBeterMeldenModal(medewerkerGegevens, geselecteerdeDatum, typeMelding);
+    }
+
+    /**
+     * Opent de bewerkmodal voor zittingvrij
+     */
+    async function openEditZittingvrijModal(zittingvrijItem) {
+        if (!window.openAdminZittingVrijModal) {
+            throw new Error('Zittingvrij modal functie niet beschikbaar');
+        }
+
+        const medewerkerGegevens = {
+            Username: zittingvrijItem.Gebruikersnaam,
+            Naam: zittingvrijItem.MedewerkerNaam,
+            Id: zittingvrijItem.ID
+        };
+
+        // Stel bewerkingsmodus in
+        window.zittingvrijModalBewerkingsmodus = true;
+        window.zittingvrijModalBewerkItem = zittingvrijItem;
+
+        await window.openAdminZittingVrijModal(medewerkerGegevens, true);
+    }
+
+    /**
+     * Verwijdert een item uit SharePoint
+     */
+    async function deleteItem(itemType, itemData) {
+        if (!window.deleteSPListItem) {
+            throw new Error('SharePoint delete functie niet beschikbaar');
+        }
+
+        let lijstNaam;
+        switch (itemType) {
+            case 'verlof':
+                lijstNaam = 'Verlof';
+                break;
+            case 'compensatie':
+                lijstNaam = 'CompensatieUren';
+                break;
+            case 'ziekte':
+                lijstNaam = 'Verlof'; // Ziekmeldingen staan ook in Verlof lijst
+                break;
+            case 'zittingvrij':
+                lijstNaam = 'IncidenteelZittingVrij';
+                break;
+            default:
+                throw new Error(`Onbekend item type: ${itemType}`);
+        }
+
+        // Gebruik de deleteSPListItem functie uit machtigingen.js
+        await window.deleteSPListItem(lijstNaam, itemData.ID);
+    }
+
+    /**
+     * Controleert of de huidige gebruiker het item mag bewerken
+     */
+    function canUserEditItem(itemData, itemType) {
+        if (!window.huidigeGebruiker) return false;
+
+        const currentUsername = window.huidigeGebruiker.normalizedUsername;
+        if (!currentUsername) return false;
+
+        // Normaliseer de medewerker ID van het item
+        let itemUsername = itemData.MedewerkerID || itemData.Gebruikersnaam || '';
+        if (window.trimLoginNaamPrefixMachtigingen) {
+            itemUsername = window.trimLoginNaamPrefixMachtigingen(itemUsername);
+        }
+
+        // Controleer of het de eigen aanvraag is
+        if (currentUsername === itemUsername) {
+            return true;
+        }
+
+        // Controleer of gebruiker beheerder is
+        if (window.huidigeGebruiker.sharePointGroepen) {
+            const adminGroups = ["1. Sharepoint beheer", "1.1. Mulder MT", "2.6. Roosteraars", "2.3. Senioren beoordelen"];
+            const isBeheerder = window.huidigeGebruiker.sharePointGroepen.some(groep => adminGroups.includes(groep));
+            if (isBeheerder) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Voegt context menu functionaliteit toe aan een rooster cel
+     */
+    function attachContextMenuToCell(celElement, dag, medewerker) {
+        celElement.addEventListener('contextmenu', async (event) => {
+            // Voorkom standaard browser context menu
+            event.preventDefault();
+            event.stopPropagation();
+
+            // Haal data op voor deze cel
+            const itemsVoorCel = await getItemsVoorCel(dag, medewerker);
+            
+            if (!itemsVoorCel || itemsVoorCel.length === 0) {
+                return; // Geen items om te bewerken
+            }
+
+            // Als er meerdere items zijn, gebruik de eerste (of implementeer een selectie)
+            const item = itemsVoorCel[0];
+
+            // Controleer of gebruiker dit mag bewerken
+            if (!canUserEditItem(item.data, item.type)) {
+                console.log('[ContextMenu] Gebruiker heeft geen rechten om dit item te bewerken');
+                return;
+            }
+
+            // Toon het context menu
+            showContextMenu(event, item.data, item.type, celElement);
+        });
+    }
+
+    /**
+     * Haalt items op voor een specifieke cel
+     */
+    async function getItemsVoorCel(dag, medewerker) {
+        const items = [];
+        const dagNormaal = new Date(dag.getFullYear(), dag.getMonth(), dag.getDate());
+        const genormaliseerdeMedewerkerUsername = window.trimLoginNaamPrefixMachtigingen ? 
+            window.trimLoginNaamPrefixMachtigingen(medewerker.Username) : 
+            medewerker.Username;
+
+        // Check verlof items
+        if (window.alleVerlofItems) {
+            const verlofItems = window.alleVerlofItems.filter(item => {
+                const itemUsername = window.trimLoginNaamPrefixMachtigingen ? 
+                    window.trimLoginNaamPrefixMachtigingen(item.MedewerkerID) : 
+                    item.MedewerkerID;
+                
+                const startDate = new Date(item.StartDatum);
+                const endDate = new Date(item.EindDatum);
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(23, 59, 59, 999);
+
+                return itemUsername === genormaliseerdeMedewerkerUsername &&
+                       dagNormaal >= startDate && 
+                       dagNormaal <= endDate;
+            });
+
+            verlofItems.forEach(item => {
+                const itemType = item.Reden === 'Ziekte' || item.Reden === 'Beter' ? 'ziekte' : 'verlof';
+                items.push({ type: itemType, data: item });
+            });
+        }
+
+        // Check compensatie items
+        if (window.alleCompensatieUrenItems) {
+            const compensatieItems = window.alleCompensatieUrenItems.filter(item => {
+                const itemUsername = window.trimLoginNaamPrefixMachtigingen ? 
+                    window.trimLoginNaamPrefixMachtigingen(item.MedewerkerID) : 
+                    item.MedewerkerID;
+                
+                const startDate = new Date(item.StartCompensatieUren);
+                const endDate = new Date(item.EindeCompensatieUren);
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(23, 59, 59, 999);
+
+                return itemUsername === genormaliseerdeMedewerkerUsername &&
+                       dagNormaal >= startDate && 
+                       dagNormaal <= endDate;
+            });
+
+            compensatieItems.forEach(item => {
+                items.push({ type: 'compensatie', data: item });
+            });
+        }
+
+        // Check zittingvrij items
+        if (window.alleIncidenteelZittingVrijItems) {
+            const zittingvrijItems = window.alleIncidenteelZittingVrijItems.filter(item => {
+                const itemUsername = window.trimLoginNaamPrefixMachtigingen ? 
+                    window.trimLoginNaamPrefixMachtigingen(item.Gebruikersnaam) : 
+                    item.Gebruikersnaam;
+
+                if (itemUsername !== genormaliseerdeMedewerkerUsername) return false;
+
+                const startDate = new Date(item.ZittingsVrijeDagTijd);
+                const endDate = item.ZittingsVrijeDagTijdEind ? 
+                    new Date(item.ZittingsVrijeDagTijdEind) : 
+                    new Date(item.ZittingsVrijeDagTijd);
+                
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(23, 59, 59, 999);
+
+                // Handle terugkerende items
+                if (item.Terugkerend) {
+                    const terugkerendTot = new Date(item.TerugkerendTot);
+                    terugkerendTot.setHours(23, 59, 59, 999);
+
+                    if (dagNormaal < startDate || dagNormaal > terugkerendTot) return false;
+
+                    const originalDayOfWeek = new Date(item.ZittingsVrijeDagTijd).getDay();
+                    const originalDateOfMonth = new Date(item.ZittingsVrijeDagTijd).getDate();
+
+                    switch (item.TerugkeerPatroon) {
+                        case 'Wekelijks':
+                            return dagNormaal.getDay() === originalDayOfWeek;
+                        case 'Maandelijks':
+                            return dagNormaal.getDate() === originalDateOfMonth;
+                        default:
+                            return false;
+                    }
+                }
+
+                return dagNormaal >= startDate && dagNormaal <= endDate;
+            });
+
+            zittingvrijItems.forEach(item => {
+                items.push({ type: 'zittingvrij', data: item });
+            });
+        }
+
+        return items;
+    }
+
+    /**
+     * Initialiseert de context menu functionaliteit
+     */
+    function initializeContextMenu() {
+        console.log('[ContextMenu] Initialiseren context menu functionaliteit');
+
+        // Creëer het context menu element
+        createContextMenuHTML();
+
+        // Voeg CSS toe voor het context menu
+        const style = document.createElement('style');
+        style.textContent = `
+            #rooster-context-menu {
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 6px 10px rgba(0, 0, 0, 0.08);
+                animation: contextMenuFadeIn 0.15s ease-out;
+            }
+
+            @keyframes contextMenuFadeIn {
+                from {
+                    opacity: 0;
+                    transform: scale(0.95);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+
+            .context-menu-item:focus {
+                outline: none;
+                background-color: rgba(59, 130, 246, 0.1);
+            }
+
+            .dark .context-menu-item:focus {
+                background-color: rgba(59, 130, 246, 0.2);
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Observeer wanneer het rooster wordt getekend en voeg context menu toe
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList' && mutation.target.id === 'rooster-data-rows') {
+                    // Wacht even tot het rooster volledig is getekend
+                    setTimeout(() => {
+                        attachContextMenuToRoosterCells();
+                    }, 100);
+                }
+            });
+        });
+
+        const roosterDataRows = document.getElementById('rooster-data-rows');
+        if (roosterDataRows) {
+            observer.observe(roosterDataRows, {
+                childList: true,
+                subtree: true
+            });
+        }
+
+        // Voeg ook direct toe als het rooster al getekend is
+        attachContextMenuToRoosterCells();
+
+        console.log('[ContextMenu] Context menu functionaliteit geïnitialiseerd');
+    }
+
+    /**
+     * Voegt context menu toe aan alle rooster cellen
+     */
+    function attachContextMenuToRoosterCells() {
+        const roosterCellen = document.querySelectorAll('.rooster-cel');
+        
+        roosterCellen.forEach(cel => {
+            // Skip als al een context menu listener heeft
+            if (cel.hasAttribute('data-has-context-menu')) {
+                return;
+            }
+
+            // Haal datum en medewerker info op uit de cel
+            const datum = cel.dataset.datum;
+            const rijElement = cel.closest('.medewerker-rij');
+            
+            if (!datum || !rijElement) {
+                return;
+            }
+
+            const medewerkerId = rijElement.dataset.medewerkerId;
+            if (!medewerkerId || !window.alleMedewerkers) {
+                return;
+            }
+
+            const medewerker = window.alleMedewerkers.find(m => m.ID == medewerkerId);
+            if (!medewerker) {
+                return;
+            }
+
+            const dag = new Date(datum);
+            
+            // Voeg context menu toe
+            attachContextMenuToCell(cel, dag, medewerker);
+            cel.setAttribute('data-has-context-menu', 'true');
+        });
+    }
+
+    // Exporteer functies naar window scope
+    window.contextMenuLogic = {
+        initialize: initializeContextMenu,
+        show: showContextMenu,
+        hide: hideContextMenu
+    };
+
+    // Auto-initialiseer wanneer DOM ready is
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeContextMenu);
+    } else {
+        // DOM is al geladen
+        setTimeout(initializeContextMenu, 100);
+    }
+
+})();
+
+console.log('[ContextMenu] Context menu logic geladen');

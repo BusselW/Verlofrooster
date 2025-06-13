@@ -1,0 +1,189 @@
+/* Pages/css/adminCentrum_styles.css */
+
+/* Stijlen specifiek voor de adminCentrum.html pagina */
+
+/* --- Licht Thema Variabelen & Overrides (consistent met andere subpagina's) --- */
+body.light-theme {
+    --main-bg-color-admin: #f9fafb;                     /* Tailwind gray-50 */
+    --main-text-color-admin: #1f2937;                   /* Tailwind gray-800 */
+    --card-bg-color-admin: #ffffff;                     /* Tailwind white */
+    --card-border-color-admin: #e5e7eb;                 /* Tailwind gray-200 */
+    --table-header-bg-admin: #f3f4f6;                  /* Tailwind gray-100 */
+    --table-row-border-admin: #e5e7eb;                 /* Tailwind gray-200 */
+    --input-bg-color-admin: #ffffff;                    /* Tailwind white */
+    --input-border-color-admin: #d1d5db;                /* Tailwind gray-300 */
+    --input-text-color-admin: #1f2937;                  /* Tailwind gray-800 */
+    --button-primary-bg-color-admin: #2563eb;           /* Tailwind blue-600 */
+    --button-primary-hover-bg-color-admin: #1d4ed8;     /* Tailwind blue-700 */
+    --button-secondary-bg-color-admin: #e5e7eb;         /* Tailwind gray-200 */
+    --button-secondary-hover-bg-color-admin: #d1d5db;   /* Tailwind gray-300 */
+    --button-secondary-text-color-admin: #374151;       /* Tailwind gray-700 */
+    --link-color-admin: #2563eb;                        /* Tailwind blue-600 */
+    --link-hover-color-admin: #1d4ed8;                  /* Tailwind blue-700 */
+    --separator-color-admin: #e5e7eb;                   /* Tailwind gray-200 */
+    --tab-active-bg-color-admin: #f3f4f6;               /* Tailwind gray-100 (indien tabs gebruikt) */
+    --tab-active-border-color-admin: #2563eb;           /* Tailwind blue-600 (indien tabs gebruikt) */
+    --tab-active-text-color-admin: #2563eb;             /* Tailwind blue-600 (indien tabs gebruikt) */
+    --tab-inactive-text-color-admin: #6b7280;           /* Tailwind gray-500 (indien tabs gebruikt) */
+    --tab-hover-text-color-admin: #3b82f6;              /* Tailwind blue-500 (indien tabs gebruikt) */
+    --scrollbar-track-bg-admin: #e5e7eb;                /* Tailwind gray-200 */
+    --scrollbar-thumb-bg-admin: #9ca3af;                /* Tailwind gray-400 */
+    --scrollbar-thumb-hover-bg-admin: #6b7280;          /* Tailwind gray-500 */
+    --modal-bg-admin: #ffffff;                          /* Tailwind white */
+}
+
+body.light-theme {
+    background-color: var(--main-bg-color-admin) !important;
+    color: var(--main-text-color-admin) !important;
+}
+
+/* Header en algemene tekst in licht thema */
+body.light-theme h1,
+body.light-theme h2,
+body.light-theme #app-container > header p {
+    color: var(--main-text-color-admin) !important;
+}
+
+/* Sectie achtergronden en borders in licht thema */
+body.light-theme section.bg-gray-700 {
+    background-color: var(--card-bg-color-admin) !important;
+    border: 1px solid var(--card-border-color-admin) !important;
+}
+body.light-theme section p.text-gray-400 {
+    color: #4b5563 !important; /* gray-600 */
+}
+body.light-theme section p.text-gray-500 {
+    color: #6b7280 !important; /* gray-500 */
+}
+
+/* Tabellen in licht thema (indien gebruikt) */
+body.light-theme .editable-table thead.bg-gray-600 {
+    background-color: var(--table-header-bg-admin) !important;
+}
+body.light-theme .editable-table thead th {
+    color: var(--main-text-color-admin) !important;
+}
+body.light-theme .editable-table tbody.divide-gray-600 {
+    divide-color: var(--table-row-border-admin) !important;
+}
+body.light-theme .editable-table td {
+    border-color: var(--table-row-border-admin) !important;
+    color: var(--main-text-color-admin) !important;
+}
+
+/* Input velden, selects in licht thema */
+body.light-theme .input-class, /* Generieke class voor inputs in admin secties */
+body.light-theme input[type="text"],
+body.light-theme input[type="email"],
+body.light-theme textarea,
+body.light-theme select {
+    background-color: var(--input-bg-color-admin) !important;
+    color: var(--input-text-color-admin) !important;
+    border: 1px solid var(--input-border-color-admin) !important;
+}
+body.light-theme .input-class::placeholder,
+body.light-theme input[type="text"]::placeholder,
+body.light-theme textarea::placeholder {
+    color: #9ca3af; /* gray-400 */
+}
+
+
+/* Knoppen in licht thema */
+body.light-theme .bg-blue-500 { /* Algemene primaire knop */
+    background-color: var(--button-primary-bg-color-admin) !important;
+    color: white !important;
+}
+body.light-theme .bg-blue-500:hover {
+    background-color: var(--button-primary-hover-bg-color-admin) !important;
+}
+
+/* Statusberichten in licht thema */
+body.light-theme #admin-status-bericht-algemeen.bg-blue-600,
+body.light-theme #foutenlogboek-status.bg-blue-600 { /* Info */
+    background-color: #eff6ff !important; /* blue-50 */
+    color: #1e40af !important; /* blue-800 */
+    border: 1px solid #bfdbfe !important; /* blue-200 */
+}
+body.light-theme #admin-status-bericht-algemeen.bg-green-600,
+body.light-theme #foutenlogboek-status.bg-green-600 { /* Success */
+    background-color: #f0fdf4 !important; /* green-50 */
+    color: #166534 !important; /* green-800 */
+    border: 1px solid #bbf7d0 !important; /* green-200 */
+}
+body.light-theme #admin-status-bericht-algemeen.bg-red-600,
+body.light-theme #foutenlogboek-status.bg-red-600 { /* Error */
+    background-color: #fef2f2 !important; /* red-50 */
+    color: #991b1b !important; /* red-800 */
+    border: 1px solid #fecaca !important; /* red-200 */
+}
+
+/* Modal in licht thema */
+body.light-theme #admin-modal > div { /* De modal zelf */
+    background-color: var(--modal-bg-admin) !important;
+}
+body.light-theme #admin-modal #admin-modal-title,
+body.light-theme #admin-modal #admin-modal-form label {
+    color: var(--main-text-color-admin) !important;
+}
+body.light-theme #admin-modal #admin-modal-close-x {
+    color: #6b7280 !important; /* gray-500 */
+}
+body.light-theme #admin-modal #admin-modal-close-x:hover {
+    color: var(--main-text-color-admin) !important;
+}
+body.light-theme #admin-modal #admin-modal-cancel-button {
+    background-color: var(--button-secondary-bg-color-admin) !important;
+    color: var(--button-secondary-text-color-admin) !important;
+}
+body.light-theme #admin-modal #admin-modal-cancel-button:hover {
+    background-color: var(--button-secondary-hover-bg-color-admin) !important;
+}
+body.light-theme #admin-modal #admin-modal-save-button {
+    background-color: var(--button-primary-bg-color-admin) !important;
+}
+body.light-theme #admin-modal #admin-modal-save-button:hover {
+    background-color: var(--button-primary-hover-bg-color-admin) !important;
+}
+
+
+/* Footer in licht thema */
+body.light-theme footer {
+    border-color: var(--separator-color-admin) !important;
+}
+body.light-theme footer a {
+    color: var(--link-color-admin) !important;
+}
+body.light-theme footer a:hover {
+    color: var(--link-hover-color-admin) !important;
+}
+body.light-theme footer p.text-gray-500 {
+    color: #6b7280 !important; /* gray-500 */
+}
+
+/* Scrollbar voor licht thema */
+body.light-theme ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track-bg-admin) !important;
+}
+body.light-theme ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb-bg-admin) !important;
+}
+body.light-theme ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover-bg-admin) !important;
+}
+
+/* Zorg dat de .hidden class van Tailwind werkt zoals verwacht */
+.hidden {
+    display: none !important;
+}
+
+/* Algemene input class voor consistentie (kan in HTML gebruikt worden) */
+.input-class {
+    /* Standaard dark theme stijlen worden in HTML via Tailwind gezet,
+       of hier als fallback indien geen Tailwind class gebruikt wordt */
+    /* background-color: #4b5563; gray-600 */
+    /* border: 1px solid #6b7280; gray-500 */
+    /* color: #f3f4f6; gray-100 */
+    /* padding: 0.5rem; p-2 */
+    /* border-radius: 0.375rem; rounded-md */
+    /* width: 100%; w-full */
+}

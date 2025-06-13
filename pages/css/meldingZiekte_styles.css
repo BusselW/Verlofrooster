@@ -1,0 +1,184 @@
+/* Base modal styling specifiek voor ziekmeldingen */
+.ziekte-modal {
+    max-width: 600px;
+    border-radius: 8px;
+}
+
+/* Form styling */
+.ziekte-form-group {
+    margin-bottom: 1rem;
+}
+
+.ziekte-form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.ziekte-form-group input,
+.ziekte-form-group textarea,
+.ziekte-form-group select {
+    width: 100%;
+    padding: 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+.ziekte-form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.ziekte-form-col {
+    flex: 1;
+}
+
+/* Notification area styling */
+#modal-notification-area {
+    border-radius: 4px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+}
+
+/* Licht thema */
+body:not(.dark-theme) .ziekte-modal {
+    background-color: #ffffff;
+    color: #333333;
+    border: 1px solid #e0e0e0;
+}
+
+body:not(.dark-theme) .ziekte-form-group input,
+body:not(.dark-theme) .ziekte-form-group textarea,
+body:not(.dark-theme) .ziekte-form-group select {
+    background-color: #ffffff;
+    color: #333333;
+    border-color: #d0d0d0;
+}
+
+body:not(.dark-theme) .ziekte-form-group input:focus,
+body:not(.dark-theme) .ziekte-form-group textarea:focus,
+body:not(.dark-theme) .ziekte-form-group select:focus {
+    border-color: #4a86e8;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 134, 232, 0.2);
+}
+
+body:not(.dark-theme) #modal-action-button {
+    background-color: #4a86e8;
+    color: white;
+}
+
+body:not(.dark-theme) #modal-action-button:hover {
+    background-color: #3a76d8;
+}
+
+/* Donker thema */
+body.dark-theme .ziekte-modal {
+    background-color: #2d2d2d;
+    color: #e0e0e0;
+    border: 1px solid #444444;
+}
+
+body.dark-theme .ziekte-form-group label {
+    color: #e0e0e0;
+}
+
+body.dark-theme .ziekte-form-group input,
+body.dark-theme .ziekte-form-group textarea,
+body.dark-theme .ziekte-form-group select {
+    background-color: #3a3a3a;
+    color: #e0e0e0;
+    border-color: #555555;
+}
+
+body.dark-theme .ziekte-form-group input:focus,
+body.dark-theme .ziekte-form-group textarea:focus,
+body.dark-theme .ziekte-form-group select:focus {
+    border-color: #6a9eee;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(106, 158, 238, 0.2);
+}
+
+body.dark-theme #modal-action-button {
+    background-color: #6a9eee;
+    color: white;
+}
+
+body.dark-theme #modal-action-button:hover {
+    background-color: #5a8ede;
+}
+
+/* Date and time pickers */
+.ziekte-date-time-container {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.ziekte-date-container {
+    flex: 3;
+}
+
+.ziekte-time-container {
+    flex: 2;
+}
+
+/* Notifications */
+.notification-area.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.notification-area.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.notification-area.info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+body.dark-theme .notification-area.success {
+    background-color: rgba(40, 167, 69, 0.2);
+    color: #8fd19e;
+    border-color: rgba(40, 167, 69, 0.4);
+}
+
+body.dark-theme .notification-area.error {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: #ea868f;
+    border-color: rgba(220, 53, 69, 0.4);
+}
+
+body.dark-theme .notification-area.info {
+    background-color: rgba(23, 162, 184, 0.2);
+    color: #6edff6;
+    border-color: rgba(23, 162, 184, 0.4);
+}
+
+/* Spinner animation for loading states */
+.spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.5rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

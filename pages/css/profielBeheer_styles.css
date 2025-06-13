@@ -1,0 +1,462 @@
+/* Pages/css/profielBeheer_styles.css */
+
+/* --- Algemene Thema Variabelen --- */
+:root {
+  /* Kleurenpalet */
+  --primary-licht: #3b82f6;       /* Tailwind blue-500 */
+  --primary-donker: #2563eb;      /* Tailwind blue-600 */
+  --primary-focus: #60a5fa;      /* Tailwind blue-400 */
+  --primary-licht-dark-theme: #60a5fa; /* Voor actieve elementen in donker thema */
+
+  --success-licht: #10b981;      /* Tailwind green-500 */
+  --success-donker: #059669;     /* Tailwind green-600 */
+  
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --white: #ffffff;
+  
+  /* Thema-specifieke variabelen */
+  /* Lichte Modus */
+  --app-bg-lm: var(--gray-100);
+  --text-main-lm: var(--gray-800);
+  --text-muted-lm: var(--gray-600);
+  --text-heading-lm: var(--gray-900); /* Voor h2 etc. binnen content */
+  --link-lm: var(--primary-licht);
+  --link-hover-lm: var(--primary-donker);
+  --border-color-lm: var(--gray-200);
+  --card-bg-lm: var(--white); /* Voor de hoofd wrapper card */
+  --card-label-lm: var(--gray-700);
+  --card-subtle-text-lm: var(--gray-500);
+  --input-bg-lm: var(--white);
+  --input-border-lm: var(--gray-300);
+  --input-text-lm: var(--gray-900);
+  --input-placeholder-lm: var(--gray-400);
+  --input-focus-border-lm: var(--primary-licht);
+  --input-focus-shadow-lm: rgba(59, 130, 246, 0.25);
+  --input-readonly-bg-lm: var(--gray-100);
+  --input-readonly-text-lm: var(--gray-500);
+  --input-readonly-border-lm: var(--gray-300);
+  --toggle-row-bg-lm: var(--gray-50);
+  --toggle-row-border-lm: var(--gray-200);
+  --toggle-row-label-lm: var(--gray-700);
+  --step-indicator-bg-lm: var(--gray-300);
+  --step-indicator-text-lm: var(--white);
+  --step-indicator-active-bg-lm: var(--primary-licht);
+  --step-indicator-active-border-lm: var(--primary-donker);
+  --step-indicator-active-text-lm: var(--primary-licht); /* Tekst van de span, niet de cirkel */
+  --step-indicator-completed-bg-lm: var(--success-licht);
+  --step-indicator-completed-border-lm: var(--success-donker);
+  --step-indicator-completed-text-lm: var(--success-licht);
+  --step-connector-lm: var(--gray-300);
+  --step-connector-active-lm: var(--primary-licht);
+  --werkrooster-card-bg-lm: var(--gray-50); /* Voor de specifieke werkrooster card */
+  --werkrooster-card-header-lm: var(--gray-700);
+  --werkrooster-card-subtext-lm: var(--gray-500);
+  --scrollbar-track-bg-lm: var(--gray-100);
+  --scrollbar-thumb-bg-lm: var(--gray-400);
+  --scrollbar-thumb-hover-bg-lm: var(--gray-500);
+
+  /* Donkere Modus */
+  --app-bg-dm: var(--gray-900);
+  --text-main-dm: var(--gray-100);
+  --text-muted-dm: var(--gray-300);
+  --text-heading-dm: var(--gray-100);
+  --link-dm: var(--primary-focus);
+  --link-hover-dm: var(--primary-licht);
+  --border-color-dm: var(--gray-700);
+  --card-bg-dm: var(--gray-800);
+  --card-label-dm: var(--gray-300);
+  --card-subtle-text-dm: var(--gray-400);
+  --input-bg-dm: var(--gray-700);
+  --input-border-dm: var(--gray-600);
+  --input-text-dm: var(--gray-100);
+  --input-placeholder-dm: var(--gray-500);
+  --input-focus-border-dm: var(--primary-focus);
+  --input-focus-shadow-dm: rgba(96, 165, 250, 0.25);
+  --input-readonly-bg-dm: var(--gray-700); 
+  --input-readonly-text-dm: var(--gray-400);
+  --input-readonly-border-dm: var(--gray-600);
+  --toggle-row-bg-dm: var(--gray-700); /* Tailwind's bg-gray-700/60 is lastig met vars */
+  --toggle-row-border-dm: var(--gray-600);
+  --toggle-row-label-dm: var(--gray-300);
+  --step-indicator-bg-dm: var(--gray-600);
+  --step-indicator-text-dm: var(--gray-200);
+  --step-indicator-active-bg-dm: var(--primary-licht-dark-theme);
+  --step-indicator-active-border-dm: var(--primary-licht);
+  --step-indicator-active-text-dm: var(--primary-licht-dark-theme);
+  --step-indicator-completed-bg-dm: var(--success-donker);
+  --step-indicator-completed-border-dm: var(--success-licht);
+  --step-indicator-completed-text-dm: var(--success-licht);
+  --step-connector-dm: var(--gray-600);
+  --step-connector-active-dm: var(--primary-licht-dark-theme);
+  --werkrooster-card-bg-dm: var(--gray-900);
+  --werkrooster-card-header-dm: var(--gray-100);
+  --werkrooster-card-subtext-dm: var(--gray-400);
+  --scrollbar-track-bg-dm: var(--gray-800);
+  --scrollbar-thumb-bg-dm: var(--gray-600);
+  --scrollbar-thumb-hover-bg-dm: var(--gray-500);
+  
+  /* Algemeen */
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --border-radius-sm: 0.25rem;
+  --border-radius: 0.375rem;
+  --border-radius-md: 0.5rem;
+  --border-radius-lg: 0.75rem;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* --- Basis Body Styling --- */
+body {
+  font-family: var(--font-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body.light-theme {
+  background-color: var(--app-bg-lm);
+  color: var(--text-main-lm);
+}
+
+body.dark-theme {
+  background-color: var(--app-bg-dm);
+  color: var(--text-main-dm);
+}
+
+/* --- Scrollbar Styling --- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+body.light-theme ::-webkit-scrollbar-track { background: var(--scrollbar-track-bg-lm); border-radius: 4px; }
+body.light-theme ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb-bg-lm); border-radius: 4px; border: 2px solid var(--scrollbar-track-bg-lm); }
+body.light-theme ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover-bg-lm); }
+
+body.dark-theme ::-webkit-scrollbar-track { background: var(--scrollbar-track-bg-dm); border-radius: 4px; }
+body.dark-theme ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb-bg-dm); border-radius: 4px; border: 2px solid var(--scrollbar-track-bg-dm); }
+body.dark-theme ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover-bg-dm); }
+
+/* --- Hoofd "Kaart" voor Stappen --- */
+.tab-wrapper-card { /* Naamgeving behouden van vorige iteratie, functioneert als hoofdkaart */
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+}
+body.light-theme .tab-wrapper-card {
+  background-color: var(--card-bg-lm);
+}
+body.dark-theme .tab-wrapper-card {
+  background-color: var(--card-bg-dm);
+}
+
+/* Titels binnen de stappen */
+body.light-theme .step-content h2 {
+  color: var(--text-heading-lm);
+}
+body.dark-theme .step-content h2 {
+  color: var(--text-heading-dm);
+}
+
+/* Labels en subtiele tekst binnen de stappen/formulieren */
+body.light-theme .step-content label,
+body.light-theme .step-content .text-sm { /* Algemene kleine tekst */
+  color: var(--card-label-lm);
+}
+body.light-theme .step-content p.text-gray-600 { /* Specifieke paragraaf */
+    color: var(--card-subtle-text-lm);
+}
+body.light-theme .step-content .text-xs { /* Nog kleinere tekst */
+    color: var(--gray-500);
+}
+
+
+body.dark-theme .step-content label,
+body.dark-theme .step-content .text-sm {
+  color: var(--card-label-dm);
+}
+body.dark-theme .step-content p.text-gray-400 {
+    color: var(--card-subtle-text-dm);
+}
+body.dark-theme .step-content .text-xs {
+    color: var(--gray-400);
+}
+
+
+/* Interne borders in formulieren */
+body.light-theme #rooster-instellingen-form .border-t,
+body.light-theme #persoonlijke-info-form .border-t,
+body.light-theme #step-3-content .border-t { /* Voor de knoppenbalk in stap 3 */
+    border-color: var(--border-color-lm) !important;
+}
+body.dark-theme #rooster-instellingen-form .border-t,
+body.dark-theme #persoonlijke-info-form .border-t,
+body.dark-theme #step-3-content .border-t {
+    border-color: var(--border-color-dm) !important;
+}
+
+/* --- Step Indicators --- */
+.step-indicator-container {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 1.5rem; 
+  padding-bottom: 1rem; 
+}
+body.light-theme .step-indicator-container {
+  border-bottom: 1px solid var(--border-color-lm);
+}
+body.dark-theme .step-indicator-container {
+  border-bottom: 1px solid var(--border-color-dm);
+}
+
+.step-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.875rem; 
+  position: relative;
+  flex-grow: 1;
+  text-align: center;
+}
+body.light-theme .step-indicator { color: var(--gray-400); }
+body.dark-theme .step-indicator { color: var(--gray-500); } /* Iets donkerder voor contrast op donkere achtergrond */
+
+.step-indicator.active span { font-weight: 600; }
+body.light-theme .step-indicator.active span { color: var(--step-indicator-active-text-lm); }
+body.dark-theme .step-indicator.active span { color: var(--step-indicator-active-text-dm); }
+
+.step-indicator.completed span { font-weight: 500; }
+body.light-theme .step-indicator.completed span { color: var(--step-indicator-completed-text-lm); }
+body.dark-theme .step-indicator.completed span { color: var(--step-indicator-completed-text-dm); }
+
+
+.step-circle {
+  width: 32px; height: 32px; border-radius: 50%;
+  color: var(--white); /* Tekst in cirkel is meestal wit */
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 600; margin-bottom: 0.5rem;
+  transition: all 0.3s ease; border: 2px solid transparent;
+}
+body.light-theme .step-circle { background-color: var(--step-indicator-bg-lm); }
+body.dark-theme .step-circle { background-color: var(--step-indicator-bg-dm); }
+
+body.light-theme .step-indicator.active .step-circle {
+  background-color: var(--step-indicator-active-bg-lm);
+  border-color: var(--step-indicator-active-border-lm);
+}
+body.dark-theme .step-indicator.active .step-circle {
+  background-color: var(--step-indicator-active-bg-dm);
+  border-color: var(--step-indicator-active-border-dm);
+}
+
+body.light-theme .step-indicator.completed .step-circle {
+  background-color: var(--step-indicator-completed-bg-lm);
+  border-color: var(--step-indicator-completed-border-lm);
+}
+body.dark-theme .step-indicator.completed .step-circle {
+  background-color: var(--step-indicator-completed-bg-dm);
+  border-color: var(--step-indicator-completed-border-dm);
+}
+
+/* Connector Lines */
+.step-indicator:not(:last-child)::after {
+  content: ''; position: absolute; top: 15px; 
+  left: calc(50% + 20px); width: calc(100% - 40px); height: 2px;
+  z-index: -1; 
+}
+body.light-theme .step-indicator:not(:last-child)::after { background-color: var(--step-connector-lm); }
+body.dark-theme .step-indicator:not(:last-child)::after { background-color: var(--step-connector-dm); }
+
+body.light-theme .step-indicator.completed:not(:last-child)::after,
+body.light-theme .step-indicator.active:not(:last-child)::after {
+  background-color: var(--step-connector-active-lm);
+}
+body.dark-theme .step-indicator.completed:not(:last-child)::after,
+body.dark-theme .step-indicator.active:not(:last-child)::after {
+  background-color: var(--step-connector-active-dm);
+}
+/* Ensure line before an active step (if previous is completed) is also active */
+body.light-theme .step-indicator.completed + .step-indicator.active::before, /* Using ::before on the active step to color the incoming line */
+body.light-theme .step-indicator.completed + .step-indicator.active .step-indicator:not(:last-child)::after { /* This might be too complex, simplify if needed */
+    background-color: var(--step-connector-active-lm);
+}
+body.dark-theme .step-indicator.completed + .step-indicator.active::before,
+body.dark-theme .step-indicator.completed + .step-indicator.active .step-indicator:not(:last-child)::after {
+    background-color: var(--step-connector-active-dm);
+}
+
+
+/* --- Formulier Velden --- */
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 0.625rem 0.875rem;
+  border-radius: var(--border-radius); border-width: 1px; border-style: solid;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
+  box-shadow: none; font-size: 0.875rem;
+}
+.form-input::placeholder, .form-textarea::placeholder { opacity: 1; }
+.form-select {
+  appearance: none; background-position: right 0.5rem center;
+  background-repeat: no-repeat; background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+body.light-theme .form-input,
+body.light-theme .form-select,
+body.light-theme .form-textarea {
+  background-color: var(--input-bg-lm); border-color: var(--input-border-lm); color: var(--input-text-lm);
+}
+body.light-theme .form-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); }
+body.light-theme .form-input::placeholder, 
+body.light-theme .form-textarea::placeholder { color: var(--input-placeholder-lm); }
+body.light-theme .form-input:focus,
+body.light-theme .form-select:focus,
+body.light-theme .form-textarea:focus {
+  border-color: var(--input-focus-border-lm); box-shadow: 0 0 0 3px var(--input-focus-shadow-lm); outline: none;
+}
+body.light-theme .form-input[readonly], body.light-theme .form-input:disabled,
+body.light-theme .form-select:disabled, body.light-theme .form-textarea:disabled {
+  background-color: var(--input-readonly-bg-lm); color: var(--input-readonly-text-lm); border-color: var(--input-readonly-border-lm);
+}
+
+body.dark-theme .form-input,
+body.dark-theme .form-select,
+body.dark-theme .form-textarea {
+  background-color: var(--input-bg-dm); border-color: var(--input-border-dm); color: var(--input-text-dm);
+}
+body.dark-theme .form-select { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); }
+body.dark-theme .form-input::placeholder,
+body.dark-theme .form-textarea::placeholder { color: var(--input-placeholder-dm); }
+body.dark-theme .form-input:focus,
+body.dark-theme .form-select:focus,
+body.dark-theme .form-textarea:focus {
+  border-color: var(--input-focus-border-dm); box-shadow: 0 0 0 3px var(--input-focus-shadow-dm); outline: none;
+}
+body.dark-theme .form-input[readonly], body.dark-theme .form-input:disabled,
+body.dark-theme .form-select:disabled, body.dark-theme .form-textarea:disabled {
+  background-color: var(--input-readonly-bg-dm); color: var(--input-readonly-text-dm); border-color: var(--input-readonly-border-dm);
+}
+
+/* Toggle switch rijen in Stap 1 */
+.toggle-row-container { /* De Tailwind klassen in HTML doen het meeste werk */ }
+body.light-theme .toggle-row-container {
+    background-color: var(--toggle-row-bg-lm);
+    border: 1px solid var(--toggle-row-border-lm);
+}
+body.light-theme .toggle-row-container label.text-sm {
+    color: var(--toggle-row-label-lm);
+}
+body.dark-theme .toggle-row-container {
+    background-color: var(--toggle-row-bg-dm);
+    border: 1px solid var(--toggle-row-border-dm);
+}
+body.dark-theme .toggle-row-container label.text-sm {
+    color: var(--toggle-row-label-dm);
+}
+
+/* --- Profiel Foto --- */
+.profile-picture-container {
+    width: 100px; height: 100px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; margin-bottom: 1rem; 
+    box-shadow: var(--shadow-md); transition: all 0.3s ease;
+}
+.profile-picture-container img { width: 100%; height: 100%; object-fit: cover; }
+
+body.light-theme .profile-picture-container {
+    background-color: var(--profile-pic-bg-lm);
+    border: 3px solid var(--card-bg-lm); /* Rand in achtergrondkleur van de hoofdkaart */
+}
+body.dark-theme .profile-picture-container {
+    background-color: var(--profile-pic-bg-dm);
+    border: 3px solid var(--card-bg-dm);
+}
+
+/* --- Knoppen (Buttons) --- */
+.btn {
+    padding: 0.6rem 1.2rem; border-radius: var(--border-radius-md);
+    font-weight: 500; transition: all 0.2s ease;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-sm); letter-spacing: 0.025em;
+    border: 1px solid transparent; 
+}
+.btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.btn:active { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.btn:disabled, .btn.disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn-primary { background-color: var(--primary-licht); color: white; border-color: var(--primary-licht); }
+.btn-primary:hover { background-color: var(--primary-donker); border-color: var(--primary-donker); }
+
+.btn-secondary { background-color: var(--gray-200); color: var(--gray-700); border-color: var(--gray-300); }
+.btn-secondary:hover { background-color: var(--gray-300); border-color: var(--gray-400); }
+body.dark-theme .btn-secondary {
+    background-color: var(--gray-700); color: var(--gray-100); border-color: var(--gray-600);
+}
+body.dark-theme .btn-secondary:hover { background-color: var(--gray-600); border-color: var(--gray-500); }
+
+.btn-success { background-color: var(--success-licht); color: white; border-color: var(--success-licht); }
+.btn-success:hover { background-color: var(--success-donker); border-color: var(--success-donker); }
+
+/* Werkrooster Form Card in Stap 3 */
+.werkrooster-form-card { /* De div met class bg-gray-100 dark:bg-gray-900 */ }
+body.light-theme .werkrooster-form-card {
+    background-color: var(--werkrooster-card-bg-lm);
+}
+body.light-theme .werkrooster-form-card h3 {
+    color: var(--werkrooster-card-header-lm);
+}
+body.light-theme .werkrooster-form-card p.text-sm { /* De subtekst */
+    color: var(--werkrooster-card-subtext-lm);
+}
+body.light-theme .werkrooster-form-card .text-xs { /* De 'Niet Werkzaam' hint */
+    color: var(--gray-500);
+}
+
+
+body.dark-theme .werkrooster-form-card {
+    background-color: var(--werkrooster-card-bg-dm);
+}
+body.dark-theme .werkrooster-form-card h3 {
+    color: var(--werkrooster-card-header-dm);
+}
+body.dark-theme .werkrooster-form-card p.text-sm {
+    color: var(--werkrooster-card-subtext-dm);
+}
+body.dark-theme .werkrooster-form-card .text-xs {
+    color: var(--gray-400);
+}
+
+
+/* --- Statusberichten --- */
+.status-message {
+  padding: 0.875rem 1.25rem; border-radius: var(--border-radius-md);
+  margin-top: 1.25rem; animation: slideIn 0.3s ease-out;
+  border-width: 1px; border-style: solid; font-size: 0.875rem; line-height: 1.4;
+}
+.status-success { background-color: #dcfce7; border-color: #4ade80; color: #166534; }
+body.dark-theme .status-success { background-color: rgba(34, 197, 94, 0.2); border-color: #22c55e; color: #bbf7d0; }
+.status-error { background-color: #fee2e2; border-color: #f87171; color: #991b1b; }
+body.dark-theme .status-error { background-color: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fecaca; }
+.status-info { background-color: #dbeafe; border-color: #60a5fa; color: #1e40af; }
+body.dark-theme .status-info { background-color: rgba(59, 130, 246, 0.2); border-color: #3b82f6; color: #bfdbfe; }
+
+/* --- Footer --- */
+footer { border-top-width: 1px; }
+body.light-theme footer { border-color: var(--border-color-lm); color: var(--text-muted-lm); }
+body.light-theme footer a { color: var(--link-lm); }
+body.light-theme footer a:hover { color: var(--link-hover-lm); }
+
+body.dark-theme footer { border-color: var(--border-color-dm); color: var(--text-muted-dm); }
+body.dark-theme footer a { color: var(--link-dm); }
+body.dark-theme footer a:hover { color: var(--link-hover-dm); }
+
+/* --- Utility --- */
+.hidden { display: none !important; }

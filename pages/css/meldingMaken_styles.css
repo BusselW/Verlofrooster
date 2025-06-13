@@ -1,0 +1,528 @@
+/* Pages/css/meldingMaken_styles.css */
+
+/* --- Algemene Thema Variabelen --- */
+:root {
+  /* Kleurenpalet (consistent met gInstellingen_styles.css) */
+  --primary-licht: #3b82f6; /* blauw-500 */
+  --primary-donker: #2563eb; /* blauw-600 */
+  --primary-focus: #60a5fa; /* blauw-400 */
+  --primary-content: #ffffff; /* Wit voor tekst op primaire achtergrond */
+
+  --secondary-licht: #6b7280; /* grijs-500 */
+  --secondary-donker: #4b5563; /* grijs-600 */
+  --secondary-focus: #9ca3af; /* grijs-400 */
+  --secondary-content: #ffffff; /* Wit voor tekst op secundaire achtergrond */
+
+  --accent-licht: #10b981; /* smaragd-500 */
+  --accent-donker: #059669; /* smaragd-600 */
+  --accent-focus: #34d399; /* smaragd-400 */
+  --accent-content: #ffffff;
+
+  --success-licht: #10b981;     
+  --success-donker: #059669;    
+  --success-content: #ffffff;
+
+  --danger-licht: #ef4444;      
+  --danger-donker: #dc2626;     
+  --danger-content: #ffffff;
+
+  --warning-licht: #f59e0b;      
+  --warning-donker: #d97706;     
+  --warning-content: #ffffff;
+  
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --white: #ffffff;
+  
+  /* Thema-specifieke variabelen voor meldingMaken pagina */
+  /* Lichte Modus */
+  --page-bg-lm: var(--gray-100);
+  --card-bg-lm: var(--white);
+  --card-border-lm: var(--gray-200);
+  --text-main-lm: var(--gray-800);
+  --text-heading-lm: var(--gray-900);
+  --text-muted-lm: var(--gray-600);
+  --text-placeholder-lm: var(--gray-400);
+  --input-bg-lm: var(--white);
+  --input-border-lm: var(--gray-300);
+  --input-text-lm: var(--gray-900);
+  --input-focus-border-lm: var(--primary-licht);
+  --input-focus-shadow-lm: rgba(59, 130, 246, 0.25); /* blauw-500 met 25% opacity */
+  --input-disabled-bg-lm: var(--gray-100);
+  --input-disabled-text-lm: var(--gray-500);
+  --input-disabled-border-lm: var(--gray-300);
+  --button-primary-bg-lm: var(--accent-licht); /* Gebruik accentkleur voor "Indienen" */
+  --button-primary-hover-bg-lm: var(--accent-donker);
+  --button-primary-text-lm: var(--accent-content);
+  --button-secondary-bg-lm: var(--gray-200);
+  --button-secondary-hover-bg-lm: var(--gray-300);
+  --button-secondary-text-lm: var(--gray-700);
+  --button-secondary-border-lm: var(--gray-300);
+  --feedback-item-bg-lm: var(--white);
+  --feedback-item-border-lm: var(--gray-200);
+  --my-feedback-border-lm: var(--primary-licht);
+  --my-feedback-badge-bg-lm: #dbeafe; /* blauw-100 */
+  --my-feedback-badge-text-lm: #1e40af; /* blauw-800 */
+  --status-nieuw-bg-lm: #93c5fd; /* blauw-300 */
+  --status-nieuw-text-lm: #1e3a8a; /* blauw-900 */
+  --status-in-behandeling-bg-lm: #fcd34d; /* amber-300 */
+  --status-in-behandeling-text-lm: #92400e; /* amber-800 */
+  --status-opgelost-bg-lm: #86efac; /* smaragd-300 */
+  --status-opgelost-text-lm: #14532d; /* smaragd-900 */
+  --form-status-success-bg-lm: #dcfce7; /* groen-100 */
+  --form-status-success-text-lm: #166534; /* groen-800 */
+  --form-status-success-border-lm: #4ade80; /* groen-400 */
+  --form-status-error-bg-lm: #fee2e2; /* rood-100 */
+  --form-status-error-text-lm: #991b1b; /* rood-800 */
+  --form-status-error-border-lm: #f87171; /* rood-400 */
+  --form-status-info-bg-lm: #dbeafe; /* blauw-100 */
+  --form-status-info-text-lm: #1e40af; /* blauw-800 */
+  --form-status-info-border-lm: #60a5fa; /* blauw-400 */
+  --scrollbar-track-bg-lm: var(--gray-100);
+  --scrollbar-thumb-bg-lm: var(--gray-400);
+  --scrollbar-thumb-hover-bg-lm: var(--gray-500);
+
+  /* Donkere Modus */
+  --page-bg-dm: var(--gray-900);
+  --card-bg-dm: var(--gray-800);
+  --card-border-dm: var(--gray-700);
+  --text-main-dm: var(--gray-100);
+  --text-heading-dm: var(--white);
+  --text-muted-dm: var(--gray-400);
+  --text-placeholder-dm: var(--gray-500);
+  --input-bg-dm: var(--gray-700);
+  --input-border-dm: var(--gray-600);
+  --input-text-dm: var(--gray-100);
+  --input-focus-border-dm: var(--primary-focus);
+  --input-focus-shadow-dm: rgba(96, 165, 250, 0.25); /* blauw-400 met 25% opacity */
+  --input-disabled-bg-dm: var(--gray-700); 
+  --input-disabled-text-dm: var(--gray-400);
+  --input-disabled-border-dm: var(--gray-600);
+  --button-primary-bg-dm: var(--accent-focus);
+  --button-primary-hover-bg-dm: var(--accent-licht);
+  --button-primary-text-dm: var(--gray-900); /* Donkere tekst op lichte accentkleur */
+  --button-secondary-bg-dm: var(--gray-600);
+  --button-secondary-hover-bg-dm: var(--gray-500);
+  --button-secondary-text-dm: var(--gray-200);
+  --button-secondary-border-dm: var(--gray-500);
+  --feedback-item-bg-dm: var(--gray-800); 
+  --feedback-item-border-dm: var(--gray-700);
+  --my-feedback-border-dm: var(--primary-focus);
+  --my-feedback-badge-bg-dm: #1e3a8a; /* blauw-900 */
+  --my-feedback-badge-text-dm: #93c5fd; /* blauw-300 */
+  --status-nieuw-bg-dm: #1e3a8a; /* blauw-900 */
+  --status-nieuw-text-dm: #93c5fd; /* blauw-300 */
+  --status-in-behandeling-bg-dm: #92400e; /* amber-800 */
+  --status-in-behandeling-text-dm: #fcd34d; /* amber-300 */
+  --status-opgelost-bg-dm: #14532d; /* smaragd-900 */
+  --status-opgelost-text-dm: #86efac; /* smaragd-300 */
+  --form-status-success-bg-dm: rgba(34, 197, 94, 0.2); 
+  --form-status-success-text-dm: #bbf7d0; /* groen-200 */
+  --form-status-success-border-dm: #22c55e; /* groen-500 */
+  --form-status-error-bg-dm: rgba(239, 68, 68, 0.2);
+  --form-status-error-text-dm: #fecaca; /* rood-200 */
+  --form-status-error-border-dm: #ef4444; /* rood-500 */
+  --form-status-info-bg-dm: rgba(59, 130, 246, 0.2);
+  --form-status-info-text-dm: #bfdbfe; /* blauw-200 */
+  --form-status-info-border-dm: #3b82f6; /* blauw-500 */
+  --scrollbar-track-bg-dm: var(--gray-800);
+  --scrollbar-thumb-bg-dm: var(--gray-600);
+  --scrollbar-thumb-hover-bg-dm: var(--gray-500);
+
+  /* Algemeen */
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --border-radius-sm: 0.25rem; /* 4px */
+  --border-radius: 0.375rem; /* 6px */
+  --border-radius-md: 0.5rem; /* 8px */
+  --border-radius-lg: 0.75rem; /* 12px */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* --- Basis Body Styling --- */
+body {
+  font-family: var(--font-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body.light-theme {
+  background-color: var(--page-bg-lm);
+  color: var(--text-main-lm);
+}
+
+body.dark-theme {
+  background-color: var(--page-bg-dm);
+  color: var(--text-main-dm);
+}
+
+/* --- Scrollbar Styling --- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+body.light-theme ::-webkit-scrollbar-track { background: var(--scrollbar-track-bg-lm); border-radius: 4px; }
+body.light-theme ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb-bg-lm); border-radius: 4px; border: 2px solid var(--scrollbar-track-bg-lm); }
+body.light-theme ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover-bg-lm); }
+
+body.dark-theme ::-webkit-scrollbar-track { background: var(--scrollbar-track-bg-dm); border-radius: 4px; }
+body.dark-theme ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb-bg-dm); border-radius: 4px; border: 2px solid var(--scrollbar-track-bg-dm); }
+body.dark-theme ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover-bg-dm); }
+
+/* --- Paginabanner (reeds in HTML via Tailwind, geen extra CSS nodig tenzij specifieke overrides) --- */
+/* #page-banner {} */
+
+/* --- Hoofd Content Kaart --- */
+/* De div met class="bg-white dark:bg-gray-800 shadow-xl..." in de HTML */
+#app-container > .bg-white { /* Gerichter maken */
+  background-color: var(--card-bg-lm);
+  border: 1px solid var(--card-border-lm); /* Subtiele rand */
+  box-shadow: var(--shadow-xl);
+  border-radius: var(--border-radius-lg); /* Consistent met gInstellingen */
+  width: 99%;
+}
+body.dark-theme #app-container > .bg-white {
+  background-color: var(--card-bg-dm);
+  border-color: var(--card-border-dm);
+}
+
+/* Verberg de JS-geïnjecteerde banner omdat de HTML nu een eigen paginabanner heeft */
+#app-container > .bg-white > div.w-full.bg-gradient-to-r.from-indigo-600.to-emerald-500 {
+    display: none !important;
+	width: 99% !important;
+}
+
+/* --- Sectie Titels (Feedback Overzicht, Nieuwe Feedback) --- */
+section h2 {
+  color: var(--text-heading-lm);
+  border-bottom: 2px solid var(--accent-licht); /* Gebruik accentkleur */
+  padding-bottom: 0.5rem; /* pb-2 */
+}
+body.dark-theme section h2 {
+  color: var(--text-heading-dm);
+  border-bottom-color: var(--accent-focus);
+}
+
+/* --- Formulier Elementen (algemeen) --- */
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 0.625rem 0.875rem; /* 10px 14px */
+  border-radius: var(--border-radius); /* 6px */
+  border-width: 1px;
+  border-style: solid;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
+  box-shadow: var(--shadow-sm);
+  font-size: 0.875rem; /* 14px */
+  line-height: 1.25rem; /* 20px */
+}
+.form-input::placeholder, .form-textarea::placeholder { opacity: 1; }
+
+/* Lichte modus formulier elementen */
+body.light-theme .form-input,
+body.light-theme .form-select,
+body.light-theme .form-textarea {
+  background-color: var(--input-bg-lm);
+  border-color: var(--input-border-lm);
+  color: var(--input-text-lm);
+}
+body.light-theme .form-input::placeholder, 
+body.light-theme .form-textarea::placeholder { color: var(--text-placeholder-lm); }
+
+body.light-theme .form-input:focus,
+body.light-theme .form-select:focus,
+body.light-theme .form-textarea:focus {
+  border-color: var(--input-focus-border-lm);
+  box-shadow: 0 0 0 3px var(--input-focus-shadow-lm);
+  outline: none;
+}
+body.light-theme .form-input[readonly],
+body.light-theme .form-input:disabled, /* Zorg ervoor dat disabled ook gestyled is */
+body.light-theme .form-select:disabled,
+body.light-theme .form-textarea:disabled {
+  background-color: var(--input-disabled-bg-lm) !important; /* !important om Tailwind te overschrijven indien nodig */
+  color: var(--input-disabled-text-lm) !important;
+  border-color: var(--input-disabled-border-lm) !important;
+  cursor: not-allowed;
+}
+
+/* Donkere modus formulier elementen */
+body.dark-theme .form-input,
+body.dark-theme .form-select,
+body.dark-theme .form-textarea {
+  background-color: var(--input-bg-dm);
+  border-color: var(--input-border-dm);
+  color: var(--input-text-dm);
+}
+body.dark-theme .form-input::placeholder,
+body.dark-theme .form-textarea::placeholder { color: var(--text-placeholder-dm); }
+
+body.dark-theme .form-input:focus,
+body.dark-theme .form-select:focus,
+body.dark-theme .form-textarea:focus {
+  border-color: var(--input-focus-border-dm);
+  box-shadow: 0 0 0 3px var(--input-focus-shadow-dm);
+  outline: none;
+}
+body.dark-theme .form-input[readonly],
+body.dark-theme .form-input:disabled,
+body.dark-theme .form-select:disabled,
+body.dark-theme .form-textarea:disabled {
+  background-color: var(--input-disabled-bg-dm) !important;
+  color: var(--input-disabled-text-dm) !important;
+  border-color: var(--input-disabled-border-dm) !important;
+  cursor: not-allowed;
+}
+
+/* Select pijltjes (consistent met gInstellingen) */
+.form-select {
+  appearance: none;
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+body.light-theme .form-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+body.dark-theme .form-select {
+   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+}
+
+/* Fieldset & Legend */
+fieldset {
+  border: 1px solid var(--card-border-lm); 
+  border-radius: var(--border-radius-lg); /* 12px */
+}
+body.dark-theme fieldset {
+  border-color: var(--card-border-dm);
+}
+legend {
+  font-weight: 600; /* semibold */
+}
+body.light-theme legend { color: var(--text-heading-lm); }
+body.dark-theme legend { color: var(--text-heading-dm); }
+
+/* Labels */
+label {
+  font-weight: 500; /* medium */
+}
+body.light-theme label { color: var(--text-main-lm); }
+body.dark-theme label { color: var(--text-main-dm); }
+
+/* Knoppen */
+.btn {
+    padding: 0.6rem 1.2rem; 
+    border-radius: var(--border-radius-md); /* 8px */
+    font-weight: 500; 
+    transition: all 0.2s ease;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-sm); 
+    letter-spacing: 0.025em;
+    border: 1px solid transparent; 
+}
+.btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.btn:active:not(:disabled) { transform: translateY(0px); box-shadow: var(--shadow-sm); }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+#indienen-button {
+  background-color: var(--button-primary-bg-lm);
+  color: var(--button-primary-text-lm);
+  border-color: var(--button-primary-bg-lm);
+}
+#indienen-button:hover:not(:disabled) {
+  background-color: var(--button-primary-hover-bg-lm);
+  border-color: var(--button-primary-hover-bg-lm);
+}
+body.dark-theme #indienen-button {
+  background-color: var(--button-primary-bg-dm);
+  color: var(--button-primary-text-dm);
+  border-color: var(--button-primary-bg-dm);
+}
+body.dark-theme #indienen-button:hover:not(:disabled) {
+  background-color: var(--button-primary-hover-bg-dm);
+  border-color: var(--button-primary-hover-bg-dm);
+}
+
+#annuleren-button {
+  background-color: var(--button-secondary-bg-lm);
+  color: var(--button-secondary-text-lm);
+  border-color: var(--button-secondary-border-lm);
+}
+#annuleren-button:hover:not(:disabled) {
+  background-color: var(--button-secondary-hover-bg-lm);
+}
+body.dark-theme #annuleren-button {
+  background-color: var(--button-secondary-bg-dm);
+  color: var(--button-secondary-text-dm);
+  border-color: var(--button-secondary-border-dm);
+}
+body.dark-theme #annuleren-button:hover:not(:disabled) {
+  background-color: var(--button-secondary-hover-bg-dm);
+}
+
+/* Feedback Items Display */
+.feedback-item {
+  background-color: var(--feedback-item-bg-lm);
+  border: 1px solid var(--feedback-item-border-lm);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--border-radius-md);
+}
+body.dark-theme .feedback-item {
+  background-color: var(--feedback-item-bg-dm);
+  border-color: var(--feedback-item-border-dm);
+}
+/* Speciale markering voor eigen feedback */
+.feedback-item.is-user-feedback { 
+    border-left-width: 4px;
+    border-left-color: var(--my-feedback-border-lm);
+}
+body.dark-theme .feedback-item.is-user-feedback {
+    border-left-color: var(--my-feedback-border-dm);
+}
+
+.feedback-item h3 { color: var(--text-heading-lm); }
+body.dark-theme .feedback-item h3 { color: var(--text-heading-dm); }
+
+/* Voor "Ingediend door..." */
+.feedback-item p.text-xs { color: var(--text-muted-lm); } 
+body.dark-theme .feedback-item p.text-xs { color: var(--text-muted-dm); }
+
+/* De div met de volledige beschrijving */
+.feedback-item .bg-gray-50 { 
+    background-color: var(--gray-50);
+}
+body.dark-theme .feedback-item .dark\\:bg-gray-700 { /* Target specifieke Tailwind dark mode class */
+    background-color: var(--gray-700) !important; /* Override Tailwind */
+}
+
+/* Reactie tekst */
+.feedback-item .reactie-content p { 
+    color: var(--text-main-lm);
+    border-left: 2px solid var(--primary-licht);
+}
+body.dark-theme .feedback-item .reactie-content p {
+    color: var(--text-main-dm);
+    border-left-color: var(--primary-focus);
+}
+
+/* Status Indicatoren in Feedback Items */
+.status-indicator { 
+    font-size: 0.7rem; /* Iets kleiner */
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--border-radius-full, 9999px); /* Tailwind's rounded-full */
+    font-weight: 500; /* medium */
+}
+/* Licht thema status indicatoren */
+body.light-theme .status-indicator.status-nieuw { background-color: var(--status-nieuw-bg-lm); color: var(--status-nieuw-text-lm); }
+body.light-theme .status-indicator.status-in-behandeling { background-color: var(--status-in-behandeling-bg-lm); color: var(--status-in-behandeling-text-lm); }
+body.light-theme .status-indicator.status-opgelost { background-color: var(--status-opgelost-bg-lm); color: var(--status-opgelost-text-lm); }
+/* Donker thema status indicatoren */
+body.dark-theme .status-indicator.status-nieuw { background-color: var(--status-nieuw-bg-dm); color: var(--status-nieuw-text-dm); }
+body.dark-theme .status-indicator.status-in-behandeling { background-color: var(--status-in-behandeling-bg-dm); color: var(--status-in-behandeling-text-dm); }
+body.dark-theme .status-indicator.status-opgelost { background-color: var(--status-opgelost-bg-dm); color: var(--status-opgelost-text-dm); }
+
+/* "Mijn feedback" badge */
+.my-feedback-badge {
+    background-color: var(--my-feedback-badge-bg-lm);
+    color: var(--my-feedback-badge-text-lm);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
+    border-radius: var(--border-radius-sm);
+    font-weight: 500;
+}
+body.dark-theme .my-feedback-badge {
+    background-color: var(--my-feedback-badge-bg-dm);
+    color: var(--my-feedback-badge-text-dm);
+}
+
+/* Reactie textarea en knoppen */
+.reactie-textarea { /* Hergebruik .form-input stijlen */ }
+.reactie-edit-btn, .tussentijds-btn, .reactie-final-btn, .reactie-cancel-btn {/* Hergebruik .btn stijlen */ 
+    padding: 0.6rem 1.2rem; border-radius: var(--border-radius-md);
+    font-weight: 500; transition: all 0.2s ease;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-sm); letter-spacing: 0.025em;
+    border: 1px solid transparent; 
+}
+/* Specifieke styling voor reactie knoppen als ze kleiner moeten zijn */
+.reactie-edit-btn, 
+.tussentijds-btn, 
+.reactie-final-btn, 
+.reactie-cancel-btn {
+    padding: 0.375rem 0.75rem; /* Kleinere padding */
+    font-size: 0.75rem; /* Kleinere tekst */
+}
+/* Kleuren voor reactie knoppen */
+body.light-theme .reactie-edit-btn { color: var(--primary-licht); }
+body.light-theme .tussentijds-btn { background-color: var(--warning-licht); color: var(--warning-content); border-color: var(--warning-licht); }
+body.light-theme .tussentijds-btn:hover:not(:disabled) { background-color: var(--warning-donker); border-color: var(--warning-donker); }
+body.light-theme .reactie-final-btn { background-color: var(--success-licht); color: var(--success-content); border-color: var(--success-licht); }
+body.light-theme .reactie-final-btn:hover:not(:disabled) { background-color: var(--success-donker); border-color: var(--success-donker); }
+body.light-theme .reactie-cancel-btn { background-color: var(--gray-200); color: var(--gray-700); border-color: var(--gray-300); }
+body.light-theme .reactie-cancel-btn:hover:not(:disabled) { background-color: var(--gray-300); }
+
+body.dark-theme .reactie-edit-btn { color: var(--primary-focus); }
+body.dark-theme .tussentijds-btn { background-color: var(--warning-donker); color: var(--warning-content); border-color: var(--warning-donker); } /* Misschien andere tekstkleur nodig */
+body.dark-theme .tussentijds-btn:hover:not(:disabled) { background-color: var(--warning-licht); border-color: var(--warning-licht); }
+body.dark-theme .reactie-final-btn { background-color: var(--success-donker); color: var(--success-content); border-color: var(--success-donker); }
+body.dark-theme .reactie-final-btn:hover:not(:disabled) { background-color: var(--success-licht); border-color: var(--success-licht); }
+body.dark-theme .reactie-cancel-btn { background-color: var(--gray-600); color: var(--gray-200); border-color: var(--gray-500); }
+body.dark-theme .reactie-cancel-btn:hover:not(:disabled) { background-color: var(--gray-500); }
+
+
+/* Statusberichten (algemeen) */
+#status-bericht {
+  padding: 0.875rem 1.25rem; 
+  border-radius: var(--border-radius-md);
+  border-width: 1px; 
+  border-style: solid; 
+  font-size: 0.875rem; 
+  line-height: 1.4;
+}
+body.light-theme #status-bericht.status-success { background-color: var(--form-status-success-bg-lm); border-color: var(--form-status-success-border-lm); color: var(--form-status-success-text-lm); }
+body.light-theme #status-bericht.status-error   { background-color: var(--form-status-error-bg-lm);   border-color: var(--form-status-error-border-lm);   color: var(--form-status-error-text-lm); }
+body.light-theme #status-bericht.status-info    { background-color: var(--form-status-info-bg-lm);    border-color: var(--form-status-info-border-lm);    color: var(--form-status-info-text-lm); }
+
+body.dark-theme #status-bericht.status-success { background-color: var(--form-status-success-bg-dm); border-color: var(--form-status-success-border-dm); color: var(--form-status-success-text-dm); }
+body.dark-theme #status-bericht.status-error   { background-color: var(--form-status-error-bg-dm);   border-color: var(--form-status-error-border-dm);   color: var(--form-status-error-text-dm); }
+body.dark-theme #status-bericht.status-info    { background-color: var(--form-status-info-bg-dm);    border-color: var(--form-status-info-border-dm);    color: var(--form-status-info-text-dm); }
+
+
+/* Footer */
+footer {
+    border-top-width: 1px;
+}
+body.light-theme footer { border-color: var(--card-border-lm); color: var(--text-muted-lm); }
+body.light-theme footer a { color: var(--primary-licht); }
+body.light-theme footer a:hover { color: var(--primary-donker); text-decoration: underline; }
+
+body.dark-theme footer { border-color: var(--card-border-dm); color: var(--text-muted-dm); }
+body.dark-theme footer a { color: var(--primary-focus); }
+body.dark-theme footer a:hover { color: var(--primary-licht); text-decoration: underline; }
+
+
+/* Date/Time Input Special Styling for Dark Theme (herhaald voor zekerheid) */
+@media (prefers-color-scheme: dark) {
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
+  }
+}
+body.dark-theme input[type="date"]::-webkit-calendar-picker-indicator,
+body.dark-theme input[type="time"]::-webkit-calendar-picker-indicator,
+body.dark-theme input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+}
+
+.hidden { display: none !important; }

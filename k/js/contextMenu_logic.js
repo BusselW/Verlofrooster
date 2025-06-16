@@ -875,22 +875,26 @@ function handleZiekteToevoegen() {
     // Check permissions for ziekte events using same logic as FAB menu
     const isPrivilegedUser = checkAdminRights();
     let medewerkerContext;
-    
-    if (isPrivilegedUser) {
+      if (isPrivilegedUser) {
         // Privileged users: can report for anyone if someone is selected, or for themselves if no one is selected
         // Use the same global selection variables as the FAB menu
         if (window.geselecteerdeMedewerkerId && window.geselecteerdeMedewerkerUsername && window.geselecteerdeMedewerkerNaam) {
             // Use selected employee context from global selection
+            // Normalize the username to remove any SharePoint claims prefix
+            const normalizedUsername = window.trimLoginNaamPrefix ? 
+                window.trimLoginNaamPrefix(window.geselecteerdeMedewerkerUsername) : 
+                window.geselecteerdeMedewerkerUsername;
+                
             medewerkerContext = {
-                Username: window.geselecteerdeMedewerkerUsername,
+                Username: normalizedUsername,
                 Naam: window.geselecteerdeMedewerkerNaam,
                 Id: window.geselecteerdeMedewerkerId,
-                loginNaam: window.geselecteerdeMedewerkerUsername,
+                loginNaam: normalizedUsername,
                 Title: window.geselecteerdeMedewerkerNaam,
-                Email: null // Will be filled by the modal if needed
+                Email: null, // Will be filled by the modal if needed
+                normalizedUsername: normalizedUsername
             };
-            console.log("[ContextMenu] Privileged user creating ziekte for selected employee:", medewerkerContext);
-        } else {
+            console.log("[ContextMenu] Privileged user creating ziekte for selected employee:", medewerkerContext);        } else {
             // No selection - report for themselves
             medewerkerContext = {
                 Username: window.huidigeGebruiker.normalizedUsername,
@@ -898,7 +902,8 @@ function handleZiekteToevoegen() {
                 Naam: window.huidigeGebruiker.Title || window.huidigeGebruiker.Naam,
                 Title: window.huidigeGebruiker.Title,
                 Id: window.huidigeGebruiker.medewerkerData ? window.huidigeGebruiker.medewerkerData.ID : window.huidigeGebruiker.Id,
-                Email: window.huidigeGebruiker.Email
+                Email: window.huidigeGebruiker.Email,
+                normalizedUsername: window.huidigeGebruiker.normalizedUsername
             };
             console.log("[ContextMenu] Privileged user creating ziekte for themselves:", medewerkerContext);
         }
@@ -914,15 +919,15 @@ function handleZiekteToevoegen() {
                 alert('U kunt alleen ziekmeldingen voor uzelf maken. Selectie wordt genegeerd.');
             }
         }
-        
-        // Always use zichzelf for regular users
+          // Always use zichzelf for regular users
         medewerkerContext = {
             Username: window.huidigeGebruiker.normalizedUsername,
             loginNaam: window.huidigeGebruiker.loginNaam,
             Naam: window.huidigeGebruiker.Title || window.huidigeGebruiker.Naam,
             Title: window.huidigeGebruiker.Title,
             Id: window.huidigeGebruiker.medewerkerData ? window.huidigeGebruiker.medewerkerData.ID : window.huidigeGebruiker.Id,
-            Email: window.huidigeGebruiker.Email
+            Email: window.huidigeGebruiker.Email,
+            normalizedUsername: window.huidigeGebruiker.normalizedUsername
         };
         console.log("[ContextMenu] Regular user creating ziekte for themselves:", medewerkerContext);
     }

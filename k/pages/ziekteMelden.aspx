@@ -201,99 +201,159 @@
 </head>
 <body class="light-theme">
     <div class="form-container">
-        <div class="notification-area" id="notification-area"></div>
+        <div class="notification-area" id="modal-notification-area"></div>
         
         <div class="form-header">
-            <a href="../verlofRooster.aspx" class="back-link">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-                Terug naar rooster
-            </a>
-            <h1 class="form-title">Ziek/Beter Melden</h1>
+            <!-- Titel en terugknop worden nu meer dynamisch beheerd door de modal zelf of de standalone pagina logica -->
         </div>
         
-        <form id="ziekmelding-form" class="space-y-6">
-            <!-- Super-user dropdown (hidden by default) -->
-            <div class="form-group hidden" id="MedewerkerSelectGroup">
-                <label for="ModalMedewerkerSelect" class="form-label">Medewerker selecteren</label>
-                <select id="ModalMedewerkerSelect" class="form-select">
+        <form id="ziekmeldenForm" class="space-y-6"> <!-- Changed ID to ziekmeldenForm -->
+            <!-- Verborgen velden die essentieel zijn voor SharePoint integratie -->
+            <input type="hidden" id="Title" name="Title"> <!-- Wordt vaak automatisch gegenereerd -->
+            <input type="hidden" id="MedewerkerID" name="MedewerkerID"> <!-- SharePoint User ID van de medewerker -->
+            <input type="hidden" id="AanvraagTijdstip" name="AanvraagTijdstip"> <!-- ISO string van het moment van aanvraag -->
+            <input type="hidden" id="Status" name="Status" value="Nieuw"> <!-- Standaard status -->
+            <input type="hidden" id="RedenId" name="RedenId"> <!-- ID van de verlofreden (bijv. Ziekte) -->
+            <input type="hidden" id="Reden" name="Reden" value="Ziekte"> <!-- Tekst van de reden, kan ook via RedenId -->
+
+            <!-- Visuele header binnen het formulier -->
+            <div class="form-header mb-6">
+                <h2 class="form-title" id="modalFormTitle">Ziek/Beter Melden</h2>
+                <!-- De teruglink is minder relevant in een modal, maar kan blijven voor standalone gebruik -->
+                <a href="../verlofRooster.aspx" class="back-link mt-2 text-sm" title="Terug naar het volledige verlofrooster" id="backToRoosterLink">← Terug naar rooster</a>
+            </div>
+
+            <!-- Sectie voor Medewerker Selectie (Superuser) -->
+            <div class="form-group hidden" id="medewerkerSelectRow" style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem;">
+                <label for="ModalMedewerkerSelect" class="form-label">Medewerker (voor supervisors):</label>
+                <select id="ModalMedewerkerSelect" name="ModalMedewerkerSelect" class="form-select">
                     <option value="">Selecteer een medewerker...</option>
                 </select>
             </div>
-            
-            <!-- Medewerker display fields -->
-            <div class="form-row">
+
+            <!-- Sectie voor Medewerker Weergave (Standaard gebruiker / Geselecteerde medewerker) -->
+            <div class="form-group" id="medewerkerDisplayRow" style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem;">
                 <div class="form-group">
-                    <label for="ModalMedewerkerDisplay" class="form-label">Medewerker</label>
-                    <input type="text" id="ModalMedewerkerDisplay" class="form-input" readonly disabled>
+                    <label for="ModalMedewerkerDisplay" class="form-label">Medewerker:</label>
+                    <input type="text" id="ModalMedewerkerDisplay" name="ModalMedewerkerDisplay" class="form-input" readonly style="background-color: #f9fafb; border: 1px solid #d1d5db;">
                 </div>
-                
                 <div class="form-group">
-                    <label for="MedewerkerIDDisplay" class="form-label">Medewerker ID</label>
-                    <input type="text" id="MedewerkerIDDisplay" class="form-input" readonly disabled>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="RedenDisplay" class="form-label">Reden</label>
-                <input type="text" id="RedenDisplay" class="form-input" value="Ziekte" readonly disabled>
-            </div>
-            
-            <!-- Datum/tijd fields -->
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="StartDatum" class="form-label">Startdatum</label>
-                    <input type="date" id="StartDatum" class="form-input" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="EindDatum" class="form-label">Einddatum</label>
-                    <input type="date" id="EindDatum" class="form-input" required>
+                    <label for="ModalMedewerkerIDDisplay" class="form-label">Medewerker ID (SP User):</label>
+                    <input type="text" id="ModalMedewerkerIDDisplay" name="ModalMedewerkerIDDisplay" class="form-input" readonly style="background-color: #f9fafb; border: 1px solid #d1d5db;">
                 </div>
             </div>
             
-            <div class="form-row">
+            <!-- Reden (vast op "Ziekte" voor deze modal, maar getoond voor duidelijkheid) -->
+            <div class="form-group" id="redenDisplayRow" style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem;">
+                <label for="ModalRedenDisplay" class="form-label">Reden:</label>
+                <input type="text" id="ModalRedenDisplay" name="ModalRedenDisplay" class="form-input" value="Ziekte" readonly style="background-color: #f9fafb; border: 1px solid #d1d5db;">
+            </div>
+
+            <!-- Datum en Tijd Selectie -->
+            <div class="form-row" style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem;">
                 <div class="form-group">
-                    <label for="StartTijd" class="form-label">Starttijd</label>
-                    <input type="time" id="StartTijd" class="form-input" value="09:00" required>
+                    <label for="ModalBegindatum" class="form-label">Begindatum:</label>
+                    <input type="date" id="ModalBegindatum" name="StartDatum" class="form-input" required>
                 </div>
-                
                 <div class="form-group">
-                    <label for="EindTijd" class="form-label">Eindtijd</label>
-                    <input type="time" id="EindTijd" class="form-input" value="17:00" required>
+                    <label for="ModalEinddatum" class="form-label">Einddatum (leeg indien nog ziek):</label>
+                    <input type="date" id="ModalEinddatum" name="EindDatum" class="form-input">
                 </div>
             </div>
-            
-            <!-- Toelichting -->
-            <div class="form-group">
-                <label for="Toelichting" class="form-label">Toelichting (optioneel)</label>
-                <textarea id="Toelichting" class="form-textarea" rows="4" 
-                    placeholder="Eventuele aanvullende informatie..."></textarea>
+            <div class="form-row" style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem;">
+                <div class="form-group">
+                    <label for="ModalBegintijd" class="form-label">Begintijd:</label>
+                    <input type="time" id="ModalBegintijd" name="StartTijd" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label for="ModalEindtijd" class="form-label">Eindtijd:</label>
+                    <input type="time" id="ModalEindtijd" name="EindTijd" class="form-input">
+                </div>
             </div>
-            
-            <!-- Hidden fields for form submission -->
-            <input type="hidden" id="Medewerker" name="Medewerker">
-            <input type="hidden" id="MedewerkerID" name="MedewerkerID">
-            <input type="hidden" id="Reden" name="Reden" value="Ziekte">
-            
-            <!-- Action buttons -->
-            <div class="flex justify-end space-x-3 pt-4">
-                <button type="button" class="btn btn-secondary" onclick="window.location.href='../verlofRooster.aspx'">
-                    Annuleren
-                </button>
-                <button type="submit" class="btn btn-primary">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    Ziekmelding Indienen
-                </button>
+            <div class="form-group flex items-center" style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem;">
+                <input type="checkbox" id="ModalHeleDag" name="HeleDag" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-2" checked>
+                <label for="ModalHeleDag" class="form-label mb-0">Hele dag</label>
+            </div>
+
+            <!-- Opmerkingen -->
+            <div class="form-group" style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem;">
+                <label for="ModalOpmerkingen" class="form-label">Opmerkingen:</label>
+                <textarea id="ModalOpmerkingen" name="Opmerkingen" rows="3" class="form-textarea"></textarea>
+            </div>
+
+            <!-- Actieknoppen (worden nu door de generieke modal logic in verlofroosterModal_logic.js afgehandeld) -->
+            <!-- De knoppen hieronder zijn dus meer voor standalone testen -->
+             <div class="flex justify-end space-x-3 mt-8" id="standaloneActionButtons">
+                <button type="button" id="cancelZiekmeldingBtnStandalone" class="btn btn-secondary">Annuleren</button>
+                <button type="submit" id="submitZiekmeldingBtnStandalone" class="btn btn-primary">Melding Opslaan</button>
             </div>
         </form>
     </div>
     
     <script src="../js/configLijst.js"></script>
     <script src="../js/util_auth.js"></script>
+    <!-- Zorg dat de globale functies zoals getAlleMedewerkers beschikbaar zijn -->
+    <script src="../js/verlofrooster_logic.js"></script> <!-- Voor getAlleMedewerkers etc. -->
     <script src="js/meldingZiekte_logic.js"></script>
+    <script>
+        // Standalone initialization if not in modal
+        // This part is more for testing the .aspx page directly.
+        // In modal context, initializeZiekmeldingModal will be called by verlofroosterModal_logic.js
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (typeof initializeZiekmeldingModal === 'function' && 
+                !document.body.classList.contains('modal-loaded-content')) { // Voorkom dubbele init
+                
+                // Mock current user info for standalone testing
+                // In a real scenario, this would come from _spPageContextInfo of a global var
+                const mockCurrentUser = window.huidigeGebruiker || { 
+                    loginNaam: "i:0#.w|domain\\testuser",
+                    displayName: "Test User (Afdeling)",
+                    normalizedUsername: "domain\\testuser",
+                    email: "testuser@example.com",
+                    id: 1, // Mock SP User ID
+                    medewerkerNaamVolledig: "Test User",
+                    isSupervisor: true // Set to true or false to test scenarios
+                };
+                const mockSiteUrl = window.spWebAbsoluteUrl || "/sites/jouwomgeving"; // Pas aan indien nodig
+
+                // Ensure global dependencies are loaded or mocked
+                if (typeof window.getAlleMedewerkers !== 'function') {
+                    window.getAlleMedewerkers = async () => { 
+                        console.warn('Mocking getAlleMedewerkers');
+                        return [
+                            { LoginName: "i:0#.w|domain\\\\testuser", Account: "i:0#.w|domain\\\\testuser", VolledigeNaam: "Test User", DisplayName: "Test User", Id: 1, Email: "testuser@example.com" },
+                            { LoginName: "i:0#.w|domain\\\\collega1", Account: "i:0#.w|domain\\\\collega1", VolledigeNaam: "Collega Een", DisplayName: "Collega Een", Id: 2, Email: "collega1@example.com" },
+                            { LoginName: "i:0#.w|domain\\\\collega2", Account: "i:0#.w|domain\\\\collega2", VolledigeNaam: "Collega Twee", DisplayName: "Collega Twee", Id: 3, Email: "collega2@example.com" }
+                        ];
+                    };
+                }
+                 if (typeof window.getLijstItemsAlgemeen !== 'function') {
+                    window.getLijstItemsAlgemeen = async (listTitle) => {
+                        if (listTitle === 'Verlofredenen') {
+                            return [
+                                { Id: 1, Title: 'Verlof/vakantie' },
+                                { Id: 2, Title: 'Ziekte' },
+                                { Id: 3, Title: 'Speciaal verlof' }
+                            ];
+                        }
+                        return [];
+                    };
+                }
+                if (typeof window.isUserPrivilegedGroup !== 'function') { // Nodig voor isUserSuperUser
+                     window.isUserPrivilegedGroup = () => mockCurrentUser.isSupervisor; // Simpele mock
+                }
+
+
+                try {
+                    await initializeZiekmeldingModal(mockCurrentUser, mockSiteUrl, mockCurrentUser.isSupervisor);
+                    console.log("Standalone ziekteMelden.aspx initialized.");
+                } catch (error) {
+                    console.error("Error initializing standalone ziekteMelden.aspx:", error);
+                    const notificationArea = document.getElementById('modal-notification-area');
+                    if(notificationArea) notificationArea.innerHTML = `<p class="text-red-500">Fout bij initialiseren: ${error.message}</p>`;
+                }
+            }
+        });
+    </script>
 </body>
 </html>

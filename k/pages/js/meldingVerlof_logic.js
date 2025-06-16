@@ -691,3 +691,103 @@ window.toonMedewerkerVelden = function() {
 };
 
 console.log("Rooster/pages/js/meldingVerlof_logic.js geladen - verlofvelden automatische invulling en super-user functionaliteit geïmplementeerd.");
+
+// --- Global Function Exports for Modal Compatibility ---
+
+// Make functions available globally for use by the modal
+window.initializeVerlofModalForm = initializeVerlofModalForm;
+
+/**
+ * Opens the verlof aanvraag modal with the specified parameters
+ * @param {Object} itemData - Existing item data for editing (null for new request)
+ * @param {Date} geselecteerdeDatum - Selected date from calendar
+ * @param {Object} medewerkerContext - Context of the employee for whom the request is made
+ */
+window.openVerlofAanvraagModal = async function(itemData, geselecteerdeDatum, medewerkerContext) {
+    console.log("[MeldingVerlof] Opening verlof aanvraag modal", { itemData, geselecteerdeDatum, medewerkerContext });
+    
+    try {
+        // Check if modal system is available
+        if (typeof window.openModal !== 'function') {
+            console.error("[MeldingVerlof] Modal system not available");
+            return;
+        }
+
+        // Set the modal title
+        const modalTitle = itemData ? "Verlofaanvraag Bewerken" : "Verlofaanvraag Indienen";        // Load the verlof form content
+        const baseUrl = window.spWebAbsoluteUrl.replace(/\/$/, ''); // Remove trailing slash
+        const modalUrl = `${baseUrl}CPW/k/pages/meldingVerlof.aspx`;
+        console.log(`[MeldingVerlof] Ophalen modal content van: ${modalUrl}`);
+        
+        const response = await fetch(modalUrl);
+        if (!response.ok) {
+            throw new Error(`Network response was not ok: ${response.statusText} while fetching ${modalUrl}`);
+        }
+        
+        const htmlContent = await response.text();
+        
+        // Create a temporary div to parse the HTML and extract only the form container
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        
+        const formContainer = tempDiv.querySelector('.form-container'); // Assumes .form-container holds everything needed
+        
+        if (!formContainer) {
+            console.error(`[MeldingVerlof] <div class="form-container"> niet gevonden in de geladen HTML van ${modalUrl}.`);
+            throw new Error(`<div class="form-container"> niet gevonden in de geladen HTML.`);
+        }
+
+        // Open the modal with the extracted content
+        window.openModal(
+            modalTitle,
+            formContainer.innerHTML, // Use innerHTML of formContainer
+            "Verlofaanvraag Opslaan", // Action button text
+            async () => { // Action callback
+                // Call the specific submission handler 
+                const formElement = document.getElementById('verlofForm');
+                if (formElement && typeof formElement.requestSubmit === 'function') {
+                    formElement.requestSubmit(); // Programmatically submit the form
+                } else if (formElement && typeof formElement.submit === 'function') {
+                    formElement.submit(); // Fallback for older browsers
+                } else {
+                    console.error("Formulier #verlofForm niet gevonden of kan niet programmatisch worden ingediend.");
+                    if (typeof window.toonModalNotificatie === 'function') {
+                        window.toonModalNotificatie("Fout bij opslaan: formulier niet gevonden.", "error");
+                    }
+                }
+                return true; // Indicate action was attempted
+            },
+            true, // showCancelButton
+            false, // showPrevButton
+            null, // prevButtonCallback
+            'max-w-2xl' // modalSizeClass - make it a bit wider for this form
+        );
+
+        // Apply theme after content is in the modal
+        if (typeof window.applyDarkThemeToModal === 'function') {
+            window.applyDarkThemeToModal(); // Ensure modal container gets theme
+        }
+        
+        const modalActualContentElement = window.domRefsLogic?.modalContent?.firstChild;
+        if (modalActualContentElement && typeof window.applyThemeToModalContent === 'function') {
+            window.applyThemeToModalContent(modalActualContentElement); // Apply to the content itself
+        }
+
+        // Initialize the form logic 
+        if (typeof initializeVerlofModalForm === 'function') {
+            await initializeVerlofModalForm(geselecteerdeDatum, medewerkerContext, itemData);
+            console.log("[MeldingVerlof] initializeVerlofModalForm aangeroepen.");
+        } else {
+            console.error("[MeldingVerlof] Functie initializeVerlofModalForm niet gevonden.");
+            if (typeof window.toonModalNotificatie === 'function') {
+                window.toonModalNotificatie("Fout: Initialisatie van verlofformulier mislukt.", "error");
+            }
+        }
+
+    } catch (error) {
+        console.error("[MeldingVerlof] Error opening verlof modal:", error);
+        if (typeof window.toonModalNotificatie === 'function') {
+            window.toonModalNotificatie(`Fout bij openen verlofaanvraag: ${error.message}`, "error");
+        }
+    }
+};

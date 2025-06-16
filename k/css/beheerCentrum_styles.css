@@ -1,0 +1,1168 @@
+/* Rooster/pages/css/beheerCentrum_styles.css - Gebaseerd op gInstellingen styling */
+
+/* --- Algemene Thema Variabelen --- */
+:root {
+  /* Kleurenpalet */
+  --primary-licht: #3b82f6;
+  --primary-donker: #2563eb;
+  --primary-focus: #60a5fa;
+  --success-licht: #10b981;
+  --success-donker: #059669;
+  --warning-licht: #f59e0b;
+  --warning-donker: #d97706;
+  --danger-licht: #ef4444;
+  --danger-donker: #dc2626;
+  
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --white: #ffffff;
+  
+  /* Thema-specifieke variabelen */
+  /* Lichte Modus */
+  --app-bg-lm: var(--gray-100);
+  --text-main-lm: var(--gray-800);
+  --text-muted-lm: var(--gray-600);
+  --link-lm: var(--primary-licht);
+  --link-hover-lm: var(--primary-donker);
+  --border-color-lm: var(--gray-200);
+  --tab-wrapper-bg-lm: var(--white);
+  --tab-wrapper-label-lm: var(--gray-700);
+  --tab-wrapper-subtle-text-lm: var(--gray-500);
+  --input-bg-lm: var(--white);
+  --input-border-lm: var(--gray-300);
+  --input-text-lm: var(--gray-900);
+  --input-placeholder-lm: var(--gray-400);
+  --input-focus-border-lm: var(--primary-licht);
+  --input-focus-shadow-lm: rgba(59, 130, 246, 0.25);
+  --input-readonly-bg-lm: var(--gray-100);
+  --input-readonly-text-lm: var(--gray-500);
+  --input-readonly-border-lm: var(--gray-300);
+  --schedule-header-bg-lm: var(--gray-100);
+  --schedule-header-text-lm: var(--gray-600);
+  --schedule-row-border-lm: var(--gray-200);
+  --schedule-row-hover-bg-lm: rgba(59, 130, 246, 0.04);
+  --schedule-text-lm: var(--gray-700);
+  --profile-pic-bg-lm: var(--gray-200);
+  --profile-pic-border-lm: var(--white);
+  --toggle-row-bg-lm: var(--gray-100);
+  --toggle-row-border-lm: var(--gray-200);
+  --toggle-row-label-lm: var(--gray-700);
+  --scrollbar-track-bg-lm: var(--gray-100);
+  --scrollbar-thumb-bg-lm: var(--gray-400);
+  --scrollbar-thumb-hover-bg-lm: var(--gray-500);
+  --calendar-icon-filter-lm: brightness(0) saturate(100%) invert(41%) sepia(14%) saturate(2235%) hue-rotate(202deg) brightness(98%) contrast(85%);
+
+  /* Donkere Modus */
+  --app-bg-dm: var(--gray-900);
+  --text-main-dm: var(--gray-100);
+  --text-muted-dm: var(--gray-300);
+  --link-dm: var(--primary-focus);
+  --link-hover-dm: var(--primary-licht);
+  --border-color-dm: var(--gray-700);
+  --tab-wrapper-bg-dm: var(--gray-800);
+  --tab-wrapper-label-dm: var(--gray-300);
+  --tab-wrapper-subtle-text-dm: var(--gray-400);
+  --input-bg-dm: var(--gray-700);
+  --input-border-dm: var(--gray-600);
+  --input-text-dm: var(--gray-100);
+  --input-placeholder-dm: var(--gray-500);
+  --input-focus-border-dm: var(--primary-focus);
+  --input-focus-shadow-dm: rgba(96, 165, 250, 0.25);
+  --input-readonly-bg-dm: var(--gray-700);
+  --input-readonly-text-dm: var(--gray-400);
+  --input-readonly-border-dm: var(--gray-600);
+  --schedule-header-bg-dm: var(--gray-700);
+  --schedule-header-text-dm: var(--gray-300);
+  --schedule-row-border-dm: var(--gray-700);
+  --schedule-row-hover-bg-dm: rgba(96, 165, 250, 0.08);
+  --schedule-text-dm: var(--gray-300);
+  --profile-pic-bg-dm: var(--gray-600);
+  --profile-pic-border-dm: var(--gray-800);
+  --toggle-row-bg-dm: var(--gray-700);
+  --toggle-row-border-dm: var(--gray-600);
+  --toggle-row-label-dm: var(--gray-300);
+  --scrollbar-track-bg-dm: var(--gray-800);
+  --scrollbar-thumb-bg-dm: var(--gray-600);
+  --scrollbar-thumb-hover-bg-dm: var(--gray-500);
+  --calendar-icon-filter-dm: brightness(0) saturate(100%) invert(81%) sepia(9%) saturate(730%) hue-rotate(206deg) brightness(101%) contrast(91%);
+  
+  /* Algemeen */
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --border-radius-sm: 0.25rem;
+  --border-radius: 0.375rem;
+  --border-radius-md: 0.5rem;
+  --border-radius-lg: 0.75rem;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* --- Full Width Layout --- */
+html, body {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* --- Basis Body Styling --- */
+body {
+  font-family: var(--font-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+/* --- Full Width App Container --- */
+#app-container {
+  width: 100%;
+  max-width: none;
+}
+
+.tab-wrapper-card {
+  width: 100%;
+  max-width: none;
+}
+
+/* --- Scrollbar Styling --- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+body.light-theme ::-webkit-scrollbar-track { background: var(--scrollbar-track-bg-lm); border-radius: 4px; }
+body.light-theme ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb-bg-lm); border-radius: 4px; border: 2px solid var(--scrollbar-track-bg-lm); }
+body.light-theme ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover-bg-lm); }
+
+body.dark-theme ::-webkit-scrollbar-track { background: var(--scrollbar-track-bg-dm); border-radius: 4px; }
+body.dark-theme ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb-bg-dm); border-radius: 4px; border: 2px solid var(--scrollbar-track-bg-dm); }
+body.dark-theme ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover-bg-dm); }
+
+/* --- Tab Wrapper Card --- */
+.tab-wrapper-card {
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+}
+body.light-theme .tab-wrapper-card {
+  background-color: var(--tab-wrapper-bg-lm);
+}
+body.dark-theme .tab-wrapper-card {
+  background-color: var(--tab-wrapper-bg-dm);
+}
+
+body.light-theme .tab-wrapper-card h2,
+body.light-theme .tab-wrapper-card h3,
+body.light-theme .tab-wrapper-card label {
+  color: var(--tab-wrapper-label-lm);
+}
+body.light-theme .tab-wrapper-card p,
+body.light-theme .tab-wrapper-card .text-sm {
+  color: var(--tab-wrapper-subtle-text-lm);
+}
+
+body.dark-theme .tab-wrapper-card h2,
+body.dark-theme .tab-wrapper-card h3,
+body.dark-theme .tab-wrapper-card label {
+  color: var(--tab-wrapper-label-dm);
+}
+body.dark-theme .tab-wrapper-card p,
+body.dark-theme .tab-wrapper-card .text-sm {
+  color: var(--tab-wrapper-subtle-text-dm);
+}
+
+body.light-theme .tab-wrapper-card .border-b {
+  border-color: var(--border-color-lm) !important;
+}
+body.dark-theme .tab-wrapper-card .border-b {
+  border-color: var(--border-color-dm) !important;
+}
+
+/* --- Tab Navigation Styling like gInstellingen --- */
+.tab-button {
+  position: relative;
+  transition: color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  padding-bottom: 0.75rem; 
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  outline: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+body.light-theme .tab-button {
+  color: var(--text-muted-lm);
+}
+body.dark-theme .tab-button {
+  color: var(--text-muted-dm);
+}
+
+body.light-theme .tab-button:hover {
+  color: var(--text-main-lm);
+  border-bottom-color: var(--border-color-lm);
+}
+body.dark-theme .tab-button:hover {
+  color: var(--text-main-dm);
+  border-bottom-color: var(--border-color-dm);
+}
+
+body.light-theme .tab-button.active {
+  color: var(--primary-licht);
+  border-bottom-color: var(--primary-licht);
+  font-weight: 600;
+}
+body.dark-theme .tab-button.active {
+  color: var(--primary-focus);
+  border-bottom-color: var(--primary-focus);
+  font-weight: 600;
+}
+
+/* --- Back Button Styling --- */
+.btn-back {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 30;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  gap: 0.375rem;
+}
+
+.btn-back svg {
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .btn-back {
+    top: 1rem;
+    right: 1rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  
+  .btn-back span {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .btn-back {
+    padding: 0.5rem;
+  }
+  
+  .btn-back span {
+    display: none;
+  }
+}
+
+.btn-back:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: white !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-back svg {
+  margin-right: 0.5rem;
+}
+
+/* --- Formulier Velden --- */
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--border-radius);
+  border-width: 1px;
+  border-style: solid;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
+  box-shadow: none;
+  font-size: 0.875rem;
+  font-family: var(--font-main) !important;
+  font-weight: 400 !important;
+  line-height: 1.5;
+}
+
+/* Universal input styling to ensure consistency */
+input, select, textarea {
+  font-family: var(--font-main) !important;
+  font-weight: 400 !important;
+  font-size: 0.875rem !important;
+}
+
+/* Date inputs specific styling */
+input[type="date"] {
+  font-family: var(--font-main) !important;
+  font-weight: 400 !important;
+  font-size: 0.875rem !important;
+  color: var(--input-text-lm) !important;
+  background: var(--input-bg-lm) !important;
+  border: 2px solid var(--input-border-lm) !important;
+  border-radius: 0.375rem !important;
+  padding: 0.625rem 0.875rem !important;
+  transition: all 0.2s ease !important;
+  width: 100% !important;
+  line-height: 1.5 !important;
+}
+
+/* Normalize webkit date input styling */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: var(--calendar-icon-filter-lm);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+input[type="date"]:focus {
+  border-color: var(--input-focus-border-lm) !important;
+  box-shadow: 0 0 0 3px var(--input-focus-shadow-lm) !important;
+  outline: none !important;
+}
+
+body.dark-theme input[type="date"] {
+  color: var(--input-text-dm) !important;
+  background: var(--input-bg-dm) !important;
+  border-color: var(--input-border-dm) !important;
+}
+
+body.dark-theme input[type="date"]:focus {
+  border-color: var(--input-focus-border-dm) !important;
+  box-shadow: 0 0 0 3px var(--input-focus-shadow-dm) !important;
+}
+
+/* Calendar icon styling for date inputs */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: var(--calendar-icon-filter-lm);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+body.dark-theme input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: var(--calendar-icon-filter-dm);
+}
+
+body.dark-theme input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  background-color: rgba(96, 165, 250, 0.1);
+}
+
+.form-input::placeholder, .form-textarea::placeholder { 
+  opacity: 1; 
+  font-family: var(--font-main);
+  font-weight: 400;
+}
+
+body.light-theme .form-input,
+body.light-theme .form-select,
+body.light-theme .form-textarea {
+  background-color: var(--input-bg-lm);
+  border-color: var(--input-border-lm);
+  color: var(--input-text-lm);
+}
+
+body.light-theme .form-input::placeholder,
+body.light-theme .form-textarea::placeholder {
+  color: var(--input-placeholder-lm);
+}
+
+body.light-theme .form-input:focus,
+body.light-theme .form-select:focus,
+body.light-theme .form-textarea:focus {
+  outline: none;
+  border-color: var(--input-focus-border-lm);
+  box-shadow: 0 0 0 3px var(--input-focus-shadow-lm);
+}
+
+body.dark-theme .form-input,
+body.dark-theme .form-select,
+body.dark-theme .form-textarea {
+  background-color: var(--input-bg-dm);
+  border-color: var(--input-border-dm);
+  color: var(--input-text-dm);
+}
+
+body.dark-theme .form-input::placeholder,
+body.dark-theme .form-textarea::placeholder {
+  color: var(--input-placeholder-dm);
+}
+
+body.dark-theme .form-input:focus,
+body.dark-theme .form-select:focus,
+body.dark-theme .form-textarea:focus {
+  outline: none;
+  border-color: var(--input-focus-border-dm);
+  box-shadow: 0 0 0 3px var(--input-focus-shadow-dm);
+}
+
+/* --- Button Styling --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  transition: all 0.15s ease-in-out;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  outline: none;
+}
+
+.btn:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.btn svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.btn-primary {
+  background-color: var(--primary-licht);
+  color: white;
+  border-color: var(--primary-licht);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-donker);
+  border-color: var(--primary-donker);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  border-color: var(--gray-300);
+}
+
+body.light-theme .btn-secondary {
+  color: var(--gray-700);
+  border-color: var(--gray-300);
+}
+
+body.light-theme .btn-secondary:hover {
+  background-color: var(--gray-50);
+  border-color: var(--gray-400);
+}
+
+body.dark-theme .btn-secondary {
+  color: var(--gray-300);
+  border-color: var(--gray-600);
+}
+
+body.dark-theme .btn-secondary:hover {
+  background-color: var(--gray-700);
+  border-color: var(--gray-500);
+}
+
+.btn-success {
+  background-color: var(--success-licht);
+  color: white;
+  border-color: var(--success-licht);
+}
+
+.btn-success:hover {
+  background-color: var(--success-donker);
+  border-color: var(--success-donker);
+}
+
+.btn-danger {
+  background-color: var(--danger-licht);
+  color: white;
+  border-color: var(--danger-licht);
+}
+
+.btn-danger:hover {
+  background-color: var(--danger-donker);
+  border-color: var(--danger-donker);
+}
+
+/* --- Data Table Styling --- */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: 0.875rem;
+  table-layout: auto; /* Allow table to use full width efficiently */
+}
+
+.data-table th,
+.data-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Specific column widths for better responsiveness */
+.data-table th:first-child,
+.data-table td:first-child {
+  min-width: 150px; /* Name/ID column */
+}
+
+.data-table th:last-child,
+.data-table td:last-child {
+  min-width: 120px; /* Action buttons column */
+  text-align: center;
+}
+
+/* Override container constraints */
+.tab-contents-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+#tab-content-container {
+  width: 100%;
+  min-width: 100%;
+}
+
+body.light-theme .data-table th {
+  background-color: var(--schedule-header-bg-lm);
+  color: var(--schedule-header-text-lm);
+  border-color: var(--schedule-row-border-lm);
+  font-weight: 600;
+}
+
+body.light-theme .data-table td {
+  color: var(--schedule-text-lm);
+  border-color: var(--schedule-row-border-lm);
+}
+
+body.light-theme .data-table tr:hover td {
+  background-color: var(--schedule-row-hover-bg-lm);
+}
+
+body.dark-theme .data-table th {
+  background-color: var(--schedule-header-bg-dm);
+  color: var(--schedule-header-text-dm);
+  border-color: var(--schedule-row-border-dm);
+  font-weight: 600;
+}
+
+body.dark-theme .data-table td {
+  color: var(--schedule-text-dm);
+  border-color: var(--schedule-row-border-dm);
+}
+
+body.dark-theme .data-table tr:hover td {
+  background-color: var(--schedule-row-hover-bg-dm);
+}
+
+/* Force table headers to always be visible */
+.data-table th,
+table th {
+  display: table-cell !important;
+  visibility: visible !important;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* --- Modal Styling --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content-card {
+  max-width: min(90vw, 32rem);
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+}
+
+body.light-theme .modal-content-card {
+  background-color: var(--tab-wrapper-bg-lm);
+}
+
+body.dark-theme .modal-content-card {
+  background-color: var(--tab-wrapper-bg-dm);
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+body.light-theme .modal-title {
+  color: var(--tab-wrapper-label-lm);
+}
+
+body.dark-theme .modal-title {
+  color: var(--tab-wrapper-label-dm);
+}
+
+/* --- Loading and Notification Styling --- */
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+}
+
+.loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid var(--gray-200);
+  border-top: 2px solid var(--primary-licht);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.notification-item {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  background-color: var(--white);
+  color: var(--text-main-lm);
+  padding: 1rem 1.25rem;
+  border-radius: var(--border-radius-md);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 20rem;
+  border: 1px solid var(--gray-200);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-in-out;
+}
+
+.notification-item.show {
+  transform: translateX(0);
+}
+
+.notification-item.notification-success {
+  background-color: var(--white);
+  border-left: 4px solid var(--success-licht);
+  color: var(--success-donker);
+}
+
+.notification-item.notification-error {
+  background-color: var(--white);
+  border-left: 4px solid var(--danger-licht);
+  color: var(--danger-donker);
+}
+
+.notification-item.notification-warning {
+  background-color: var(--white);
+  border-left: 4px solid var(--warning-licht);
+  color: var(--warning-donker);
+}
+
+.notification-item.notification-info {
+  background-color: var(--white);
+  border-left: 4px solid var(--primary-licht);
+  color: var(--primary-donker);
+}
+
+/* Dark theme notifications */
+body.dark-theme .notification-item {
+  background-color: var(--gray-800);
+  color: var(--text-main-dm);
+  border-color: var(--gray-700);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+body.dark-theme .notification-item.notification-success {
+  background-color: var(--gray-800);
+  color: #10b981;
+}
+
+body.dark-theme .notification-item.notification-error {
+  background-color: var(--gray-800);
+  color: #ef4444;
+}
+
+body.dark-theme .notification-item.notification-warning {
+  background-color: var(--gray-800);
+  color: #f59e0b;
+}
+
+body.dark-theme .notification-item.notification-info {
+  background-color: var(--gray-800);
+  color: #60a5fa;
+}
+
+.status-message {
+  padding: 0.75rem 1rem;
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+  border: 1px solid;
+}
+
+.status-message.success {
+  background-color: rgba(16, 185, 129, 0.1);
+  border-color: var(--success-licht);
+  color: var(--success-donker);
+}
+
+.status-message.error {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: var(--danger-licht);
+  color: var(--danger-donker);
+}
+
+/* --- Footer Styling --- */
+.text-center {
+  text-align: center;
+}
+
+body.light-theme .border-t {
+  border-top: 1px solid var(--border-color-lm);
+}
+
+body.dark-theme .border-t {
+  border-top: 1px solid var(--border-color-dm);
+}
+
+body.light-theme .text-gray-500 {
+  color: var(--text-muted-lm);
+}
+
+body.dark-theme .text-gray-400 {
+  color: var(--text-muted-dm);
+}
+
+/* --- Tab Content Animation --- */
+.tab-content {
+  display: none;
+  animation: fadeIn 0.4s ease-out;
+}
+.tab-content.active {
+  display: block;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Responsive Table Containers --- */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin: 0;
+  padding: 0;
+}
+
+/* Remove max-width constraints on main containers */
+.p-4,
+.p-6,
+.md\\:p-6 {
+  width: 100%;
+}
+
+/* Ensure modals don't exceed screen width */
+.modal-content-card {
+  max-width: min(90vw, 32rem);
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Full width utility classes */
+.w-full-important {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.container-full {
+  width: 100vw;
+  max-width: none;
+  margin: 0;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 768px) {
+  .container-full {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* Status indicators for boolean fields */
+.status-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.status-active {
+    background-color: #10b981; /* Green */
+    border: 1px solid #059669;
+}
+
+.status-inactive {
+    background-color: #ef4444; /* Red */
+    border: 1px solid #dc2626;
+}
+
+/* Dark mode support for status indicators */
+[data-theme="dark"] .status-indicator {
+    box-shadow: 0 1px 3px rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .status-active {
+    background-color: #22c55e;
+    border: 1px solid #16a34a;
+}
+
+[data-theme="dark"] .status-inactive {
+    background-color: #f87171;
+    border: 1px solid #ef4444;
+}
+
+/* Date field styling */
+.date-field {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    background-color: var(--bg-secondary);
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    display: inline-block;
+    min-width: 100px;
+    text-align: center;
+}
+
+[data-theme="dark"] .date-field {
+    color: var(--text-primary);
+    background-color: rgba(55, 65, 81, 0.5);
+    border: 1px solid rgba(75, 85, 99, 0.5);
+}
+
+/* --- Header Banner Improvements --- */
+/* Let Tailwind handle the banner background colors - no overrides needed */
+#page-banner h1 {
+  color: white !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+#page-banner p {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 400 !important;
+}
+
+#page-banner .text-right div {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+#page-banner #current-user {
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: 500 !important;
+}
+
+#page-banner #connection-status {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Back Button - same styling as gInstellingen */
+.btn-back {
+  background: rgba(255, 255, 255, 0.2) !important;
+  color: white !important;
+  border: none !important;
+  backdrop-filter: blur(10px) !important;
+  font-weight: 500 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.btn-back:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  color: white !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* --- Status Indicators (Ja/Nee Bolletjes) --- */
+.status-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.status-indicator.status-active {
+  background-color: var(--success-licht);
+  border-color: var(--success-donker);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.status-indicator.status-inactive {
+  background-color: var(--danger-licht);
+  border-color: var(--danger-donker);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+/* Dark theme adjustments for status indicators */
+body.dark-theme .status-indicator.status-active {
+  background-color: #10b981;
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3);
+}
+
+body.dark-theme .status-indicator.status-inactive {
+  background-color: #ef4444;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
+}
+
+/* --- Date Field Styling --- */
+.date-field {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 0.875rem;
+  color: var(--text-main-lm);
+  background: transparent;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+body.dark-theme .date-field {
+  color: var(--text-main-dm);
+}
+
+/* --- Full Width Utilities --- */
+.full-width {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.full-width-viewport {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin-left: calc(-50vw + 50%) !important;
+}
+
+/* Ensure main containers use full width */
+#app-container {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.tab-wrapper-card {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* Force all content containers to use full width */
+.container,
+.max-w-6xl,
+.max-w-7xl,
+.mx-auto {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+/* Table responsiveness improvements */
+.data-table {
+  min-width: 100% !important;
+  width: 100% !important;
+}
+
+.table-container {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Modal full width constraints */
+.modal-content-card {
+  width: 100% !important;
+  max-width: 90vw !important;
+  margin: 0 auto !important;
+}
+
+@media (min-width: 768px) {
+  .modal-content-card {
+    max-width: 80vw !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .modal-content-card {
+    max-width: 70vw !important;
+  }
+}
+
+/* Remove unnecessary margin/padding that could limit width */
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  overflow-x: auto !important;
+}
+
+html {
+  width: 100% !important;
+  overflow-x: auto !important;
+}
+
+/* --- Toggle Switch Styling --- */
+.toggle-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e0;
+  transition: all 0.3s ease;
+  border-radius: 24px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-button {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: transform 0.3s ease;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-status {
+  font-size: 0.875rem;
+  font-weight: 500;
+  min-width: 24px;
+}
+
+/* Dark theme adjustments for toggle */
+body.dark-theme .toggle-slider {
+  background-color: #4b5563;
+}
+
+body.dark-theme .toggle-status {
+  color: var(--text-main-dm);
+}
+
+/* Active state styling */
+.toggle-input:checked + .toggle-slider {
+  background-color: var(--primary-licht) !important;
+}
+
+.toggle-input:checked + .toggle-slider .toggle-button {
+  transform: translateX(20px);
+}
+
+/* Focus styling for accessibility */
+.toggle-input:focus + .toggle-slider {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+/* Hover effect */
+.toggle-slider:hover {
+  opacity: 0.9;
+}

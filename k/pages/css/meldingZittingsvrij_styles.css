@@ -1,0 +1,320 @@
+/* Pages/css/meldingZittingsvrij_styles.css */
+
+/*
+ * Stijlen specifiek voor de Pages/meldingZittingsvrij.aspx pagina.
+ * Deze stijlen zorgen voor consistentie met de rest van de applicatie,
+ * inclusief ondersteuning voor lichte en donkere thema's.
+ */
+
+/* --- Thema Variabelen (consistent met andere subpagina's zoals meldingMaken) --- */
+body, :root { /* :root voor fallback als class niet direct op body staat */
+    /* Light Theme Defaults (worden overschreven door .light-theme class indien aanwezig) */
+    --form-page-bg-color: #f9fafb;              /* Tailwind gray-50 */
+    --form-card-bg-color: #ffffff;              /* Tailwind white */
+    --form-card-border-color: #e5e7eb;          /* Tailwind gray-200 */
+    --form-text-color: #1f2937;                /* Tailwind gray-800 */
+    --form-label-color: #4b5563;               /* Tailwind gray-600 */
+    --form-legend-color: #374151;              /* Tailwind gray-700 */
+    --form-input-bg-color: #ffffff;            /* Tailwind white */
+    --form-input-border-color: #d1d5db;        /* Tailwind gray-300 */
+    --form-input-text-color: #1f2937;          /* Tailwind gray-800 */
+    --form-input-placeholder-color: #9ca3af;   /* Tailwind gray-400 */
+    --form-input-focus-border-color: #2563eb;  /* Tailwind blue-600 */
+    --form-input-focus-ring-color: rgba(59, 130, 246, 0.3); /* blue-300 met opacity */
+    --form-input-disabled-bg-color: #f3f4f6;   /* Tailwind gray-100 */
+    --form-input-disabled-text-color: #6b7280; /* Tailwind gray-500 */
+    --form-button-primary-bg-color: #2563eb;        /* Tailwind blue-600 */
+    --form-button-primary-hover-bg-color: #1d4ed8;  /* Tailwind blue-700 */
+    --form-button-primary-text-color: #ffffff;      /* Tailwind white */
+    --form-button-secondary-bg-color: #e5e7eb;      /* Tailwind gray-200 */
+    --form-button-secondary-hover-bg-color: #d1d5db;/* Tailwind gray-300 */
+    --form-button-secondary-text-color: #374151;    /* Tailwind gray-700 */
+    --form-link-color: #2563eb;                     /* Tailwind blue-600 */
+    --form-link-hover-color: #1d4ed8;               /* Tailwind blue-700 */
+    --form-status-info-bg: #eff6ff;                 /* blue-50 */
+    --form-status-info-text: #1e40af;               /* blue-800 */
+    --form-status-info-border: #bfdbfe;             /* blue-200 */
+    --form-status-success-bg: #f0fdf4;              /* green-50 */
+    --form-status-success-text: #166534;            /* green-800 */
+    --form-status-success-border: #bbf7d0;          /* green-200 */
+    --form-status-error-bg: #fef2f2;                /* red-50 */
+    --form-status-error-text: #991b1b;              /* red-800 */
+    --form-status-error-border: #fecaca;            /* red-200 */
+    --form-scrollbar-track-bg: #e5e7eb;             /* gray-200 */
+    --form-scrollbar-thumb-bg: #9ca3af;             /* gray-400 */
+    --form-scrollbar-thumb-hover-bg: #6b7280;       /* gray-500 */
+    --form-checkbox-bg: #f9fafb;                    /* gray-50 for unchecked checkbox bg */
+    --form-checkbox-checked-bg: #2563eb;            /* blue-600 for checked */
+    --form-checkbox-border: #d1d5db;                /* gray-300 for checkbox border */
+}
+
+body.dark-theme {
+    --form-page-bg-color: #111827;              /* Tailwind gray-900 */
+    --form-card-bg-color: #1f2937;              /* Tailwind gray-800 */
+    --form-card-border-color: #374151;          /* Tailwind gray-700 */
+    --form-text-color: #f3f4f6;                 /* Tailwind gray-100 */
+    --form-label-color: #d1d5db;                /* Tailwind gray-300 */
+    --form-legend-color: #e5e7eb;               /* Tailwind gray-200 */
+    --form-input-bg-color: #374151;             /* Tailwind gray-700 */
+    --form-input-border-color: #4b5563;         /* Tailwind gray-600 */
+    --form-input-text-color: #f3f4f6;           /* Tailwind gray-100 */
+    --form-input-placeholder-color: #6b7280;    /* Tailwind gray-500 */
+    --form-input-focus-border-color: #60a5fa;   /* Tailwind blue-400 */
+    --form-input-focus-ring-color: rgba(96, 165, 250, 0.3); /* blue-400 met opacity */
+    --form-input-disabled-bg-color: #4b5563;    /* Tailwind gray-600 */
+    --form-input-disabled-text-color: #9ca3af;  /* Tailwind gray-400 */
+    --form-button-primary-bg-color: #3b82f6;        /* Tailwind blue-500 */
+    --form-button-primary-hover-bg-color: #2563eb;  /* Tailwind blue-600 */
+    --form-button-primary-text-color: #ffffff;      /* Tailwind white */
+    --form-button-secondary-bg-color: #4b5563;      /* Tailwind gray-600 */
+    --form-button-secondary-hover-bg-color: #6b7280;/* Tailwind gray-500 */
+    --form-button-secondary-text-color: #f3f4f6;    /* Tailwind gray-100 */
+    --form-link-color: #60a5fa;                     /* Tailwind blue-400 */
+    --form-link-hover-color: #93c5fd;               /* Tailwind blue-300 */
+    --form-status-info-bg: #1e3a8a;                 /* blue-800 */
+    --form-status-info-text: #bfdbfe;               /* blue-200 */
+    --form-status-info-border: #3b82f6;             /* blue-500 */
+    --form-status-success-bg: #166534;              /* green-800 */
+    --form-status-success-text: #bbf7d0;            /* green-200 */
+    --form-status-success-border: #4ade80;          /* green-500 */
+    --form-status-error-bg: #991b1b;                /* red-800 */
+    --form-status-error-text: #fecaca;              /* red-200 */
+    --form-status-error-border: #ef4444;            /* red-500 */
+    --form-scrollbar-track-bg: #2d3748;             /* gray-700 */
+    --form-scrollbar-thumb-bg: #4a5568;             /* gray-600 */
+    --form-scrollbar-thumb-hover-bg: #718096;       /* gray-500 */
+    --form-checkbox-bg: #374151;                    /* gray-700 for unchecked checkbox bg */
+    --form-checkbox-checked-bg: #3b82f6;            /* blue-500 for checked */
+    --form-checkbox-border: #4b5563;                /* gray-600 for checkbox border */
+}
+
+/* Algemene pagina en container styling */
+body {
+    background-color: var(--form-page-bg-color);
+    color: var(--form-text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#app-container > div:first-child { /* De main form card (w-full max-w-2xl) */
+    background-color: var(--form-card-bg-color);
+    border-color: var(--form-card-border-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Headers en subtitels */
+#form-title { color: var(--form-text-color); }
+#form-subtitle { color: var(--form-label-color); } /* Gebruik label kleur voor subtitel */
+#app-container footer, #app-container footer a {
+    color: var(--form-label-color);
+}
+body.dark-theme #app-container footer a {
+    color: var(--form-link-color);
+}
+#app-container footer a:hover {
+    color: var(--form-link-hover-color);
+}
+
+/* Link styling for terug naar rooster */
+#app-container header a {
+    color: var(--form-link-color);
+    transition: color 0.3s ease;
+}
+#app-container header a:hover {
+    color: var(--form-link-hover-color);
+}
+
+/* Fieldsets en Legends */
+fieldset {
+    border-color: var(--form-card-border-color); /* Gebruik card border voor fieldsets */
+    transition: border-color 0.3s ease;
+}
+legend {
+    color: var(--form-legend-color);
+    transition: color 0.3s ease;
+}
+
+/* Labels */
+label {
+    color: var(--form-label-color);
+    transition: color 0.3s ease;
+}
+
+/* Input velden, selects, textareas (basisstijlen in HTML, hier thema-specifieke overrides) */
+.form-input, .form-select, .form-textarea {
+    background-color: var(--form-input-bg-color);
+    color: var(--form-input-text-color);
+    border-color: var(--form-input-border-color);
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+.form-input::placeholder, .form-textarea::placeholder {
+    color: var(--form-input-placeholder-color);
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--form-input-focus-border-color);
+    box-shadow: 0 0 0 3px var(--form-input-focus-ring-color);
+    outline: none;
+}
+.form-input[readonly], .form-input.cursor-not-allowed {
+    background-color: var(--form-input-disabled-bg-color) !important; /* Override Tailwind */
+    color: var(--form-input-disabled-text-color) !important;
+    cursor: not-allowed;
+}
+
+/* Specifieke styling voor medewerker velden */
+#form-medewerker-display {
+    background-color: var(--form-input-bg-color);
+    color: var(--form-input-text-color);
+}
+
+#form-gebruikersnaam {
+    background-color: var(--form-input-disabled-bg-color);
+    color: var(--form-input-disabled-text-color);
+    cursor: not-allowed;
+}
+
+/* Checkbox specifieke styling */
+input[type="checkbox"] {
+    background-color: var(--form-checkbox-bg);
+    border-color: var(--form-checkbox-border);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+input[type="checkbox"]:checked {
+    background-color: var(--form-checkbox-checked-bg);
+    border-color: var(--form-checkbox-checked-bg); /* Vaak is de border dezelfde kleur als de check */
+}
+/* Voor de focus ring van Tailwind op checkboxes */
+input[type="checkbox"]:focus {
+    --tw-ring-color: var(--form-input-focus-ring-color); /* Pas Tailwind's focus ring kleur aan */
+}
+
+/* Knoppen */
+#annuleren-button {
+    background-color: var(--form-button-secondary-bg-color);
+    color: var(--form-button-secondary-text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    /* Tailwind regelt border, maar kan hier expliciet: border: 1px solid var(--form-input-border-color); */
+}
+#annuleren-button:hover {
+    background-color: var(--form-button-secondary-hover-bg-color);
+}
+
+#indienen-button { /* Primaire knop */
+    background-color: var(--form-button-primary-bg-color);
+    color: var(--form-button-primary-text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+#indienen-button:hover {
+    background-color: var(--form-button-primary-hover-bg-color);
+}
+#indienen-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Status Bericht Styling */
+#status-bericht {
+    border-width: 1px;
+    border-style: solid;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+/* Info status */
+#status-bericht.status-info {
+    background-color: var(--form-status-info-bg);
+    color: var(--form-status-info-text);
+    border-color: var(--form-status-info-border);
+}
+/* Success status */
+#status-bericht.status-success {
+    background-color: var(--form-status-success-bg);
+    color: var(--form-status-success-text);
+    border-color: var(--form-status-success-border);
+}
+/* Error status */
+#status-bericht.status-error {
+    background-color: var(--form-status-error-bg);
+    color: var(--form-status-error-text);
+    border-color: var(--form-status-error-border);
+}
+
+/* Notification area (voor modal context) */
+.notification-area {
+    border-width: 1px;
+    border-style: solid;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Modal notification styling matching the status styling */
+.notification-area.info {
+    background-color: var(--form-status-info-bg);
+    color: var(--form-status-info-text);
+    border-color: var(--form-status-info-border);
+}
+
+.notification-area.success {
+    background-color: var(--form-status-success-bg);
+    color: var(--form-status-success-text);
+    border-color: var(--form-status-success-border);
+}
+
+.notification-area.error {
+    background-color: var(--form-status-error-bg);
+    color: var(--form-status-error-text);
+    border-color: var(--form-status-error-border);
+}
+
+/* Intro banner styling */
+.intro-banner-modal {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Scrollbar Theming */
+::-webkit-scrollbar-track {
+    background: var(--form-scrollbar-track-bg);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--form-scrollbar-thumb-bg);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--form-scrollbar-thumb-hover-bg);
+}
+
+/* Specifieke styling voor date/datetime-local input iconen in donker thema */
+body.dark-theme input[type="date"]::-webkit-calendar-picker-indicator,
+body.dark-theme input[type="time"]::-webkit-calendar-picker-indicator, /* Voor time inputs ook */
+body.dark-theme input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.8) brightness(1.1); /* Maakt icoon lichter en iets helderder */
+}
+
+/* Utility class voor verplichte velden (als niet via JS) */
+.label-required::after {
+    content: " *";
+    color: #ef4444; /* Tailwind red-500 */
+}
+body.dark-theme .label-required::after {
+    color: #f87171; /* Tailwind red-400 voor betere zichtbaarheid op donkere achtergrond */
+}
+
+/* Lookup status styling */
+#gebruikersnaam-lookup-status {
+    transition: color 0.3s ease;
+}
+
+/* Error state for inputs */
+.form-input.border-red-500,
+.form-select.border-red-500,
+.form-textarea.border-red-500 {
+    border-color: #ef4444;
+}
+
+body.dark-theme .form-input.dark\:border-red-400,
+body.dark-theme .form-select.dark\:border-red-400,
+body.dark-theme .form-textarea.dark\:border-red-400 {
+    border-color: #f87171;
+}
+
+/* Hidden class utility */
+.hidden {
+    display: none !important;
+}

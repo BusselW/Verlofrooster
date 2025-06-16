@@ -1,0 +1,410 @@
+/* Pages/css/gInstellingen_styles.css */
+
+/* --- Algemene Thema Variabelen --- */
+:root {
+  /* Kleurenpalet */
+  --primary-licht: #3b82f6;
+  --primary-donker: #2563eb;
+  --primary-focus: #60a5fa;
+  --success-licht: #10b981;
+  --success-donker: #059669;
+  --warning-licht: #f59e0b;
+  --warning-donker: #d97706;
+  --danger-licht: #ef4444;
+  --danger-donker: #dc2626;
+  
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --white: #ffffff;
+  
+  /* Thema-specifieke variabelen */
+  /* Lichte Modus */
+  --app-bg-lm: var(--gray-100);
+  --text-main-lm: var(--gray-800);
+  --text-muted-lm: var(--gray-600);
+  --link-lm: var(--primary-licht);
+  --link-hover-lm: var(--primary-donker);
+  --border-color-lm: var(--gray-200);
+  --tab-wrapper-bg-lm: var(--white);
+  --tab-wrapper-label-lm: var(--gray-700);
+  --tab-wrapper-subtle-text-lm: var(--gray-500);
+  --input-bg-lm: var(--white);
+  --input-border-lm: var(--gray-300);
+  --input-text-lm: var(--gray-900);
+  --input-placeholder-lm: var(--gray-400);
+  --input-focus-border-lm: var(--primary-licht);
+  --input-focus-shadow-lm: rgba(59, 130, 246, 0.25);
+  --input-readonly-bg-lm: var(--gray-100);
+  --input-readonly-text-lm: var(--gray-500);
+  --input-readonly-border-lm: var(--gray-300);
+  --schedule-header-bg-lm: var(--gray-100);
+  --schedule-header-text-lm: var(--gray-600);
+  --schedule-row-border-lm: var(--gray-200);
+  --schedule-row-hover-bg-lm: rgba(59, 130, 246, 0.04);
+  --schedule-text-lm: var(--gray-700);
+  --profile-pic-bg-lm: var(--gray-200);
+  --profile-pic-border-lm: var(--white);
+  --toggle-row-bg-lm: var(--gray-100);
+  --toggle-row-border-lm: var(--gray-200);
+  --toggle-row-label-lm: var(--gray-700);
+  --scrollbar-track-bg-lm: var(--gray-100);
+  --scrollbar-thumb-bg-lm: var(--gray-400);
+  --scrollbar-thumb-hover-bg-lm: var(--gray-500);
+
+
+  /* Donkere Modus */
+  --app-bg-dm: var(--gray-900);
+  --text-main-dm: var(--gray-100);
+  --text-muted-dm: var(--gray-300);
+  --link-dm: var(--primary-focus);
+  --link-hover-dm: var(--primary-licht);
+  --border-color-dm: var(--gray-700);
+  --tab-wrapper-bg-dm: var(--gray-800);
+  --tab-wrapper-label-dm: var(--gray-300);
+  --tab-wrapper-subtle-text-dm: var(--gray-400);
+  --input-bg-dm: var(--gray-700);
+  --input-border-dm: var(--gray-600);
+  --input-text-dm: var(--gray-100);
+  --input-placeholder-dm: var(--gray-500);
+  --input-focus-border-dm: var(--primary-focus);
+  --input-focus-shadow-dm: rgba(96, 165, 250, 0.25);
+  --input-readonly-bg-dm: var(--gray-700); /* Kan iets afwijken van input-bg-dm voor duidelijkheid */
+  --input-readonly-text-dm: var(--gray-400);
+  --input-readonly-border-dm: var(--gray-600);
+  --schedule-header-bg-dm: var(--gray-700);
+  --schedule-header-text-dm: var(--gray-300);
+  --schedule-row-border-dm: var(--gray-700);
+  --schedule-row-hover-bg-dm: rgba(96, 165, 250, 0.08);
+  --schedule-text-dm: var(--gray-300);
+  --profile-pic-bg-dm: var(--gray-600);
+  --profile-pic-border-dm: var(--gray-800);
+  --toggle-row-bg-dm: var(--gray-700);
+  --toggle-row-border-dm: var(--gray-600);
+  --toggle-row-label-dm: var(--gray-300);
+  --scrollbar-track-bg-dm: var(--gray-800);
+  --scrollbar-thumb-bg-dm: var(--gray-600);
+  --scrollbar-thumb-hover-bg-dm: var(--gray-500);
+  
+  /* Algemeen */
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --border-radius-sm: 0.25rem;
+  --border-radius: 0.375rem;
+  --border-radius-md: 0.5rem;
+  --border-radius-lg: 0.75rem;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* --- Basis Body Styling --- */
+body {
+  font-family: var(--font-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body.light-theme {
+  background-color: var(--app-bg-lm);
+  color: var(--text-main-lm);
+}
+
+body.dark-theme {
+  background-color: var(--app-bg-dm);
+  color: var(--text-main-dm);
+}
+
+/* --- Scrollbar Styling --- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+body.light-theme ::-webkit-scrollbar-track { background: var(--scrollbar-track-bg-lm); border-radius: 4px; }
+body.light-theme ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb-bg-lm); border-radius: 4px; border: 2px solid var(--scrollbar-track-bg-lm); }
+body.light-theme ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover-bg-lm); }
+
+body.dark-theme ::-webkit-scrollbar-track { background: var(--scrollbar-track-bg-dm); border-radius: 4px; }
+body.dark-theme ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb-bg-dm); border-radius: 4px; border: 2px solid var(--scrollbar-track-bg-dm); }
+body.dark-theme ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover-bg-dm); }
+
+/* --- Tab Wrapper Card --- */
+.tab-wrapper-card {
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+}
+body.light-theme .tab-wrapper-card {
+  background-color: var(--tab-wrapper-bg-lm);
+}
+body.dark-theme .tab-wrapper-card {
+  background-color: var(--tab-wrapper-bg-dm);
+}
+
+body.light-theme .tab-wrapper-card h2,
+body.light-theme .tab-wrapper-card h3,
+body.light-theme .tab-wrapper-card label { /* Standaard label kleur binnen de tab wrapper */
+  color: var(--tab-wrapper-label-lm);
+}
+body.light-theme .tab-wrapper-card p,
+body.light-theme .tab-wrapper-card .text-sm {
+    color: var(--tab-wrapper-subtle-text-lm);
+}
+
+body.dark-theme .tab-wrapper-card h2,
+body.dark-theme .tab-wrapper-card h3,
+body.dark-theme .tab-wrapper-card label {
+  color: var(--tab-wrapper-label-dm);
+}
+body.dark-theme .tab-wrapper-card p,
+body.dark-theme .tab-wrapper-card .text-sm {
+    color: var(--tab-wrapper-subtle-text-dm);
+}
+
+body.light-theme .tab-wrapper-card .border-b { /* Tab navigatie border */
+    border-color: var(--border-color-lm) !important;
+}
+body.dark-theme .tab-wrapper-card .border-b {
+    border-color: var(--border-color-dm) !important;
+}
+
+/* Interne borders in formulieren (binnen tab-wrapper) */
+body.light-theme #persoonlijke-gegevens-form .border-t,
+body.light-theme #rooster-instellingen-form .border-t {
+    border-color: var(--border-color-lm) !important;
+}
+body.dark-theme #persoonlijke-gegevens-form .border-t,
+body.dark-theme #rooster-instellingen-form .border-t {
+    border-color: var(--border-color-dm) !important;
+}
+
+/* --- Formulier Velden --- */
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--border-radius);
+  border-width: 1px;
+  border-style: solid;
+  transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
+  box-shadow: none;
+  font-size: 0.875rem;
+}
+.form-input::placeholder, .form-textarea::placeholder { opacity: 1; }
+.form-select {
+  appearance: none;
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+/* Lichte Modus Formulier Velden */
+body.light-theme .form-input,
+body.light-theme .form-select,
+body.light-theme .form-textarea {
+  background-color: var(--input-bg-lm);
+  border-color: var(--input-border-lm);
+  color: var(--input-text-lm);
+}
+body.light-theme .form-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); /* gray-500 arrow */
+}
+body.light-theme .form-input::placeholder, 
+body.light-theme .form-textarea::placeholder {
+  color: var(--input-placeholder-lm); 
+}
+body.light-theme .form-input:focus,
+body.light-theme .form-select:focus,
+body.light-theme .form-textarea:focus {
+  border-color: var(--input-focus-border-lm);
+  box-shadow: 0 0 0 3px var(--input-focus-shadow-lm);
+  outline: none;
+}
+body.light-theme .form-input[readonly],
+body.light-theme .form-input:disabled,
+body.light-theme .form-select:disabled,
+body.light-theme .form-textarea:disabled {
+  background-color: var(--input-readonly-bg-lm);
+  color: var(--input-readonly-text-lm);
+  border-color: var(--input-readonly-border-lm);
+}
+
+/* Donkere Modus Formulier Velden */
+body.dark-theme .form-input,
+body.dark-theme .form-select,
+body.dark-theme .form-textarea {
+  background-color: var(--input-bg-dm);
+  border-color: var(--input-border-dm);
+  color: var(--input-text-dm);
+}
+body.dark-theme .form-select {
+   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); /* gray-400 arrow */
+}
+body.dark-theme .form-input::placeholder,
+body.dark-theme .form-textarea::placeholder {
+  color: var(--input-placeholder-dm);
+}
+body.dark-theme .form-input:focus,
+body.dark-theme .form-select:focus,
+body.dark-theme .form-textarea:focus {
+  border-color: var(--input-focus-border-dm);
+  box-shadow: 0 0 0 3px var(--input-focus-shadow-dm);
+  outline: none;
+}
+body.dark-theme .form-input[readonly],
+body.dark-theme .form-input:disabled,
+body.dark-theme .form-select:disabled,
+body.dark-theme .form-textarea:disabled {
+  background-color: var(--input-readonly-bg-dm);
+  color: var(--input-readonly-text-dm);
+  border-color: var(--input-readonly-border-dm);
+}
+
+/* Werkrooster Edit Tabel */
+body.light-theme .werkrooster-edit-table-header {
+    background-color: var(--gray-50); /* Lichter dan form-input readonly */
+    border-bottom-color: var(--gray-200);
+    color: var(--gray-600);
+}
+body.light-theme #werkrooster-input-rows {
+    background-color: var(--gray-50); /* Consistent met header of white */
+}
+body.light-theme #werkrooster-input-rows .dag-label { color: var(--gray-700); }
+
+body.dark-theme .werkrooster-edit-table-header {
+    background-color: var(--gray-700); 
+    border-bottom-color: var(--gray-600); 
+    color: var(--gray-300); 
+}
+body.dark-theme #werkrooster-input-rows {
+    background-color: var(--gray-900); /* Achtergrond van input rows in dark mode */
+}
+body.dark-theme #werkrooster-input-rows .dag-label { color: var(--gray-300); }
+
+/* Toggle switch rijen in Rooster Instellingen */
+body.light-theme #rooster-instellingen-form .flex.items-center.justify-between {
+    background-color: var(--toggle-row-bg-lm);
+    border: 1px solid var(--toggle-row-border-lm);
+}
+body.light-theme #rooster-instellingen-form .flex.items-center.justify-between label.text-sm {
+    color: var(--toggle-row-label-lm);
+}
+
+body.dark-theme #rooster-instellingen-form .flex.items-center.justify-between {
+    background-color: var(--toggle-row-bg-dm);
+    border: 1px solid var(--toggle-row-border-dm);
+}
+body.dark-theme #rooster-instellingen-form .flex.items-center.justify-between label.text-sm {
+    color: var(--toggle-row-label-dm);
+}
+
+/* --- Profiel Foto --- */
+.profile-picture-container {
+    width: 100px; height: 100px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; margin-bottom: 1rem; 
+    box-shadow: var(--shadow-md); transition: all 0.3s ease;
+}
+.profile-picture-container img { width: 100%; height: 100%; object-fit: cover; }
+
+body.light-theme .profile-picture-container {
+    background-color: var(--profile-pic-bg-lm);
+    border: 3px solid var(--profile-pic-border-lm);
+}
+body.dark-theme .profile-picture-container {
+    background-color: var(--profile-pic-bg-dm);
+    border: 3px solid var(--profile-pic-border-dm);
+}
+
+/* --- Knoppen (Buttons) --- */
+.btn {
+    padding: 0.6rem 1.2rem; border-radius: var(--border-radius-md);
+    font-weight: 500; transition: all 0.2s ease;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-sm); letter-spacing: 0.025em;
+    border: 1px solid transparent; 
+}
+.btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.btn:active { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.btn:disabled, .btn.disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn-primary { background-color: var(--primary-licht); color: white; border-color: var(--primary-licht); }
+.btn-primary:hover { background-color: var(--primary-donker); border-color: var(--primary-donker); }
+/* Geen specifieke dark-theme override voor primary nodig tenzij gewenst */
+
+.btn-secondary { background-color: var(--gray-200); color: var(--gray-700); border-color: var(--gray-300); }
+.btn-secondary:hover { background-color: var(--gray-300); border-color: var(--gray-400); }
+body.dark-theme .btn-secondary {
+    background-color: var(--gray-700); color: var(--gray-100); border-color: var(--gray-600);
+}
+body.dark-theme .btn-secondary:hover { background-color: var(--gray-600); border-color: var(--gray-500); }
+
+.btn-success { background-color: var(--success-licht); color: white; border-color: var(--success-licht); }
+.btn-success:hover { background-color: var(--success-donker); border-color: var(--success-donker); }
+
+
+/* --- Schedule Table --- */
+.schedule-table {
+    border-collapse: separate; border-spacing: 0; width: 100%;
+    border-radius: var(--border-radius-lg); overflow: hidden; box-shadow: var(--shadow);
+}
+.schedule-table thead th {
+    font-weight: 600; text-transform: uppercase; font-size: 0.75rem;
+    letter-spacing: 0.05em; padding: 0.875rem 1.25rem; text-align: left;
+}
+.schedule-table tbody td { padding: 0.875rem 1.25rem; font-size: 0.875rem; }
+
+body.light-theme .schedule-table thead th {
+    background-color: var(--schedule-header-bg-lm);
+    border-bottom: 1px solid var(--schedule-row-border-lm);
+    color: var(--schedule-header-text-lm);
+}
+body.light-theme .schedule-table tbody tr:not(:last-child) td {
+    border-bottom: 1px solid var(--schedule-row-border-lm);
+}
+body.light-theme .schedule-table tbody tr:hover { background-color: var(--schedule-row-hover-bg-lm); }
+body.light-theme .schedule-table tbody td { color: var(--schedule-text-lm); }
+
+body.dark-theme .schedule-table thead th {
+    background-color: var(--schedule-header-bg-dm);
+    border-bottom-color: var(--schedule-row-border-dm);
+    color: var(--schedule-header-text-dm);
+}
+body.dark-theme .schedule-table tbody tr:not(:last-child) td {
+    border-bottom-color: var(--schedule-row-border-dm);
+}
+body.dark-theme .schedule-table tbody tr:hover { background-color: var(--schedule-row-hover-bg-dm); }
+body.dark-theme .schedule-table tbody td { color: var(--schedule-text-dm); }
+
+/* --- Statusberichten --- */
+.status-message {
+  padding: 0.875rem 1.25rem; border-radius: var(--border-radius-md);
+  margin-top: 1.25rem; animation: slideIn 0.3s ease-out;
+  border-width: 1px; border-style: solid; font-size: 0.875rem; line-height: 1.4;
+}
+.status-success { background-color: #dcfce7; border-color: #4ade80; color: #166534; }
+body.dark-theme .status-success { background-color: rgba(34, 197, 94, 0.2); border-color: #22c55e; color: #bbf7d0; }
+.status-error { background-color: #fee2e2; border-color: #f87171; color: #991b1b; }
+body.dark-theme .status-error { background-color: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #fecaca; }
+.status-info { background-color: #dbeafe; border-color: #60a5fa; color: #1e40af; }
+body.dark-theme .status-info { background-color: rgba(59, 130, 246, 0.2); border-color: #3b82f6; color: #bfdbfe; }
+
+/* --- Footer --- */
+footer { border-top-width: 1px; }
+body.light-theme footer { border-color: var(--border-color-lm); color: var(--text-muted-lm); }
+body.light-theme footer a { color: var(--link-lm); }
+body.light-theme footer a:hover { color: var(--link-hover-lm); }
+
+body.dark-theme footer { border-color: var(--border-color-dm); color: var(--text-muted-dm); }
+body.dark-theme footer a { color: var(--link-dm); }
+body.dark-theme footer a:hover { color: var(--link-hover-dm); }
+
+/* --- Utility --- */
+.hidden { display: none !important; }

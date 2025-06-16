@@ -1,0 +1,160 @@
+/* Rooster/css/profielKaart.css */
+
+#profile-card-container {
+    position: fixed; /* Of 'absolute' afhankelijk van de parent */
+    background-color: var(--card-bg-color, #fff); /* Gebruik thema variabele indien beschikbaar */
+    color: var(--main-text-color, #000);
+    border: 1px solid var(--card-border-color, #ccc);
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000; /* Zorg dat het boven andere elementen verschijnt */
+    width: 300px; /* Voorbeeld breedte */
+    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+    opacity: 1;
+    transform: scale(1);
+}
+
+#profile-card-container.hidden {
+    opacity: 0;
+    transform: scale(0.95);
+    pointer-events: none; /* Voorkom interactie als verborgen */
+}
+
+/* Basis structuur binnen de kaart */
+.profile-card-header img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin-right: 15px;
+    object-fit: cover;
+    border: 2px solid var(--primary-light, #3b82f6);
+}
+
+.profile-card-name {
+    font-size: 1.25em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.profile-card-contact span {
+    display: block;
+    font-size: 0.9em;
+    color: var(--placeholder-text-color, #666);
+    margin-bottom: 3px;
+}
+
+.profile-card-availability {
+    margin-top: 10px;
+    padding: 8px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.availability-hoort-ja {
+    background-color: rgba(16, 185, 129, 0.1); /* Groen-achtig */
+    color: #057754; /* Donkergroen */
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+body.dark-theme .availability-hoort-ja {
+    background-color: rgba(52, 211, 153, 0.15);
+    color: #a7f3d0; /* Lichter groen voor donker thema */
+    border: 1px solid rgba(52, 211, 153, 0.4);
+}
+
+
+.availability-hoort-nee {
+    background-color: rgba(239, 68, 68, 0.1); /* Rood-achtig */
+    color: #b91c1c; /* Donkerrood */
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+body.dark-theme .availability-hoort-nee {
+    background-color: rgba(248, 113, 113, 0.15);
+    color: #fecaca; /* Lichter rood voor donker thema */
+    border: 1px solid rgba(248, 113, 113, 0.4);
+}
+
+.profile-card-badges {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.profile-card-badge {
+    /* background-color: var(--button-secondary-bg-color, #e5e7eb); */
+    /* color: var(--button-secondary-text-color, #374151); */
+    padding: 3px 8px;
+    border-radius: 12px; /* pilvormig */
+    font-size: 0.8em;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid transparent;
+}
+.profile-card-badge img {
+    width: 16px;
+    height: 16px;
+}
+
+/* Specifieke badge stijlen (voorbeeld) */
+.badge-teamleider {
+    background-color: rgba(96, 165, 250, 0.2); /* Blauw-achtig */
+    color: #1e40af;
+    border-color: rgba(96, 165, 250, 0.4);
+}
+body.dark-theme .badge-teamleider {
+    background-color: rgba(96, 165, 250, 0.25);
+    color: #bfdbfe;
+    border-color: rgba(96, 165, 250, 0.5);
+}
+
+.badge-senior {
+    background-color: rgba(245, 158, 11, 0.2); /* Oranje-achtig */
+    color: #9a3412;
+    border-color: rgba(245, 158, 11, 0.4);
+}
+body.dark-theme .badge-senior {
+    background-color: rgba(251, 146, 60, 0.25);
+    color: #fed7aa;
+    border-color: rgba(251, 146, 60, 0.5);
+}
+
+
+.profile-card-uren {
+    margin-top: 15px;
+}
+
+.profile-card-uren h4 {
+    font-size: 0.95em;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--main-text-color, #333);
+}
+
+.profile-card-uren table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em;
+}
+
+.profile-card-uren th, .profile-card-uren td {
+    text-align: left;
+    padding: 6px 4px;
+    border-bottom: 1px solid var(--separator-color, #eee);
+}
+.profile-card-uren th {
+    color: var(--placeholder-text-color, #555);
+}
+
+.profile-card-uren tr:last-child td {
+    border-bottom: none;
+}
+
+/* Stijling voor als er geen uren zijn */
+.no-uren-info {
+    font-style: italic;
+    color: var(--placeholder-text-color, #777);
+    font-size: 0.85em;
+}
+

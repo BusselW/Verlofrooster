@@ -31,6 +31,7 @@ const GEDEFINIEERDE_SITE_URL = "/sites/MulderT/CustomPW/Verlof/"; // Pas aan ind
 window.UI_SECTION_PERMISSIONS = {
     "BeheerHeader": ["1. Sharepoint beheer", "1.1. Mulder MT"],
     "AdminInstellingen": ["1. Sharepoint beheer", "1.1. Mulder MT"],
+    "CountDataSection": ["1. Sharepoint beheer", "1.1. Mulder MT"],
 };
 
 // Globale initialisatie promise voor andere scripts om op te wachten
@@ -166,15 +167,21 @@ async function getLijstItemsAlgemeen(lijstConfigKey, selectQuery = "", filterQue
         console.error(`[getLijstItemsAlgemeen] Lijstconfiguratie (met lijstId) niet gevonden voor '${lijstConfigKey}'. Controleer configLijst.js.`);
         return []; 
     }
-    const lijstId = lijstConfig.lijstId;
-    let apiUrlPath = `/_api/web/lists(guid'${lijstId}')/items`;
+    const lijstId = lijstConfig.lijstId;    let apiUrlPath = `/_api/web/lists(guid'${lijstId}')/items`;
     let queryParams = [];
     if (selectQuery) queryParams.push(selectQuery);
     if (filterQuery) queryParams.push(filterQuery);
     if (expandQuery) queryParams.push(expandQuery);
     if (orderbyQuery) queryParams.push(orderbyQuery);
+    
+    // Add default $top=5000 if not already specified in selectQuery or other params
+    const hasTopParam = queryParams.some(param => param.includes('$top='));
+    if (!hasTopParam) {
+        queryParams.push('$top=5000');
+    }
+    
     const baseApiUrl = window.spWebAbsoluteUrl.replace(/\/$/, "");
-    const apiUrl = `${baseApiUrl}${apiUrlPath}${queryParams.length > 0 ? '?' + queryParams.join('&') : ''}`;    try {
+    const apiUrl = `${baseApiUrl}${apiUrlPath}${queryParams.length > 0 ? '?' + queryParams.join('&') : ''}`;try {
         console.log(`[getLijstItemsAlgemeen] Fetching from ${apiUrl}`);
         const response = await fetch(apiUrl, { method: 'GET', headers: { 'Accept': 'application/json;odata=verbose' } });
         

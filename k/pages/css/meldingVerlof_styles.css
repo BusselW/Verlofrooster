@@ -1,0 +1,249 @@
+/* Verlof Modal Styles - Mirroring ziekte pattern for consistency */
+
+/* Modal Container */
+.verlof-modal-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+/* Form Styling */
+.verlof-form {
+    background: #ffffff;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .verlof-form {
+        background: #1f2937;
+        color: #f9fafb;
+    }
+}
+
+/* Form Header */
+.verlof-form .form-header {
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.verlof-form .form-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+    .verlof-form .form-title {
+        color: #f9fafb;
+    }
+}
+
+/* Notification Area */
+.verlof-form .notification-area {
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+}
+
+.verlof-form .notification-area.hidden {
+    display: none;
+}
+
+/* Form Row (for side-by-side inputs) - Enhanced for paired fields */
+.verlof-form .form-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: start;
+}
+
+.verlof-form .form-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* Flexible width for time/date combinations */
+.verlof-form .form-row .form-group.flex-1 {
+    flex: 1;
+}
+
+.verlof-form .form-row .form-group.flex-2 {
+    flex: 2;
+}
+
+/* Visual pairing enhancement */
+.verlof-form .form-row {
+    background: rgba(59, 130, 246, 0.02);
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+/* Form Groups */
+.verlof-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.verlof-form .form-group .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.875rem;
+}
+
+.verlof-form .form-label.required::after {
+    content: " *";
+    color: #ef4444;
+}
+
+@media (prefers-color-scheme: dark) {
+    .verlof-form .form-group .form-label {
+        color: #d1d5db;
+    }
+}
+
+/* Input Styling */
+.verlof-form .form-input,
+.verlof-form .form-select,
+.verlof-form .form-textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    background-color: #ffffff;
+    transition: all 0.2s ease-in-out;
+}
+
+.verlof-form .form-input:focus,
+.verlof-form .form-select:focus,
+.verlof-form .form-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.verlof-form .form-input:readonly {
+    background-color: #f9fafb;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+/* Dark mode input styling */
+@media (prefers-color-scheme: dark) {
+    .verlof-form .form-input,
+    .verlof-form .form-select,
+    .verlof-form .form-textarea {
+        background-color: #374151;
+        border-color: #4b5563;
+        color: #f9fafb;
+    }
+    
+    .verlof-form .form-input:readonly {
+        background-color: #1f2937;
+        color: #9ca3af;
+    }
+}
+
+/* Textarea specific styling */
+.verlof-form .form-textarea {
+    min-height: 4rem;
+    resize: vertical;
+}
+
+/* Hidden elements */
+.verlof-form .hidden {
+    display: none !important;
+}
+
+/* Success and error states */
+.verlof-form .form-input.success {
+    border-color: #10b981;
+    background-color: #f0fdf4;
+}
+
+.verlof-form .form-input.error {
+    border-color: #ef4444;
+    background-color: #fef2f2;
+}
+
+/* Responsive design */
+@media (max-width: 640px) {
+    .verlof-form .form-row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .verlof-form .form-row .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .verlof-modal-container {
+        padding: 0.5rem;
+    }
+    
+    .verlof-form {
+        padding: 1rem;
+    }
+}
+
+/* Enhanced focus states for accessibility */
+.verlof-form .form-input:focus-visible,
+.verlof-form .form-select:focus-visible,
+.verlof-form .form-textarea:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Loading state for submit button */
+.verlof-form .btn-loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.verlof-form .btn-loading::after {
+    content: '';
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    margin-left: 0.5rem;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Field validation styling */
+.verlof-form .field-valid {
+    border-color: #10b981;
+}
+
+.verlof-form .field-invalid {
+    border-color: #ef4444;
+}
+
+.verlof-form .validation-message {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    padding: 0.25rem;
+}
+
+.verlof-form .validation-message.error {
+    color: #ef4444;
+}
+
+.verlof-form .validation-message.success {
+    color: #10b981;
+}

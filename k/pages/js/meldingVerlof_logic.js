@@ -25,7 +25,7 @@ let huidigeGebruikerVerlofContext = { // Wordt gevuld bij het openen van de moda
 let verlofVakantieRedenId = null; // ID van de "Verlof/vakantie" reden uit de Verlofredenen lijst
 
 // --- Configuration for Email Logic ---
-const verlofEmailDebugMode = false; // SET TO true FOR DEBUGGING (all mails to debugRecipient)
+const verlofEmailMode = 1; // 0=off, 1=seniors get email, 9=debug mode (w.van.bussel only)
 const verlofEmailDebugRecipient = "w.van.bussel@om.nl";
 // --- End Configuration ---
 
@@ -37,9 +37,10 @@ async function getRequestDigestVerlof() {
     if (!spWebAbsoluteUrlVerlof) {
         console.error("[MeldingVerlof] SharePoint site URL (spWebAbsoluteUrlVerlof) is niet ingesteld.");
         throw new Error('SharePoint site URL is niet geconfigureerd voor request digest.');
-    }
-    console.log("[MeldingVerlof] Ophalen Request Digest van:", `${spWebAbsoluteUrlVerlof}/_api/contextinfo`);
-    const response = await fetch(`${spWebAbsoluteUrlVerlof}/_api/contextinfo`, {
+    }    const baseUrl = spWebAbsoluteUrlVerlof.replace(/\/$/, "");
+    const contextInfoUrl = `${baseUrl}/_api/contextinfo`;
+    console.log("[MeldingVerlof] Ophalen Request Digest van:", contextInfoUrl);
+    const response = await fetch(contextInfoUrl, {
         method: 'POST',
         headers: { 'Accept': 'application/json;odata=verbose' }
     });
@@ -73,11 +74,11 @@ function toonNotificatieInVerlofModal(berichtHTML, type = 'info', autoHideDelay 
 
 /**
  * Initialiseert het verlofaanvraagformulier in de modal.
- * @param {Date} geselecteerdeDatum - De datum die geselecteerd is voor het verlof.
  * @param {Object} medewerkerContext - Context van de medewerker voor wie het verlof wordt aangevraagd.
+ * @param {Date} geselecteerdeDatum - De datum die geselecteerd is voor het verlof.
  * @param {Object} itemData - Optioneel: bestaande verlofgegevens voor bewerkingsmodus.
  */
-async function initializeVerlofModalForm(geselecteerdeDatum, medewerkerContext, itemData = null) {
+async function initializeVerlofModalForm(medewerkerContext, geselecteerdeDatum, itemData = null) {
     const isEditMode = itemData !== null;
     console.log(`[MeldingVerlof] Initialiseren formulier. Modus: ${isEditMode ? 'Bewerken' : 'Nieuw'}.`);
 
@@ -116,12 +117,12 @@ async function initializeVerlofModalForm(geselecteerdeDatum, medewerkerContext, 
         toonNotificatieInVerlofModal("Gebruikersinformatie kon niet worden geladen.", "error", false);
         return;
     }
-    
-    // --- Velden ophalen ---
+      // --- Velden ophalen ---
     const medewerkerDisplayVeld = document.getElementById('ModalMedewerkerDisplay');
     const medewerkerSelectVeld = document.getElementById('ModalMedewerkerSelect');
     const medewerkerIdDisplayVeld = document.getElementById('ModalMedewerkerIDDisplay');
     const verborgenMedewerkerIdVeld = document.getElementById('MedewerkerID');
+    const verborgenMedewerkerSharePointNameVeld = document.getElementById('MedewerkerSharePointName');
       // Configureer UI op basis van gebruikersrechten
     if (isSuperUser) {
         // Super-user: toon dropdown, verberg readonly veld
@@ -261,10 +262,15 @@ async function initializeVerlofModalForm(geselecteerdeDatum, medewerkerContext, 
             console.log('[MeldingVerlof] Using fallback medewerker ID:', medewerkerId);
         }
     }
-    
-    // Vul de velden in op basis van UI configuratie
+      // Vul de velden in op basis van UI configuratie
     console.log('[MeldingVerlof] === INVULLEN VAN VELDEN ===');
     console.log('[MeldingVerlof] Te gebruiken waarden:', { displayName, medewerkerId, isSuperUser });
+    
+    // Altijd de hidden SharePoint name field vullen met de volledige naam
+    if (verborgenMedewerkerSharePointNameVeld) {
+        verborgenMedewerkerSharePointNameVeld.value = displayName || 'Onbekende gebruiker';
+        console.log('[MeldingVerlof] ✓ MedewerkerSharePointName hidden field ingevuld:', verborgenMedewerkerSharePointNameVeld.value);
+    }
     
     if (!isSuperUser) {
         // Gewone gebruiker: vul readonly velden in
@@ -520,12 +526,18 @@ async function populateEmployeeDropdown(selectElement, selectedEmployee = null) 
 function updateEmployeeFields(displayName, username) {
     const medewerkerIdDisplayVeld = document.getElementById('ModalMedewerkerIDDisplay');
     const verborgenMedewerkerIdVeld = document.getElementById('MedewerkerID');
+    const verborgenMedewerkerSharePointNameVeld = document.getElementById('MedewerkerSharePointName');
     
     if (medewerkerIdDisplayVeld) {
         medewerkerIdDisplayVeld.value = username;
     }
     if (verborgenMedewerkerIdVeld) {
         verborgenMedewerkerIdVeld.value = username;
+    }
+    // KRITIEK: Update de hidden SharePoint name field met de volledige display name
+    if (verborgenMedewerkerSharePointNameVeld) {
+        verborgenMedewerkerSharePointNameVeld.value = displayName;
+        console.log('[MeldingVerlof] ✓ MedewerkerSharePointName hidden field bijgewerkt:', displayName);
     }
     
     console.log('[MeldingVerlof] Medewerker velden bijgewerkt:', { displayName, username });
@@ -607,8 +619,24 @@ window.debugMedewerkerMatching = function() {
     console.log('=== END DEBUG ===');
 };
 
-// Exporteer de initialisatiefunctie zodat deze vanuit verlofroosterModal_logic.js kan worden aangeroepen
-window.initializeVerlofModalForm = initializeVerlofModalForm;
+/* Add to meldingVerlof_logic.js for debugging */
+window.debugVerlofForm = function() {
+    console.log('=== VERLOF FORM DEBUG ===');
+    
+    const form = document.getElementById('verlof-form');
+    if (form) {
+        console.log('Form HTML:', form.outerHTML);
+        console.log('Form fields found:');
+        
+        const allInputs = form.querySelectorAll('input, select, textarea');
+        allInputs.forEach(input => {
+            console.log(`- ${input.id || input.name}: ${input.type} (value: "${input.value}")`);
+        });
+    } else {
+        console.log('No verlof-form found!');
+    }
+      console.log('=== END DEBUG ===');
+};
 
 // Test functies voor debugging
 window.testSuperUserStatus = function() {
@@ -690,6 +718,40 @@ window.toonMedewerkerVelden = function() {
     console.log('=== EINDE FORCE SHOW ===');
 };
 
+window.debugFieldPopulation = function() {
+    console.log('=== DEBUG FIELD POPULATION ===');
+    console.log('Current user context:', window.huidigeGebruiker);
+    console.log('alleMedewerkers available:', !!window.alleMedewerkers);
+    console.log('alleMedewerkers count:', window.alleMedewerkers?.length);
+    
+    // Check form fields
+    const fields = {
+        ModalMedewerkerDisplay: document.getElementById('ModalMedewerkerDisplay'),
+        ModalMedewerkerIDDisplay: document.getElementById('ModalMedewerkerIDDisplay'),
+        MedewerkerID: document.getElementById('MedewerkerID'),
+        ModalStartDatePicker: document.getElementById('ModalStartDatePicker'),
+        ModalEndDatePicker: document.getElementById('ModalEndDatePicker')
+    };
+    
+    Object.entries(fields).forEach(([name, element]) => {
+        console.log(`${name}:`, {
+            exists: !!element,
+            value: element?.value,
+            visible: element ? !element.classList.contains('hidden') : false
+        });
+    });
+    
+    // Check global date variables
+    console.log('Global date variables:', {
+        verlofModalStartDate: window.verlofModalStartDate,
+        verlofModalEndDate: window.verlofModalEndDate,
+        ziekmeldingModalStartDate: window.ziekmeldingModalStartDate,
+        ziekmeldingModalEndDate: window.ziekmeldingModalEndDate
+    });
+    
+    console.log('=== END DEBUG ===');
+};
+
 console.log("Rooster/pages/js/meldingVerlof_logic.js geladen - verlofvelden automatische invulling en super-user functionaliteit geïmplementeerd.");
 
 // --- Global Function Exports for Modal Compatibility ---
@@ -698,96 +760,331 @@ console.log("Rooster/pages/js/meldingVerlof_logic.js geladen - verlofvelden auto
 window.initializeVerlofModalForm = initializeVerlofModalForm;
 
 /**
- * Opens the verlof aanvraag modal with the specified parameters
- * @param {Object} itemData - Existing item data for editing (null for new request)
- * @param {Date} geselecteerdeDatum - Selected date from calendar
- * @param {Object} medewerkerContext - Context of the employee for whom the request is made
+ * Verzend verlofaanvraag naar SharePoint (mirrors submitZiekmelding)
  */
-window.openVerlofAanvraagModal = async function(itemData, geselecteerdeDatum, medewerkerContext) {
-    console.log("[MeldingVerlof] Opening verlof aanvraag modal", { itemData, geselecteerdeDatum, medewerkerContext });
-    
+async function submitVerlofAanvraag(event) {
+    if (event) event.preventDefault();
+    console.log("[MeldingVerlof] Poging tot opslaan verlofaanvraag...");
+
+    // Validatie
+    const startDatePicker = document.getElementById('ModalStartDatePicker');
+    if (!startDatePicker || !startDatePicker.value) {
+        toonNotificatieInVerlofModal("Startdatum is verplicht.", "error");
+        return;
+    }    // Prepare data structure matching the working version - key differences:
+    // 1. Use Medewerker for display name (not just MedewerkerID)
+    // 2. Ensure RedenId is a string, not number
+    // 3. Proper date/time combination
+      const titleInput = document.getElementById('Title');
+    const medewerkerDisplayInput = document.getElementById('ModalMedewerkerDisplay');
+    const medewerkerSharePointNameInput = document.getElementById('MedewerkerSharePointName');
+    const medewerkerIdInput = document.getElementById('MedewerkerID');
+    const aanvraagTijdstipInput = document.getElementById('AanvraagTijdstip');
+    const startTimePicker = document.getElementById('ModalStartTimePicker');
+    const endTimePicker = document.getElementById('ModalEndTimePicker');
+    const endDatePicker = document.getElementById('ModalEndDatePicker');
+    const omschrijvingTextarea = document.getElementById('ModalOmschrijving');
+
+    // Combineer datum en tijd EERST voordat we formData maken
+    const startDateTime = new Date(`${startDatePicker.value}T${startTimePicker?.value || '09:00'}:00`);
+    const endDateTime = new Date(`${endDatePicker?.value || startDatePicker.value}T${endTimePicker?.value || '17:00'}:00`);    // Create form data structure that matches working version exactly
+    const formData = {
+        Title: titleInput?.value || `Verlofaanvraag ${new Date().toLocaleDateString('nl-NL')}`,
+        Medewerker: medewerkerSharePointNameInput?.value || medewerkerDisplayInput?.value || 'Onbekende Medewerker', // Use SharePoint display name
+        MedewerkerID: medewerkerIdInput?.value,
+        AanvraagTijdstip: aanvraagTijdstipInput?.value || new Date().toISOString(),
+        StartDatum: startDateTime.toISOString(),
+        EindDatum: endDateTime.toISOString(),
+        Omschrijving: omschrijvingTextarea?.value || '',
+        Reden: 'Verlof/vakantie',
+        RedenId: verlofVakantieRedenId ? String(verlofVakantieRedenId) : '', // Ensure string conversion
+        Status: 'Nieuw'
+    };// Remove empty fields (but keep '0' and false values)
+    Object.keys(formData).forEach(key => {
+        if (formData[key] === null || formData[key] === undefined || formData[key] === '') {
+            delete formData[key];
+        }
+    });
+
+    // SharePoint metadata - use the pattern from working version
+    const verlofListConfig = typeof window.getLijstConfig === 'function' ? window.getLijstConfig('Verlof') : null;
+    if (!verlofListConfig) {
+        throw new Error('Kon configuratie voor Verlof lijst niet vinden');
+    }
+      // Use the exact same pattern as the working version: underscore replacement, no spaces
+    const listNameForMetadata = verlofListConfig.lijstTitel.replace(/\s+/g, '_');
+    formData.__metadata = { type: `SP.Data.${listNameForMetadata}ListItem` };
+
+    console.log("[MeldingVerlof] Voorbereide data voor SharePoint:", JSON.stringify(formData, null, 2));
+    console.log("[MeldingVerlof] Metadata type:", formData.__metadata?.type);
+    console.log("[MeldingVerlof] Lijst config:", verlofListConfig);
+
+    const submitButton = document.getElementById('modal-action-button') || document.getElementById('submitVerlofBtnStandalone');
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Opslaan...';
+    }
+
+    try {        const digest = await getRequestDigestVerlof();
+        const verlofListConfig = typeof window.getLijstConfig === 'function' ? window.getLijstConfig('Verlof') : null;
+        if (!verlofListConfig) {
+            throw new Error('Kon configuratie voor Verlof lijst niet vinden');
+        }
+        const lijstNaam = verlofListConfig.lijstTitel;
+
+        const baseUrl = spWebAbsoluteUrlVerlof.replace(/\/$/, "");
+        const fullUrl = `${baseUrl}/_api/web/lists/getbytitle('${lijstNaam}')/items`;
+        console.log(`[MeldingVerlof] URL Debug - Original: "${spWebAbsoluteUrlVerlof}", Clean base: "${baseUrl}", Full URL: "${fullUrl}"`);
+        
+        const response = await fetch(fullUrl, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json;odata=verbose',
+                'Content-Type': 'application/json;odata=verbose',
+                'X-RequestDigest': digest
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Verlofaanvraag Opslaan';
+        }
+
+        if (response.ok) {
+            const responseData = await response.json();
+            console.log("[MeldingVerlof] Verlofaanvraag succesvol opgeslagen:", responseData);
+            toonNotificatieInVerlofModal("Verlofaanvraag succesvol opgeslagen.", "success");
+            
+            // --- NIEUWE CODE VOOR EMAIL NOTIFICATIE ---
+            // Send email notification
+            await verzendVerlofNotificatieEmail(formData, huidigeGebruikerVerlofContext);
+            
+            // Refresh the calendar data
+            try {
+                if (typeof window.Laadinitiele === 'function') {
+                    await window.Laadinitiele(false);
+                    console.log("[MeldingVerlof] Calendar data refreshed after verlof submission");
+                } else if (typeof window.renderRooster === 'function') {
+                    // Alternative: just re-render if refresh function not available
+                    window.renderRooster();
+                    console.log("[MeldingVerlof] Calendar re-rendered after verlof submission");
+                }
+            } catch (refreshError) {
+                console.warn("[MeldingVerlof] Could not refresh calendar data:", refreshError);
+            }
+            
+            if (typeof window.refreshCalendarData === 'function') {
+                window.refreshCalendarData();
+            }
+            if (typeof closeModal === 'function') closeModal();
+        } else {
+            const errorData = await response.json().catch(() => ({ error: { message: { value: "Onbekende serverfout bij opslaan." } } }));
+            const errorMessage = errorData.error && errorData.error.message ? errorData.error.message.value : `Fout ${response.status}: ${response.statusText}`;
+            console.error("[MeldingVerlof] Fout bij opslaan verlofaanvraag:", errorMessage, errorData);
+            toonNotificatieInVerlofModal(`Fout bij opslaan: ${errorMessage}`, "error", false);
+        }
+    } catch (error) {
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Verlofaanvraag Opslaan';
+        }
+        console.error("[MeldingVerlof] Kritieke fout bij opslaan verlofaanvraag:", error);
+        toonNotificatieInVerlofModal(`Kritieke fout: ${error.message}`, "error", false);
+    }
+}
+
+/**
+ * Bepaalt of en naar wie verlof emails verstuurd moeten worden
+ * @param {Array} originalRecipients - Originele senior/supervisor emails
+ * @returns {Object} - {shouldSend: boolean, recipients: Array, isDebug: boolean}
+ */
+function determineVerlofEmailRecipients(originalRecipients) {
+    switch (verlofEmailMode) {
+        case 0:
+            console.log('[MeldingVerlof] Email mode 0: Verlof emails uitgeschakeld');
+            return {
+                shouldSend: false,
+                recipients: [],
+                isDebug: false,
+                debugInfo: 'Verlof emails zijn uitgeschakeld (mode 0)'
+            };
+            
+        case 1:
+            console.log('[MeldingVerlof] Email mode 1: Verlof emails naar seniors');
+            return {
+                shouldSend: true,
+                recipients: originalRecipients,
+                isDebug: false,
+                debugInfo: `Verlof emails naar ${originalRecipients.length} seniors`
+            };
+            
+        case 9:
+            console.log(`[MeldingVerlof] Email mode 9: Verlof emails debug mode naar ${verlofEmailDebugRecipient}`);
+            return {
+                shouldSend: true,
+                recipients: [verlofEmailDebugRecipient],
+                isDebug: true,
+                originalRecipients: originalRecipients,
+                debugInfo: `Debug mode: verlof emails naar ${verlofEmailDebugRecipient}`
+            };
+            
+        default:
+            console.warn(`[MeldingVerlof] Onbekende email mode: ${verlofEmailMode}. Emails uitgeschakeld.`);
+            return {
+                shouldSend: false,
+                recipients: [],
+                isDebug: false,
+                debugInfo: `Onbekende mode ${verlofEmailMode} - emails uitgeschakeld`
+            };
+    }
+}
+
+/**
+ * Verzend verlofaanvraag notificatie email
+ * @param {Object} formData - Verlofaanvraag gegevens
+ * @param {Object} medewerkerContext - Medewerker informatie
+ */
+async function verzendVerlofNotificatieEmail(formData, medewerkerContext) {
     try {
-        // Check if modal system is available
-        if (typeof window.openModal !== 'function') {
-            console.error("[MeldingVerlof] Modal system not available");
+        // Get potential recipients
+        const seniorsEmails = await getEmailAddressesFromSeniors();
+        
+        if (!seniorsEmails || seniorsEmails.length === 0) {
+            console.warn('[MeldingVerlof] Geen senior email adressen gevonden');
             return;
         }
-
-        // Set the modal title
-        const modalTitle = itemData ? "Verlofaanvraag Bewerken" : "Verlofaanvraag Indienen";        // Load the verlof form content
-        const baseUrl = window.spWebAbsoluteUrl.replace(/\/$/, ''); // Remove trailing slash
-        const modalUrl = `${baseUrl}CPW/k/pages/meldingVerlof.aspx`;
-        console.log(`[MeldingVerlof] Ophalen modal content van: ${modalUrl}`);
         
-        const response = await fetch(modalUrl);
-        if (!response.ok) {
-            throw new Error(`Network response was not ok: ${response.statusText} while fetching ${modalUrl}`);
+        // Determine if and where to send based on mode
+        const emailConfig = determineVerlofEmailRecipients(seniorsEmails);
+        
+        if (!emailConfig.shouldSend) {
+            console.log(`[MeldingVerlof] Email niet verzonden: ${emailConfig.debugInfo}`);
+            return;
         }
         
-        const htmlContent = await response.text();
+        // Prepare email content
+        const subject = `Nieuwe Verlofaanvraag: ${medewerkerContext.Title || 'Onbekende medewerker'}`;
+        const body = `
+            <h3>Nieuwe Verlofaanvraag Ontvangen</h3>
+            <table style="border-collapse: collapse; width: 100%;">
+                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Medewerker:</strong></td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${medewerkerContext.Title}</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Startdatum:</strong></td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${new Date(formData.StartDatum).toLocaleDateString('nl-NL')}</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Einddatum:</strong></td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${new Date(formData.EindDatum).toLocaleDateString('nl-NL')}</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Reden:</strong></td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${formData.Reden || 'Onbekend'}</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Omschrijving:</strong></td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${formData.Omschrijving || 'Geen'}</td></tr>
+            </table>
+            <p><em>Deze aanvraag is automatisch gegenereerd door het Verlofrooster systeem.</em></p>
+        `;
         
-        // Create a temporary div to parse the HTML and extract only the form container
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = htmlContent;
-        
-        const formContainer = tempDiv.querySelector('.form-container'); // Assumes .form-container holds everything needed
-        
-        if (!formContainer) {
-            console.error(`[MeldingVerlof] <div class="form-container"> niet gevonden in de geladen HTML van ${modalUrl}.`);
-            throw new Error(`<div class="form-container"> niet gevonden in de geladen HTML.`);
-        }
-
-        // Open the modal with the extracted content
-        window.openModal(
-            modalTitle,
-            formContainer.innerHTML, // Use innerHTML of formContainer
-            "Verlofaanvraag Opslaan", // Action button text
-            async () => { // Action callback
-                // Call the specific submission handler 
-                const formElement = document.getElementById('verlofForm');
-                if (formElement && typeof formElement.requestSubmit === 'function') {
-                    formElement.requestSubmit(); // Programmatically submit the form
-                } else if (formElement && typeof formElement.submit === 'function') {
-                    formElement.submit(); // Fallback for older browsers
-                } else {
-                    console.error("Formulier #verlofForm niet gevonden of kan niet programmatisch worden ingediend.");
-                    if (typeof window.toonModalNotificatie === 'function') {
-                        window.toonModalNotificatie("Fout bij opslaan: formulier niet gevonden.", "error");
-                    }
-                }
-                return true; // Indicate action was attempted
-            },
-            true, // showCancelButton
-            false, // showPrevButton
-            null, // prevButtonCallback
-            'max-w-2xl' // modalSizeClass - make it a bit wider for this form
-        );
-
-        // Apply theme after content is in the modal
-        if (typeof window.applyDarkThemeToModal === 'function') {
-            window.applyDarkThemeToModal(); // Ensure modal container gets theme
-        }
-        
-        const modalActualContentElement = window.domRefsLogic?.modalContent?.firstChild;
-        if (modalActualContentElement && typeof window.applyThemeToModalContent === 'function') {
-            window.applyThemeToModalContent(modalActualContentElement); // Apply to the content itself
-        }
-
-        // Initialize the form logic 
-        if (typeof initializeVerlofModalForm === 'function') {
-            await initializeVerlofModalForm(geselecteerdeDatum, medewerkerContext, itemData);
-            console.log("[MeldingVerlof] initializeVerlofModalForm aangeroepen.");
+        // Send email via mailSysteem utility
+        if (typeof verzendEmail === 'function') {
+            await verzendEmail(
+                emailConfig.recipients,
+                subject,
+                body,
+                emailConfig.isDebug,
+                emailConfig.originalRecipients || []
+            );
         } else {
-            console.error("[MeldingVerlof] Functie initializeVerlofModalForm niet gevonden.");
-            if (typeof window.toonModalNotificatie === 'function') {
-                window.toonModalNotificatie("Fout: Initialisatie van verlofformulier mislukt.", "error");
-            }
+            console.warn('[MeldingVerlof] verzendEmail functie niet beschikbaar');
         }
-
+        
+        console.log(`[MeldingVerlof] ${emailConfig.debugInfo}`);
+        
     } catch (error) {
-        console.error("[MeldingVerlof] Error opening verlof modal:", error);
-        if (typeof window.toonModalNotificatie === 'function') {
-            window.toonModalNotificatie(`Fout bij openen verlofaanvraag: ${error.message}`, "error");
-        }
+        console.error('[MeldingVerlof] Fout bij verzenden verlofaanvraag email:', error);
+        // Don't throw - email failure shouldn't break the main process
     }
+}
+window.submitVerlofAanvraag = submitVerlofAanvraag;
+
+// Test function to verify URL construction
+window.testVerlofUrlConstruction = function() {
+    console.log('=== VERLOF URL CONSTRUCTION TEST ===');
+    
+    if (!window.spWebAbsoluteUrl) {
+        console.error('window.spWebAbsoluteUrl is not set!');
+        return;
+    }
+    
+    const baseUrl = window.spWebAbsoluteUrl;
+    const cleanUrl = baseUrl.replace(/\/$/, "");
+    const contextUrl = `${cleanUrl}/_api/contextinfo`;
+    const listUrl = `${cleanUrl}/_api/web/lists/getbytitle('Verlof')/items`;
+    
+    console.log('Original URL:', baseUrl);
+    console.log('Clean URL:', cleanUrl);
+    console.log('Context URL:', contextUrl);
+    console.log('List URL:', listUrl);
+    
+    // Check for double slashes
+    const hasDoubleSlash = contextUrl.includes('//') && !contextUrl.includes('https://');
+    console.log('Has double slash issue?', hasDoubleSlash);
+    
+    return { baseUrl, cleanUrl, contextUrl, listUrl, hasDoubleSlash };
+};
+
+// Test function to verify the modal setup is complete
+window.testVerlofModalSetup = function() {
+    console.log('=== VERLOF MODAL SETUP TEST ===');
+    
+    const requiredFields = [
+        'ModalMedewerkerDisplay',
+        'MedewerkerSharePointName', // Hidden field with full SharePoint display name
+        'MedewerkerID',
+        'ModalStartDatePicker',
+        'ModalEndDatePicker',
+        'ModalStartTimePicker',
+        'ModalEndTimePicker',
+        'ModalOmschrijving',
+        'Title',
+        'AanvraagTijdstip'
+    ];
+    
+    const missingFields = [];
+    const presentFields = [];
+    
+    requiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            presentFields.push({
+                id: fieldId,
+                type: field.type,
+                value: field.value,
+                hidden: field.type === 'hidden'
+            });
+        } else {
+            missingFields.push(fieldId);
+        }
+    });
+    
+    console.log('✓ Present fields:', presentFields);
+    if (missingFields.length > 0) {
+        console.warn('⚠ Missing fields:', missingFields);
+    }
+    
+    // Test SharePoint config
+    const verlofConfig = typeof window.getLijstConfig === 'function' ? window.getLijstConfig('Verlof') : null;
+    console.log('✓ Verlof config:', verlofConfig);
+    
+    // Test user context
+    console.log('✓ Current user context:', window.huidigeGebruikerVerlofContext);
+    
+    // Test super user status
+    const isSuperUser = typeof window.checkIfSuperUser === 'function' ? window.checkIfSuperUser() : false;
+    console.log('✓ Is super user:', isSuperUser);
+    
+    return {
+        fieldsOk: missingFields.length === 0,
+        configOk: !!verlofConfig,
+        userContextOk: !!window.huidigeGebruikerVerlofContext,
+        missingFields,
+        presentFields
+    };
 };

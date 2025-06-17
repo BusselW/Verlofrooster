@@ -62,9 +62,9 @@ function toggleFabMenu(forceClose = false) {
         console.warn("[VerlofroosterLogic] FAB menu elementen niet gevonden voor toggle.");
         return;
     }
-    
+
     const isMenuOpen = !domRefsLogic.fabMenu.classList.contains('opacity-0');
-    
+
     if (forceClose || isMenuOpen) {
         // Close menu
         domRefsLogic.fabMenu.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
@@ -83,7 +83,7 @@ function toggleFabMenu(forceClose = false) {
  */
 function initDOMReferentiesLogic() {
     domRefsLogic.appBody = document.body;
-    domRefsLogic.notificationPlaceholder = document.getElementById('notification-placeholder');    domRefsLogic.gebruikersnaamDisplay = document.getElementById('gebruikersnaam-display');
+    domRefsLogic.notificationPlaceholder = document.getElementById('notification-placeholder'); domRefsLogic.gebruikersnaamDisplay = document.getElementById('gebruikersnaam-display');
     domRefsLogic.roosterDropdownButton = document.getElementById('rooster-dropdown-button');
     domRefsLogic.roosterDropdownMenu = document.getElementById('rooster-dropdown-menu');
     domRefsLogic.prevMonthButton = document.getElementById('prev-month-button');
@@ -112,7 +112,7 @@ function initDOMReferentiesLogic() {
     domRefsLogic.fabIconPlus = document.getElementById('fab-icon-plus');
     domRefsLogic.fabIconClose = document.getElementById('fab-icon-close');
     domRefsLogic.helpButton = document.getElementById('help-button');
-    domRefsLogic.meldingButton = document.getElementById('melding-button');    domRefsLogic.modalPlaceholder = document.getElementById('modal-placeholder');
+    domRefsLogic.meldingButton = document.getElementById('melding-button'); domRefsLogic.modalPlaceholder = document.getElementById('modal-placeholder');
     if (domRefsLogic.modalPlaceholder) {
         domRefsLogic.modalDialog = domRefsLogic.modalPlaceholder.querySelector('.modal-dialog');
         domRefsLogic.modalCard = domRefsLogic.modalPlaceholder.querySelector('.modal-card');
@@ -241,30 +241,96 @@ function toonRegistratieMelding(tekst, toonRegistratieKnop) {
 }
 
 /**
- * Laadt alle initiële data die nodig is voor het rooster.
+ * Get the current visible date range based on the current view and focus date
  */
-async function laadInitiëleData(forceerModalData = false) {
-    console.log(`[VerlofroosterLogic] Starten met laden van initiële data. Forceer modal data: ${forceerModalData}`);
+function getVisibleDateRange() {
+    const startDate = new Date(huidigeDatumFocus);
+    const endDate = new Date(huidigeDatumFocus);
+
+    if (huidigeWeergave === 'maand') {
+        // For month view, get the full month
+        startDate.setDate(1);
+        startDate.setHours(0, 0, 0, 0);
+        
+        endDate.setMonth(endDate.getMonth() + 1);
+        endDate.setDate(0); // Last day of current month
+        endDate.setHours(23, 59, 59, 999);
+    } else {
+        // For week view, get the full week (Monday to Sunday)
+        const dayOfWeek = startDate.getDay();
+        const diff = startDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust for Monday start
+        startDate.setDate(diff);
+        startDate.setHours(0, 0, 0, 0);
+        
+        endDate.setDate(startDate.getDate() + 6); // 7 days total
+        endDate.setHours(23, 59, 59, 999);
+    }
+
+    console.log(`[VerlofroosterLogic] Visible date range: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`);
+    return { startDate, endDate };
+}
+
+/**
+ * Create date filter query parameters for SharePoint REST API
+ */
+function createDateFilterQuery(dateRange) {
+    const startDateISO = dateRange.startDate.toISOString();
+    const endDateISO = dateRange.endDate.toISOString();
+    
+    // For verlof items: filter where (StartDatum <= endDate AND EindDatum >= startDate)
+    const verlofFilter = `(StartDatum le datetime'${endDateISO}' and EindDatum ge datetime'${startDateISO}')`;
+    
+    // For compensatie items: similar logic with their date fields
+    const compensatieFilter = `(StartCompensatieUren le datetime'${endDateISO}' and EindeCompensatieUren ge datetime'${startDateISO}')`;
+    
+    // For zittingvrij items: check ZittingsVrijeDagTijd field
+    const zittingVrijFilter = `(ZittingsVrijeDagTijd le datetime'${endDateISO}' and ZittingsVrijeDagTijd ge datetime'${startDateISO}')`;
+    
+    return {
+        verlofFilter,
+        compensatieFilter,
+        zittingVrijFilter
+    };
+}
+
+/**
+ * Laadt alle initiële data die nodig is voor het rooster.
+ * Optionally filters date-sensitive data by the current visible period.
+ */
+async function laadInitiëleData(forceerModalData = false, loadOnlyCurrentPeriod = true) {
+    console.log(`[VerlofroosterLogic] Starten met laden van initiële data. Forceer modal data: ${forceerModalData}, Filter periode: ${loadOnlyCurrentPeriod}`);
     if (domRefsLogic.notificationPlaceholder && !forceerModalData) {
         toonNotificatie("Bezig met laden van roostergegevens...", "info", 10000);
     }    try {
+        // Get date filters if we're loading only current period
+        let dateFilters = null;
+        if (loadOnlyCurrentPeriod) {
+            const visibleRange = getVisibleDateRange();
+            dateFilters = createDateFilterQuery(visibleRange);
+            console.log("[VerlofroosterLogic] Using date filters for current period:", dateFilters);
+        }
+
         const dataPromises = [
             window.getLijstItemsAlgemeen(lijstNamen.Medewerkers, "$select=ID,Title,Naam,Username,Team,Actief,Verbergen,Functie,E_x002d_mail,Horen").then(items => {
                 alleMedewerkers = items || [];
                 window.alleMedewerkers = alleMedewerkers; // Zorg ervoor dat het globaal beschikbaar is
             }),
-            window.getLijstItemsAlgemeen(lijstNamen.Verlof).then(items => {
-                console.log("[VerlofroosterLogic] Loaded Verlof items:", items ? items.length : 0);
+            // Load verlof items with date filter if applicable
+            window.getLijstItemsAlgemeen(
+                lijstNamen.Verlof, 
+                dateFilters ? `$filter=${dateFilters.verlofFilter}` : undefined
+            ).then(items => {
+                console.log(`[VerlofroosterLogic] Loaded Verlof items (${loadOnlyCurrentPeriod ? 'filtered' : 'all'}):`, items ? items.length : 0);
                 if (items && items.length > 0) {
                     console.log("[VerlofroosterLogic] Sample Verlof item:", items[0]);
                 } else {
-                    console.warn("[VerlofroosterLogic] No Verlof items loaded from SharePoint!");
+                    console.warn(`[VerlofroosterLogic] No Verlof items loaded from SharePoint! (${loadOnlyCurrentPeriod ? 'filtered by current period' : 'no filter'})`);
                 }
-                
+
                 // Apply date normalization to ensure consistent date formats
                 if (typeof window.normalizeSharePointDates === 'function') {
                     alleVerlofItems = window.normalizeSharePointDates(items || [], ['StartDatum', 'EindDatum']);
-                    console.log("[VerlofroosterLogic] Normalized Verlof dates. First item dates:", 
+                    console.log("[VerlofroosterLogic] Normalized Verlof dates. First item dates:",
                         alleVerlofItems.length > 0 ? {
                             StartDatum: alleVerlofItems[0].StartDatum,
                             EindDatum: alleVerlofItems[0].EindDatum
@@ -275,21 +341,32 @@ async function laadInitiëleData(forceerModalData = false) {
                     console.warn("[VerlofroosterLogic] Date normalization function not available");
                 }
             }),
-            window.getLijstItemsAlgemeen(lijstNamen.CompensatieUren).then(items => {
+            // Load compensatie items with date filter if applicable
+            window.getLijstItemsAlgemeen(
+                lijstNamen.CompensatieUren,
+                dateFilters ? `$filter=${dateFilters.compensatieFilter}` : undefined
+            ).then(items => {
+                console.log(`[VerlofroosterLogic] Loaded CompensatieUren items (${loadOnlyCurrentPeriod ? 'filtered' : 'all'}):`, items ? items.length : 0);
                 // Also normalize dates for compensation items
                 if (typeof window.normalizeSharePointDates === 'function') {
                     alleCompensatieUrenItems = window.normalizeSharePointDates(items || [], ['StartCompensatieUren', 'EindeCompensatieUren']);
                 } else {
                     alleCompensatieUrenItems = items || [];
                 }
-            }),
-            window.getLijstItemsAlgemeen(lijstNamen.Teams, "$select=ID,Title,Naam,Kleur,Actief").then(items => {
+            }),            window.getLijstItemsAlgemeen(lijstNamen.Teams, "$select=ID,Title,Naam,Kleur,Actief").then(items => {
                 alleTeams = items || [];
                 window.alleTeams = alleTeams; // Ensure it's on the window object
             }),
             window.getLijstItemsAlgemeen(lijstNamen.DagenIndicator).then(items => alleDagenIndicators = items || []),
             window.getLijstItemsAlgemeen(lijstNamen.UrenPerWeek).then(items => alleUrenPerWeekItems = items || []),
-            window.getLijstItemsAlgemeen(lijstNamen.IncidenteelZittingVrij).then(items => alleIncidenteelZittingVrijItems = items || []),
+            // Load zittingvrij items with date filter if applicable
+            window.getLijstItemsAlgemeen(
+                lijstNamen.IncidenteelZittingVrij,
+                dateFilters ? `$filter=${dateFilters.zittingVrijFilter}` : undefined
+            ).then(items => {
+                console.log(`[VerlofroosterLogic] Loaded IncidenteelZittingVrij items (${loadOnlyCurrentPeriod ? 'filtered' : 'all'}):`, items ? items.length : 0);
+                alleIncidenteelZittingVrijItems = items || [];
+            }),
             window.getLijstItemsAlgemeen(lijstNamen.Verlofredenen, "$select=ID,Title,Naam,Kleur,VerlofDag").then(items => alleVerlofredenen = items || [])
         ];
 
@@ -349,6 +426,21 @@ async function laadInitiëleData(forceerModalData = false) {
         toonNotificatie("", "info", 1);
     }
     console.log("[VerlofroosterLogic] Einde laadInitiëleData.");
+
+    // Add debugging after alleVerlofItems is loaded
+    console.log("=== VERLOF DEBUGGING ===");
+    console.log("Total verlof items loaded:", alleVerlofItems?.length || 0);
+    console.log("First 5 verlof items:", alleVerlofItems?.slice(0, 5));
+    console.log("Last 5 verlof items:", alleVerlofItems?.slice(-5));
+
+    // Check for recent items
+    const recentItems = alleVerlofItems?.filter(item => {
+        const startDate = new Date(item.StartDatum);
+        const now = new Date();
+        const daysDiff = (now - startDate) / (1000 * 60 * 60 * 24);
+        return Math.abs(daysDiff) <= 30; // Items within 30 days
+    });
+    console.log("Recent verlof items (±30 days):", recentItems?.length || 0, recentItems);
 }
 
 /**
@@ -366,7 +458,7 @@ async function laadBenodigdeDataVoorModal() {
         window.alleKeuzelijstFuncties = functiesData || [];
 
         console.log("[VerlofroosterLogic] Teams en Functies geladen voor modal:", window.alleTeams, window.alleKeuzelijstFuncties);
-        
+
         // Zet een vlag dat deze specifieke data gereed is, indien nodig voor andere logica
         // isDataVoorRegistratieModalGereed = true; // Of een meer generieke vlag
 
@@ -516,14 +608,14 @@ function updateLegenda() {
     compensatieKleurBlok.className = "w-2.5 h-2.5 md:w-3 md:h-3 rounded-sm mr-1.5 flex-shrink-0";
     // compensatieKleurBlok.style.backgroundColor = '#107c10'; // Kleurblok niet meer nodig als we icoon gebruiken
     // compensatieLegendaSpan.appendChild(compensatieKleurBlok);
-    
+
     // Gebruik het SVG icoon voor Compensatie in de legenda
     const compensatieIconImg = document.createElement('img');
     compensatieIconImg.src = 'Icoon/CompensatieUren.svg'; // Gebruik lokaal pad
     compensatieIconImg.alt = 'Compensatie';
     compensatieIconImg.className = 'w-3 h-3 md:w-3.5 md:h-3.5 mr-1.5 flex-shrink-0'; // Aangepaste grootte voor legenda
     compensatieLegendaSpan.appendChild(compensatieIconImg);
-    
+
     compensatieLegendaSpan.appendChild(document.createTextNode("Compensatie"));
     // Clock icon is niet meer nodig als we het SVG icoon gebruiken
     // const clockIcon = document.createElement('span');
@@ -694,8 +786,8 @@ function tekenRooster() {
         </div>`;
 
     updateDatumHeader();
-    let dagenInPeriodeVolledig = []; 
-    let aantalDagenTotaal; 
+    let dagenInPeriodeVolledig = [];
+    let aantalDagenTotaal;
     const vandaag = new Date();
     vandaag.setHours(0, 0, 0, 0);
 
@@ -717,24 +809,24 @@ function tekenRooster() {
         }
     }
 
-    const dagenTonenInPeriode = gebruikersInstellingen.weekendenWeergeven ? 
-                                dagenInPeriodeVolledig : 
-                                dagenInPeriodeVolledig.filter(dag => dag.getDay() !== 0 && dag.getDay() !== 6);
+    const dagenTonenInPeriode = gebruikersInstellingen.weekendenWeergeven ?
+        dagenInPeriodeVolledig :
+        dagenInPeriodeVolledig.filter(dag => dag.getDay() !== 0 && dag.getDay() !== 6);
 
     const effectiefAantalDagenVoorGrid = dagenTonenInPeriode.length;
-    const minCellWidth = gebruikersInstellingen.weekendenWeergeven ? 40 : 50; 
-    
+    const minCellWidth = gebruikersInstellingen.weekendenWeergeven ? 40 : 50;
+
     domRefsLogic.roosterGridHeader.style.gridTemplateColumns = `minmax(180px, 1.5fr) repeat(${effectiefAantalDagenVoorGrid}, minmax(${minCellWidth}px, 1fr))`;
 
     const dagNamenKort = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'];
-    dagenTonenInPeriode.forEach(dag => {        
+    dagenTonenInPeriode.forEach(dag => {
         const dagDiv = document.createElement('div');
         dagDiv.className = "dag-header rooster-header-dag p-1.5 text-center text-xs border-r border-gray-300 dark:border-gray-600 last:border-r-0";
         dagDiv.innerHTML = `${dagNamenKort[dag.getDay()]}<br>${dag.getDate()}`;
         if (dag.toDateString() === vandaag.toDateString()) {
-            dagDiv.classList.add("dag-header-vandaag"); 
+            dagDiv.classList.add("dag-header-vandaag");
         }
-        
+
         if (document.body.classList.contains('dark-theme')) {
             dagDiv.classList.add('bg-gray-700', 'text-gray-200');
         } else {
@@ -747,7 +839,7 @@ function tekenRooster() {
     const zoekTerm = domRefsLogic.roosterSearchInput ? domRefsLogic.roosterSearchInput.value.toLowerCase() : '';
 
     const gesorteerdeMedewerkers = [...alleMedewerkers]
-        .filter(mwd => mwd.Actief && !mwd.Verbergen) 
+        .filter(mwd => mwd.Actief && !mwd.Verbergen)
         .sort((a, b) => {
             const teamA = a.Team || '';
             const teamB = b.Team || '';
@@ -787,7 +879,7 @@ function tekenRooster() {
 
             if (teamObject) {
                 const teamHeaderDiv = document.createElement('div');
-                teamHeaderDiv.className = `team-header-rij p-2 font-semibold text-sm sticky left-0 z-10`; 
+                teamHeaderDiv.className = `team-header-rij p-2 font-semibold text-sm sticky left-0 z-10`;
                 teamHeaderDiv.style.gridColumn = `1 / span ${effectiefAantalDagenVoorGrid + 1}`;
                 teamHeaderDiv.textContent = huidigTeamNaamRender || "Team Onbekend";
 
@@ -795,11 +887,11 @@ function tekenRooster() {
                 teamHeaderDiv.style.backgroundColor = teamKleur;
                 teamHeaderDiv.style.color = getContrasterendeTekstkleur(teamKleur);
 
-                teamHeaderDiv.style.borderBottom = `1px solid var(--grid-line-color, #d1d5db)`; 
+                teamHeaderDiv.style.borderBottom = `1px solid var(--grid-line-color, #d1d5db)`;
                 teamHeaderDiv.style.borderTop = `1px solid var(--grid-line-color, #d1d5db)`;
                 domRefsLogic.roosterDataRows.appendChild(teamHeaderDiv);
             }
-        }        
+        }
         const rijDiv = document.createElement('div');
         rijDiv.className = "medewerker-rij grid gap-px";
         rijDiv.style.gridTemplateColumns = `minmax(180px, 1.5fr) repeat(${effectiefAantalDagenVoorGrid}, minmax(${minCellWidth}px, 1fr))`;
@@ -808,64 +900,64 @@ function tekenRooster() {
             rijDiv.addEventListener('click', handleRijSelectie);
         } else {
             console.warn("[VerlofroosterLogic] Medewerker zonder ID gevonden:", medewerker);
-        }        
+        }
         const naamDiv = document.createElement('div');
         naamDiv.className = 'rooster-cel-medewerker sticky left-0 p-2 z-20 border-b border-r min-w-[180px] max-w-[180px]';
-        
+
         if (document.body.classList.contains('dark-theme')) {
             naamDiv.classList.add('bg-gray-800', 'text-gray-200', 'border-gray-600');
         } else {
             naamDiv.classList.add('bg-white', 'text-gray-800', 'border-gray-300');
-        }        
+        }
         if (typeof window.getProfilePhotoUrl === 'function') {
             const img = document.createElement('img');
-            img.src = window.getProfilePhotoUrl(medewerker, 'S'); 
+            img.src = window.getProfilePhotoUrl(medewerker, 'S');
             img.alt = `Foto ${medewerker.Naam || 'medewerker'}`;
-            img.className = 'flex-shrink-0 w-8 h-8 rounded-full mr-2 object-cover'; 
-            img.onerror = function () { this.src = 'Icoon/default-profile.svg'; this.alt = 'Standaard profielicoon'; };            
+            img.className = 'flex-shrink-0 w-8 h-8 rounded-full mr-2 object-cover';
+            img.onerror = function () { this.src = 'Icoon/default-profile.svg'; this.alt = 'Standaard profielicoon'; };
             const profileAndNameContainer = document.createElement('div');
             profileAndNameContainer.className = 'flex items-start w-full';
-            
+
             profileAndNameContainer.appendChild(img);
-            
+
             const nameRow = document.createElement('div');
             nameRow.className = 'flex items-center w-full justify-between';
-            
+
             const nameSpan = document.createElement('span');
             nameSpan.className = 'font-medium text-sm text-black';
             nameSpan.textContent = medewerker.Naam || 'Onbekend';
             nameRow.appendChild(nameSpan);
-            
+
             if (medewerker.hasOwnProperty('Horen')) {
                 const horenIcon = document.createElement('img');
                 horenIcon.src = medewerker.Horen ? 'Icoon/horen-ja.svg' : 'Icoon/horen-nee.svg';
                 horenIcon.alt = medewerker.Horen ? 'Beschikbaar voor horen' : 'Niet beschikbaar voor horen';
-                horenIcon.className = 'w-4 h-4 flex-shrink-0'; 
+                horenIcon.className = 'w-4 h-4 flex-shrink-0';
                 nameRow.appendChild(horenIcon);
             }
-            
+
             profileAndNameContainer.appendChild(nameRow);
             naamDiv.appendChild(profileAndNameContainer);
-        } else {            
+        } else {
             const textContainer = document.createElement('div');
             textContainer.className = 'flex items-center w-full justify-between';
-            
+
             const nameSpan = document.createElement('span');
             nameSpan.className = 'font-medium text-sm text-black';
             nameSpan.textContent = medewerker.Naam || 'Onbekend';
             textContainer.appendChild(nameSpan);
-            
+
             if (medewerker.hasOwnProperty('Horen')) {
                 const horenIcon = document.createElement('img');
                 horenIcon.src = medewerker.Horen ? 'Icoon/horen-ja.svg' : 'Icoon/horen-nee.svg';
                 horenIcon.alt = medewerker.Horen ? 'Beschikbaar voor horen' : 'Niet beschikbaar voor horen';
-                horenIcon.className = 'w-4 h-4 flex-shrink-0'; 
+                horenIcon.className = 'w-4 h-4 flex-shrink-0';
                 textContainer.appendChild(horenIcon);
             }
-            
+
             naamDiv.appendChild(textContainer);
         }
-          naamDiv.title = `${medewerker.Naam || 'Onbekend'}${medewerker.Functie ? ' - ' + medewerker.Functie : ''}`;
+        naamDiv.title = `${medewerker.Naam || 'Onbekend'}${medewerker.Functie ? ' - ' + medewerker.Functie : ''}`;
 
         if (typeof window.showProfileCard === 'function' && typeof window.delayedHideProfileCard === 'function') {
             naamDiv.addEventListener('mouseenter', (event) => window.showProfileCard(medewerker, event.currentTarget));
@@ -873,52 +965,52 @@ function tekenRooster() {
         }
         rijDiv.appendChild(naamDiv);
 
-        dagenTonenInPeriode.forEach((dag, index) => {            
+        dagenTonenInPeriode.forEach((dag, index) => {
             const isWeekend = (dag.getDay() === 0 || dag.getDay() === 6);
             const isVandaagCel = isVandaag(dag);
 
             const celDiv = document.createElement('div');
             celDiv.className = `rooster-cel p-1 ${isWeekend && gebruikersInstellingen.weekendenWeergeven ? 'bg-gray-50 dark:bg-gray-850' : ''} ${isVandaagCel ? 'vandaag' : ''}`;
-            celDiv.style.gridColumnStart = index + 2; 
+            celDiv.style.gridColumnStart = index + 2;
             celDiv.dataset.datum = dag.toISOString().split('T')[0];
-            
+
             if (document.body.classList.contains('dark-theme')) {
                 celDiv.classList.add('bg-gray-800', 'text-gray-200');
             } else {
                 celDiv.classList.add('bg-white', 'text-gray-800');
             }
             const dagNormaal = new Date(dag.getFullYear(), dag.getMonth(), dag.getDate());
-            const genormaliseerdeMedewerkerUsername = typeof window.trimLoginNaamPrefixMachtigingen === 'function' ? window.trimLoginNaamPrefixMachtigingen(medewerker.Username) : medewerker.Username;            let cellIsFilled = false;
+            const genormaliseerdeMedewerkerUsername = typeof window.trimLoginNaamPrefixMachtigingen === 'function' ? window.trimLoginNaamPrefixMachtigingen(medewerker.Username) : medewerker.Username; let cellIsFilled = false;
             let eventItems = []; // Collect all events for this cell
-            
+
             if (alleVerlofItems.length === 0) {
                 console.warn("[VerlofroosterLogic] alleVerlofItems is empty. No verlof items to display.");
             } else {
                 console.log(`[VerlofroosterLogic] Processing ${alleVerlofItems.length} verlof items for display`);
             }
-            
+
             const verlofOpDag = alleVerlofItems.filter(item => {
                 if (!item.MedewerkerID) {
                     console.error("[VerlofroosterLogic] Found Verlof item without MedewerkerID:", item);
                     return false;
                 }
-                
-                const itemMedewerkerID = (item.MedewerkerID && typeof item.MedewerkerID === 'string') ? 
-                    (typeof window.trimLoginNaamPrefixMachtigingen === 'function' ? 
-                        window.trimLoginNaamPrefixMachtigingen(item.MedewerkerID) : 
-                        item.MedewerkerID) : 
+
+                const itemMedewerkerID = (item.MedewerkerID && typeof item.MedewerkerID === 'string') ?
+                    (typeof window.trimLoginNaamPrefix === 'function' ?
+                        window.trimLoginNaamPrefix(item.MedewerkerID) :
+                        item.MedewerkerID) :
                     '';
-                
+
                 if (itemMedewerkerID === genormaliseerdeMedewerkerUsername) {
                     const startDate = new Date(item.StartDatum);
                     const endDate = new Date(item.EindDatum);
-                    
+
                     const startDateNoTime = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
                     const endDateNoTime = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-                    
+
                     const isStartDateValid = !isNaN(startDate.getTime()) && startDate.getFullYear() > 1970;
                     const isEndDateValid = !isNaN(endDate.getTime()) && endDate.getFullYear() > 1970;
-                    
+
                     console.log(`[VerlofroosterLogic] Found verlof item for ${medewerker.Naam || 'unknown'} (${genormaliseerdeMedewerkerUsername}):`);
                     console.log(`  - Original MedewerkerID: "${item.MedewerkerID}"`);
                     console.log(`  - Normalized MedewerkerID: "${itemMedewerkerID}"`);
@@ -927,22 +1019,22 @@ function tekenRooster() {
                     console.log(`  - Current day: ${dagNormaal.toLocaleDateString()}`);
                     console.log(`  - Date check: ${(isStartDateValid && isEndDateValid) ? (startDateNoTime <= dagNormaal && endDateNoTime >= dagNormaal ? 'MATCH' : 'NO MATCH') : 'INVALID DATES'}`);
                 }
-                
+
                 const startDate = new Date(item.StartDatum);
                 const endDate = new Date(item.EindDatum);
-                
+
                 const startDateNoTime = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
                 const endDateNoTime = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-                
+
                 const isStartDateValid = !isNaN(startDate.getTime()) && startDate.getFullYear() > 1970;
                 const isEndDateValid = !isNaN(endDate.getTime()) && endDate.getFullYear() > 1970;
-                
+
                 return itemMedewerkerID === genormaliseerdeMedewerkerUsername &&
                     isStartDateValid && isEndDateValid &&
-                    startDateNoTime <= dagNormaal && 
+                    startDateNoTime <= dagNormaal &&
                     endDateNoTime >= dagNormaal;
-            });            
-            
+            });
+
             // Check for compensatie items on this day
             const compensatieOpDag = alleCompensatieUrenItems.filter(item => {
                 if (!item || !item.MedewerkerID || !item.StartCompensatieUren || !item.EindeCompensatieUren) return false;
@@ -959,7 +1051,7 @@ function tekenRooster() {
                     return false;
                 }
             });
-            
+
             if (verlofOpDag.length > 0) {
                 const item = verlofOpDag[0];
                 const verlofRedenInfo = alleVerlofredenen.find(r => r.ID == item.RedenId || r.Title === item.Reden);
@@ -1001,10 +1093,10 @@ function tekenRooster() {
                 celDiv.dataset.eventType = 'verlof';
                 celDiv.dataset.eventId = item.ID;
                 celDiv.dataset.ownerUsername = (typeof window.trimLoginNaamPrefix === 'function' ? window.trimLoginNaamPrefix(item.MedewerkerID) : item.MedewerkerID);
-                  cellIsFilled = true;                
+                cellIsFilled = true;
                 if (compensatieOpDag.length > 0) {
                     const compensatieItem = compensatieOpDag[0];
-                    
+
                     // Add compensatie item to events collection
                     eventItems.push({
                         type: 'compensatie',
@@ -1016,7 +1108,7 @@ function tekenRooster() {
                         icon: '⏱️',
                         ownerUsername: (typeof window.trimLoginNaamPrefix === 'function' ? window.trimLoginNaamPrefix(compensatieItem.MedewerkerID) : compensatieItem.MedewerkerID)
                     });
-                    
+
                     const overlayIcon = document.createElement('img');
                     overlayIcon.src = 'Icoon/CompensatieUren.svg';
                     overlayIcon.alt = 'Compensatie';
@@ -1033,7 +1125,7 @@ function tekenRooster() {
             } else if (compensatieOpDag.length > 0) {
                 // If no verlof but there is compensatie, show just the compensatie
                 const item = compensatieOpDag[0];
-                
+
                 // Add compensatie item to events collection
                 eventItems.push({
                     type: 'compensatie',
@@ -1045,7 +1137,7 @@ function tekenRooster() {
                     icon: '⏱️',
                     ownerUsername: (typeof window.trimLoginNaamPrefix === 'function' ? window.trimLoginNaamPrefix(item.MedewerkerID) : item.MedewerkerID)
                 });
-                
+
                 celDiv.style.setProperty('position', 'relative', 'important');
                 const iconImg = document.createElement('img');
                 iconImg.src = 'Icoon/CompensatieUren.svg';
@@ -1069,17 +1161,17 @@ function tekenRooster() {
                 celDiv.dataset.eventType = 'compensatie';
                 celDiv.dataset.eventId = item.ID;
                 celDiv.dataset.ownerUsername = (typeof window.trimLoginNaamPrefix === 'function' ? window.trimLoginNaamPrefix(item.MedewerkerID) : item.MedewerkerID);
-                
+
                 cellIsFilled = true;
             }
-            
+
             // Setup layered events functionality if there are multiple events
             if (eventItems.length > 1) {
                 celDiv.classList.add('has-layered-events', 'event-cell');
                 setupLayeredEventsPopup(celDiv, eventItems, medewerker);
             } else if (eventItems.length === 1) {
                 celDiv.classList.add('event-cell');
-            }            
+            }
             if (!cellIsFilled) {
                 const zittingVrijOpDagItems = alleIncidenteelZittingVrijItems.filter(item => {
                     const genormaliseerdeItemUsername = typeof window.trimLoginNaamPrefixMachtigingen === 'function' ? window.trimLoginNaamPrefixMachtigingen(item.Gebruikersnaam) : item.Gebruikersnaam;
@@ -1111,7 +1203,7 @@ function tekenRooster() {
                     } else {
                         return dagNormaal >= startDate && dagNormaal <= endDate;
                     }
-                });                
+                });
                 if (zittingVrijOpDagItems.length > 0) {
                     const item = zittingVrijOpDagItems[0];
                     const achtergrondKleur = '#F59E0B';
@@ -1219,7 +1311,7 @@ function tekenRooster() {
                     return false;
                 });
 
-                if (indicatorVoorDag) { 
+                if (indicatorVoorDag) {
                     celDiv.style.backgroundColor = indicatorVoorDag.Kleur || '#E0E0E0';
                     celDiv.innerHTML = '';
                     const tag = document.createElement('span');
@@ -1238,7 +1330,7 @@ function tekenRooster() {
                     if (indicatorVoorDag.Beschrijving && !isBeschrijvingDate) hoverTitle += ` (${indicatorVoorDag.Beschrijving})`;
                     celDiv.title = hoverTitle.trim().replace(/\\n/g, '\n');
                     cellIsFilled = true;
-                               }
+                }
             }
 
             if (gebruikersInstellingen.weekendenWeergeven && !cellIsFilled && (dag.getDay() === 0 || dag.getDay() === 6)) {
@@ -1263,7 +1355,7 @@ function tekenRooster() {
 function ensureWeekendStyling() {
     // Get all cells with the weekend class
     const weekendCells = document.querySelectorAll('.rooster-cel-weekend');
-    
+
     weekendCells.forEach(cell => {
         if (document.body.classList.contains('dark-theme')) {
             cell.style.backgroundColor = '#111827';
@@ -1271,7 +1363,7 @@ function ensureWeekendStyling() {
             cell.style.backgroundColor = '#e5e7eb';
         }
     });
-    
+
     console.log("[VerlofroosterLogic] Weekend cell styling reinforced");
 }
 
@@ -1312,7 +1404,7 @@ function handleRijSelectie(event) {
             console.warn(`[VerlofroosterLogic] Kon data niet vinden voor geselecteerde medewerker ID: ${medewerkerIdVanGeklikteRij}`);
         }
         console.log(`[VerlofroosterLogic] Medewerker ${geselecteerdeMedewerkerNaam} (ID: ${geselecteerdeMedewerkerId}, User: ${geselecteerdeMedewerkerUsername}) geselecteerd.`);
-    }    
+    }
     // Export to window for use by other scripts
     window.geselecteerdeMedewerkerId = geselecteerdeMedewerkerId;
     window.geselecteerdeMedewerkerUsername = geselecteerdeMedewerkerUsername;
@@ -1341,7 +1433,7 @@ function handleDocumentKlikVoorDeselectie(event) {
             geselecteerdeMedewerkerId = null;
             geselecteerdeMedewerkerUsername = null;
             geselecteerdeMedewerkerNaam = null;
-            
+
             // Update window globals
             window.geselecteerdeMedewerkerId = null;
             window.geselecteerdeMedewerkerUsername = null;
@@ -1425,8 +1517,7 @@ function initEventListenersLogic() {
             monthBtn.classList.remove('focus:z-10', 'focus:ring-2', 'focus:ring-blue-500');
 
             weekBtn.classList.remove(...classesToEnsureRemovedFromInactive);
-            weekBtn.classList.add('focus:z-10', 'focus:ring-2', 'focus:ring-blue-500');
-        }
+            weekBtn.classList.add('focus:z-10', 'focus:ring-2', 'focus:ring-blue-500');        }
         // theme-toggle.js will handle the styling of the button that just became inactive
         // by its selector: .view-toggle-button:not(.bg-blue-500):not(.text-white)
     };
@@ -1438,8 +1529,10 @@ function initEventListenersLogic() {
         huidigeWeergave = nieuweWeergave;
         updateViewButtonActiveState(huidigeWeergave); // Update button visual state
 
+        // Reload data for the new view period (different date ranges for month vs week)
+        await laadInitiëleData(false, true); // Load only current period data for new view
+        
         updateDatumHeader(); // Update things like "Mei 2025"
-        await tekenRooster(); // Redraw the main content
         console.log(`[VerlofroosterLogic] Weergave gewisseld naar: ${huidigeWeergave}`);
     };
 
@@ -1479,26 +1572,27 @@ function initEventListenersLogic() {
                 setTimeout(() => domRefsLogic.roosterDropdownMenu.classList.add('hidden'), 200);
             }
         });
-    } else { console.warn("[VerlofroosterLogic] Rooster dropdown elementen niet compleet gevonden in domRefsLogic."); }
-
-    const navigeerPeriode = async (offsetMaanden, offsetWeken = 0) => {
+    } else { console.warn("[VerlofroosterLogic] Rooster dropdown elementen niet compleet gevonden in domRefsLogic."); }    const navigeerPeriode = async (offsetMaanden, offsetWeken = 0) => {
         if (huidigeWeergave === 'maand') {
             huidigeDatumFocus.setMonth(huidigeDatumFocus.getMonth() + offsetMaanden);
         } else {
             huidigeDatumFocus.setDate(huidigeDatumFocus.getDate() + (offsetWeken * 7));
         }
-        await laadInitiëleData(false);
+        
+        // Reload date-sensitive data with new date filters (only for current period)
+        await laadInitiëleData(false, true);
+        
+        // Update UI
+        updateCurrentMonthDisplay();
     };
 
     if (domRefsLogic.prevMonthButton) domRefsLogic.prevMonthButton.addEventListener('click', () => navigeerPeriode(huidigeWeergave === 'maand' ? -1 : 0, huidigeWeergave === 'week' ? -1 : 0));
     else { console.warn("[VerlofroosterLogic] prevMonthButton niet gevonden in domRefsLogic."); }
 
     if (domRefsLogic.nextMonthButton) domRefsLogic.nextMonthButton.addEventListener('click', () => navigeerPeriode(huidigeWeergave === 'maand' ? 1 : 0, huidigeWeergave === 'week' ? 1 : 0));
-    else { console.warn("[VerlofroosterLogic] nextMonthButton niet gevonden in domRefsLogic."); }
-
-    if (domRefsLogic.todayButton) domRefsLogic.todayButton.addEventListener('click', async () => {
+    else { console.warn("[VerlofroosterLogic] nextMonthButton niet gevonden in domRefsLogic."); }    if (domRefsLogic.todayButton) domRefsLogic.todayButton.addEventListener('click', async () => {
         huidigeDatumFocus = new Date();
-        await laadInitiëleData(false); // This will also call tekenRooster and updateDatumHeader
+        await laadInitiëleData(false, true); // Load only current period data
         updateViewButtonActiveState(huidigeWeergave); // Ensure button state is reapplied if view didn't change but data reloaded
     });
     else { console.warn("[VerlofroosterLogic] todayButton niet gevonden in domRefsLogic."); }
@@ -1523,12 +1617,12 @@ function initEventListenersLogic() {
     if (domRefsLogic.meldingButton) {
         domRefsLogic.meldingButton.addEventListener('click', (event) => {
             // Prevent default link behavior if it's an <a> tag
-            event.preventDefault(); 
-            
+            event.preventDefault();
+
             // Directly navigate
-            window.location.href = domRefsLogic.meldingButton.href; 
+            window.location.href = domRefsLogic.meldingButton.href;
         });
-    } else { console.warn("[VerlofroosterLogic] meldingButton niet gevonden in domRefsLogic."); }    if (domRefsLogic.startRegistratieButton) {
+    } else { console.warn("[VerlofroosterLogic] meldingButton niet gevonden in domRefsLogic."); } if (domRefsLogic.startRegistratieButton) {
         domRefsLogic.startRegistratieButton.addEventListener('click', () => {
             console.log("[VerlofroosterLogic] Start registratie button clicked");
             if (typeof openRegistratieModal === 'function') {
@@ -1545,20 +1639,19 @@ function initEventListenersLogic() {
     } else {
         console.warn("[VerlofroosterLogic] startRegistratieButton niet gevonden in domRefsLogic.");
     }
-    
+
     // Event listener voor de "Verlof aanvragen" FAB knop
     if (domRefsLogic.fabVerlofAanvragenLink) {
         domRefsLogic.fabVerlofAanvragenLink.addEventListener('click', async (e) => {
             e.preventDefault();
-            console.log("[VerlofroosterLogic] FAB Verlof Aanvragen geklikt.");
-            if (!isDataVoorVerlofModalGereed) {
+            console.log("[VerlofroosterLogic] FAB Verlof Aanvragen geklikt.");            if (!isDataVoorVerlofModalGereed) {
                 toonNotificatie("Benodigde data voor verlofmodal wordt geladen...", "info");
-                await laadInitiëleData(true); // Forceer laden van modal specifieke data
+                await laadInitiëleData(true, false); // Forceer laden van modal specifieke data (all data)
                 if (!isDataVoorVerlofModalGereed) {
                     toonNotificatie("Kon data voor verlofmodal niet laden. Probeer opnieuw.", "error");
                     return;
                 }
-            }            // Altijd huidigeGebruiker gebruiken voor FAB verlof aanvraag
+            }// Altijd huidigeGebruiker gebruiken voor FAB verlof aanvraag
             if (window.huidigeGebruiker && (window.huidigeGebruiker.normalizedUsername || window.huidigeGebruiker.loginNaam)) {
                 const medewerkerContext = {
                     Username: window.huidigeGebruiker.normalizedUsername, // Gebruik normalizedUsername
@@ -1569,45 +1662,46 @@ function initEventListenersLogic() {
                     Id: window.huidigeGebruiker.Id, // SharePoint User ID
                     Email: window.huidigeGebruiker.Email
                 };
-                
+
                 // Check if there's a date selection available
                 let startDate = new Date();
                 let hasDateSelection = false;
-                
+
                 // Check for selectedRange from contextMenu (available globally)
                 if (window.selectedRange && window.selectedRange.start) {
                     startDate = new Date(window.selectedRange.start);
                     hasDateSelection = true;
-                    
+
                     // Store the selection for the modal
                     window.verlofModalStartDate = window.selectedRange.start;
                     window.verlofModalEndDate = window.selectedRange.end || window.selectedRange.start;
                     window.verlofModalSelectionMode = window.selectedRange.end ? 'range' : 'single';
-                    
+
                     console.log("[VerlofroosterLogic] FAB gebruikt geselecteerde datums:", {
                         start: window.selectedRange.start,
                         end: window.selectedRange.end,
                         totalDays: window.selectedRange.cells ? window.selectedRange.cells.length : 1
-                    });                } else {
+                    });
+                } else {
                     console.log("[VerlofroosterLogic] FAB geen datumselectie gevonden, gebruikt vandaag als standaard");
-                    
+
                     // Show helpful message about date selection
                     setTimeout(() => {
                         if (window.toonModalNotificatie) {
                             window.toonModalNotificatie(
-                                'TIP: Selecteer eerst datums in het rooster door te klikken voor automatische datumvulling!', 
+                                'TIP: Selecteer eerst datums in het rooster door te klikken voor automatische datumvulling!',
                                 'info'
                             );
                         }
                     }, 800);
                 }
-                
+
                 console.log("[VerlofroosterLogic] FAB verlof aanvraag met medewerker context:", medewerkerContext);
                 console.log("[VerlofroosterLogic] FAB startdatum:", startDate, "- Heeft selectie:", hasDateSelection);
-                
+
                 if (typeof window.openVerlofAanvraagModal === 'function') {
                     window.openVerlofAanvraagModal(null, startDate, medewerkerContext);
-                    
+
                     // Show helpful message if dates were pre-selected
                     if (hasDateSelection) {
                         setTimeout(() => {
@@ -1615,14 +1709,14 @@ function initEventListenersLogic() {
                                 const endDate = window.selectedRange.end || window.selectedRange.start;
                                 const isRange = window.selectedRange.end && window.selectedRange.end !== window.selectedRange.start;
                                 const totalDays = window.selectedRange.cells ? window.selectedRange.cells.length : 1;
-                                
+
                                 let message;
                                 if (isRange) {
                                     message = `Datums vooringevuld: ${window.selectedRange.start} - ${endDate} (${totalDays} dagen)`;
                                 } else {
                                     message = `Datum vooringevuld: ${window.selectedRange.start}`;
                                 }
-                                
+
                                 window.toonModalNotificatie(message, 'info');
                             }
                         }, 500);
@@ -1638,13 +1732,13 @@ function initEventListenersLogic() {
             toggleFabMenu(true); // Sluit FAB menu
         });
     } else { console.warn("[VerlofroosterLogic] fabVerlofAanvragenLink niet gevonden in domRefsLogic."); }
-    
+
     // Event listener voor de "CompensatieUren doorgeven" FAB knop
     if (domRefsLogic.fabCompensatieAanvragenLink) {
         domRefsLogic.fabCompensatieAanvragenLink.addEventListener('click', (e) => {
             e.preventDefault();
             console.log("[VerlofroosterLogic] 'Compensatieuren doorgeven' FAB item geklikt.");
-            
+
             if (typeof window.openCompensatieUrenModal === 'function') {
                 window.openCompensatieUrenModal();
                 toggleFabMenu(true); // Sluit FAB menu
@@ -1654,32 +1748,30 @@ function initEventListenersLogic() {
             }
         });
     } else { console.warn("[VerlofroosterLogic] fabCompensatieAanvragenLink niet gevonden in domRefsLogic."); }
-      // Event listener voor de "Ziek/Beter melden" FAB knop
+    // Event listener voor de "Ziek/Beter melden" FAB knop
     if (domRefsLogic.fabZiekMeldenLink) {
         domRefsLogic.fabZiekMeldenLink.addEventListener('click', async (e) => {
             e.preventDefault();
-            console.log("[VerlofroosterLogic] FAB Ziek/Beter Melden geklikt.");
-            
-            if (!isDataVoorZiekBeterModalGereed) {
+            console.log("[VerlofroosterLogic] FAB Ziek/Beter Melden geklikt.");            if (!isDataVoorZiekBeterModalGereed) {
                 toonNotificatie("Benodigde data voor ziekmelding wordt geladen...", "info");
-                await laadInitiëleData(true); // Forceer laden van modal specifieke data
+                await laadInitiëleData(true, false); // Forceer laden van modal specifieke data (all data)
                 if (!isDataVoorZiekBeterModalGereed) {
                     toonNotificatie("Kon data voor ziekmelding niet laden. Probeer opnieuw.", "error");
                     return;
                 }
             }
-              // Check if user is part of privileged groups
+            // Check if user is part of privileged groups
             let isPrivilegedUser = false;
             if (window.huidigeGebruiker && window.huidigeGebruiker.sharePointGroepen) {
                 const privilegedGroups = ["1. Sharepoint beheer", "1.1. Mulder MT", "2.6. Roosteraars", "2.3. Senioren beoordelen"];
-                isPrivilegedUser = window.huidigeGebruiker.sharePointGroepen.some(groep => 
+                isPrivilegedUser = window.huidigeGebruiker.sharePointGroepen.some(groep =>
                     privilegedGroups.some(privilegedGroup => groep.toLowerCase().includes(privilegedGroup.toLowerCase()))
                 );
                 console.log("[VerlofroosterLogic] Gebruiker behoort tot geprivilegieerde groepen voor ziekmelding:", isPrivilegedUser);
             }
-            
+
             let medewerkerContext;
-            
+
             if (isPrivilegedUser) {
                 // Privileged users: can report for anyone if someone is selected, or for themselves if no one is selected
                 if (geselecteerdeMedewerkerId && geselecteerdeMedewerkerUsername && geselecteerdeMedewerkerNaam) {
@@ -1715,7 +1807,7 @@ function initEventListenersLogic() {
                 };
                 console.log("[VerlofroosterLogic] Reguliere gebruiker meldt ziek/beter voor zichzelf:", medewerkerContext);
             }
-            
+
             if (typeof window.openZiekBeterMeldenModal === 'function') {
                 window.openZiekBeterMeldenModal(medewerkerContext, new Date(), 'ziek');
                 toggleFabMenu(true); // Sluit FAB menu
@@ -1725,28 +1817,28 @@ function initEventListenersLogic() {
             }
         });
     } else { console.warn("[VerlofroosterLogic] fabZiekMeldenLink niet gevonden in domRefsLogic."); }
-    
+
     // Event listener voor de "Zittingvrij (incidenteel)" FAB knop
     if (domRefsLogic.fabZittingVrijModalTrigger) {
-        domRefsLogic.fabZittingVrijModalTrigger.addEventListener('click', (e) => {            
+        domRefsLogic.fabZittingVrijModalTrigger.addEventListener('click', (e) => {
             e.preventDefault();
             console.log("[VerlofroosterLogic] 'Zittingvrij (incidenteel) Modal Trigger' FAB item geklikt.");
-            
+
             // Check if user has selected someone from the grid
             if (!geselecteerdeMedewerkerId || !geselecteerdeMedewerkerUsername || !geselecteerdeMedewerkerNaam) {
                 toonNotificatie("Selecteer eerst een medewerker uit het rooster om zittingvrij te melden.", "warning");
                 toggleFabMenu(true); // Close FAB menu
                 return;
             }
-            
+
             // Check if user is part of specific admin groups
-            let isBeheerder = false;            
+            let isBeheerder = false;
             if (window.huidigeGebruiker && window.huidigeGebruiker.sharePointGroepen) {
                 const adminGroups = ["1. Sharepoint beheer", "1.1. Mulder MT", "2.6. Roosteraars", "2.3. Senioren beoordelen"];
                 isBeheerder = window.huidigeGebruiker.sharePointGroepen.some(groep => adminGroups.includes(groep));
                 console.log("[VerlofroosterLogic] Gebruiker behoort tot beheerders groepen:", isBeheerder);
             }
-              
+
             if (typeof window.openAdminZittingVrijModal === 'function') {
                 // Pass the selected employee data
                 const selectedMedewerker = {
@@ -1754,9 +1846,9 @@ function initEventListenersLogic() {
                     Naam: geselecteerdeMedewerkerNaam,
                     Id: geselecteerdeMedewerkerId
                 };
-                
+
                 console.log("[VerlofroosterLogic] Zittingvrij modal openen voor:", selectedMedewerker);
-                
+
                 window.openAdminZittingVrijModal(selectedMedewerker, isBeheerder);
                 toggleFabMenu(true); // Close FAB menu
             } else {
@@ -1837,14 +1929,13 @@ async function initializeVerlofrooster() {
         console.log("[VerlofroosterLogic] Gebruiker is geregistreerd. Laden van rooster data...");
         if (domRefsLogic.roosterGridContainer) domRefsLogic.roosterGridContainer.classList.remove('hidden');
         if (domRefsLogic.legendaSection) domRefsLogic.legendaSection.classList.remove('hidden');
-        await laadInitiëleData(false);
+        await laadInitiëleData(false, true); // Load initial data with current period filtering
     } else {
         console.warn("[VerlofroosterLogic] Gebruiker niet geregistreerd of niet actief. Rooster wordt niet geladen.");
         if (domRefsLogic.roosterGridContainer) domRefsLogic.roosterGridContainer.classList.add('hidden');
-        if (domRefsLogic.legendaSection) domRefsLogic.legendaSection.classList.add('hidden');
-        if (!isDataVoorRegistratieModalGereed) {
+        if (domRefsLogic.legendaSection) domRefsLogic.legendaSection.classList.add('hidden');        if (!isDataVoorRegistratieModalGereed) {
             console.log("[VerlofroosterLogic] Laden van data specifiek voor registratiemodal...");
-            await laadInitiëleData(true);
+            await laadInitiëleData(true, false); // Force modal data, load all items for registration
         }
     }
 
@@ -1866,48 +1957,12 @@ document.addEventListener('DOMContentLoaded', initializeVerlofrooster);
 console.log("js/verlofrooster_logic.js geladen en wacht op DOMContentLoaded.");
 
 /**
- * Haalt alle medewerkers op voor gebruik in select/dropdown elementen
- * @returns {Promise<Array>} Array van medewerker objecten met Id, Title en andere relevante gegevens
- */
-window.getAlleMedewerkersVoorSelect = async function() {
-    // We kunnen de reeds geladen medewerkers gebruiken indien beschikbaar
-    if (alleMedewerkers && alleMedewerkers.length > 0) {
-        return alleMedewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    }
-    
-    // Anders direct van SharePoint ophalen
-    try {
-        const lijstConfigMedewerkers = getLijstConfig(lijstNamen.Medewerkers);
-        const medewerkers = await getLijstItems(lijstConfigMedewerkers.lijstNaam, lijstConfigMedewerkers.viewXml);
-        
-        return medewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    } catch (error) {
-        console.error("[VerlofroosterLogic] Fout bij ophalen medewerkers voor select:", error);
-        return [];
-    }
-};
-
-/**
  * Update gebruikersinstellingen vanuit de instellingen pagina
  * @param {Object} nieuweInstellingen - Nieuwe instellingen object uit gebruikersInstellingenLijst
  */
 function updateGebruikersInstellingen(nieuweInstellingen) {
     console.log("[VerlofroosterLogic] Bijwerken gebruikersinstellingen:", nieuweInstellingen);
-    
+
     if (nieuweInstellingen) {
         // Update global settings object
         if (nieuweInstellingen.soortWeergave !== undefined) {
@@ -1922,10 +1977,10 @@ function updateGebruikersInstellingen(nieuweInstellingen) {
         if (nieuweInstellingen.ID) {
             gebruikersInstellingenSPId = nieuweInstellingen.ID;
         }
-        
+
         // Apply updated settings
         pasGebruikersInstellingenToe();
-        
+
         // Refresh rooster if weekend settings changed
         if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
             renderRooster();
@@ -1937,31 +1992,91 @@ function updateGebruikersInstellingen(nieuweInstellingen) {
 window.updateGebruikersInstellingen = updateGebruikersInstellingen;
 
 /**
- * Renders the roster with current settings
- * Specialized function to handle re-rendering after settings changes
+ * Enhanced sticky behavior with visual feedback
+ * Adds shadow effects when sticky elements are "floating"
  */
-function renderRooster() {
-    if (domRefsLogic.roosterGridContainer) {
-        // Force a redraw by temporarily hiding and showing the container
-        const wasHidden = domRefsLogic.roosterGridContainer.classList.contains('hidden');
-        if (!wasHidden) {
-            domRefsLogic.roosterGridContainer.style.opacity = '0';
-            setTimeout(() => {
-                tekenRooster();
-                domRefsLogic.roosterGridContainer.style.opacity = '1';
-            }, 50);
-        } else {
-            tekenRooster();
+function initializeStickyObserver() {
+    // Create intersection observer to detect when sticky elements are stuck (vertical)
+    const verticalStickyObserver = new IntersectionObserver(
+        (entries) => {
+            entries.forEach(entry => {
+                const target = entry.target;
+
+                // When element is not intersecting, it means it's stuck
+                if (!entry.isIntersecting) {
+                    target.classList.add('is-stuck');
+                } else {
+                    target.classList.remove('is-stuck');
+                }
+            });
+        },
+        {
+            threshold: [0, 1],
+            rootMargin: '-1px 0px 0px 0px' // Trigger just before element becomes stuck
         }
-    } else {
-        tekenRooster();
-    }
+    );    // Create intersection observer for horizontal sticky elements
+    const horizontalStickyObserver = new IntersectionObserver(
+        (entries) => {
+            entries.forEach(entry => {
+                const target = entry.target;
+
+                // When element is not intersecting horizontally, it means it's stuck to the left
+                if (!entry.isIntersecting) {
+                    target.classList.add('is-stuck-horizontal');
+                } else {
+                    target.classList.remove('is-stuck-horizontal');
+                }
+            });
+        },
+        {
+            threshold: 1.0,
+            rootMargin: '0px'
+        }
+    );
+
+    const observeStickyElements = () => {
+        // Reset observer
+        horizontalStickyObserver.disconnect();
+
+        // Find all medewerker cells that should be observed for horizontal sticking
+        const medewerkerCells = document.querySelectorAll('.rooster-cel-medewerker');
+        medewerkerCells.forEach(cell => {
+            horizontalStickyObserver.observe(cell);
+        });
+
+        if (medewerkerCells.length > 0) {
+            console.log(`Observing ${medewerkerCells.length} medewerker cells for horizontal sticky behavior`);
+        }
+    };
+
+    // Observe elements immediately if they exist
+    observeStickyElements();
+
+    // Create a mutation observer to watch for when rooster data is updated
+    const mutationObserver = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+            if (mutation.type === 'childList' && mutation.target.id === 'rooster-data-rows') {
+                // Re-observe sticky elements when roster is re-rendered
+                setTimeout(observeStickyElements, 100);
+            }
+        });
+    });    // Start observing changes to the rooster data rows
+    const roosterDataRows = document.getElementById('rooster-data-rows');
+    if (roosterDataRows) {
+        mutationObserver.observe(roosterDataRows, {
+            childList: true,
+            subtree: true
+        });
+    }    // Call observe function initially
+    observeStickyElements();
 }
 
 // Export toggleFabMenu to window for use by other scripts
 window.toggleFabMenu = toggleFabMenu;
-// Export laadInitiëleData for use by modals
+// Export laadInitiëleData for use by modals  
 window.laadInitiëleData = laadInitiëleData;
+
+console.log("verlofrooster_logic.js Klaar met laden");
 
 /**
  * Enhanced sticky behavior with visual feedback
@@ -1973,7 +2088,7 @@ function initializeStickyObserver() {
         (entries) => {
             entries.forEach(entry => {
                 const target = entry.target;
-                
+
                 // When element is not intersecting, it means it's stuck
                 if (!entry.isIntersecting) {
                     target.classList.add('is-stuck');
@@ -1993,7 +2108,7 @@ function initializeStickyObserver() {
         (entries) => {
             entries.forEach(entry => {
                 const target = entry.target;
-                
+
                 // When element is not intersecting horizontally, it means it's stuck to the left
                 if (!entry.isIntersecting) {
                     target.classList.add('is-stuck-horizontal');
@@ -2028,7 +2143,7 @@ function initializeStickyObserver() {
         medewerkerCells.forEach(cell => {
             horizontalStickyObserver.observe(cell);
         });
-        
+
         if (medewerkerCells.length > 0) {
             console.log(`Observing ${medewerkerCells.length} medewerker cells for horizontal sticky behavior`);
         }
@@ -2071,29 +2186,29 @@ console.log("verlofrooster_logic.js Klaar met laden");
  * Haalt alle medewerkers op voor gebruik in select/dropdown elementen
  * @returns {Promise<Array>} Array van medewerker objecten met Id, Title en andere relevante gegevens
  */
-window.getAlleMedewerkersVoorSelect = async function() {
+window.getAlleMedewerkersVoorSelect = async function () {
     // We kunnen de reeds geladen medewerkers gebruiken indien beschikbaar
     if (alleMedewerkers && alleMedewerkers.length > 0) {
         return alleMedewerkers.map(m => ({
             Id: m.Id,
             Title: m.Naam || m.Title,
             PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
+            E_x002d_mail: m.E_x002d_mail || '',
             Functie: m.Functie || '',
             Gebruikersnaam: m.Gebruikersnaam || ''
         }));
     }
-    
+
     // Anders direct van SharePoint ophalen
     try {
         const lijstConfigMedewerkers = getLijstConfig(lijstNamen.Medewerkers);
         const medewerkers = await getLijstItems(lijstConfigMedewerkers.lijstNaam, lijstConfigMedewerkers.viewXml);
-        
+
         return medewerkers.map(m => ({
             Id: m.Id,
             Title: m.Naam || m.Title,
             PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
+            E_x002d_mail: m.E_x002d_mail || '',
             Functie: m.Functie || '',
             Gebruikersnaam: m.Gebruikersnaam || ''
         }));
@@ -2109,7 +2224,7 @@ window.getAlleMedewerkersVoorSelect = async function() {
  */
 function updateGebruikersInstellingen(nieuweInstellingen) {
     console.log("[VerlofroosterLogic] Bijwerken gebruikersinstellingen:", nieuweInstellingen);
-    
+
     if (nieuweInstellingen) {
         // Update global settings object
         if (nieuweInstellingen.soortWeergave !== undefined) {
@@ -2124,10 +2239,10 @@ function updateGebruikersInstellingen(nieuweInstellingen) {
         if (nieuweInstellingen.ID) {
             gebruikersInstellingenSPId = nieuweInstellingen.ID;
         }
-        
+
         // Apply updated settings
         pasGebruikersInstellingenToe();
-        
+
         // Refresh rooster if weekend settings changed
         if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
             renderRooster();
@@ -2160,1775 +2275,444 @@ function renderRooster() {
     }
 }
 
-// Export toggleFabMenu to window for use by other scripts
-window.toggleFabMenu = toggleFabMenu;
-// Export laadInitiëleData for use by modals
-window.laadInitiëleData = laadInitiëleData;
-
 /**
- * Enhanced sticky behavior with visual feedback
- * Adds shadow effects when sticky elements are "floating"
- */
-function initializeStickyObserver() {
-    // Create intersection observer to detect when sticky elements are stuck (vertical)
-    const verticalStickyObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                const target = entry.target;
-                
-                // When element is not intersecting, it means it's stuck
-                if (!entry.isIntersecting) {
-                    target.classList.add('is-stuck');
-                } else {
-                    target.classList.remove('is-stuck');
-                }
-            });
-        },
-        {
-            threshold: [0, 1],
-            rootMargin: '-1px 0px 0px 0px' // Trigger just before element becomes stuck
-        }
-    );
-
-    // Create intersection observer for horizontal sticky elements
-    const horizontalStickyObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                const target = entry.target;
-                
-                // When element is not intersecting horizontally, it means it's stuck to the left
-                if (!entry.isIntersecting) {
-                    target.classList.add('is-stuck-horizontal');
-                } else {
-                    target.classList.remove('is-stuck-horizontal');
-                }
-            });
-        },
-        {
-            threshold: [0, 1],
-            rootMargin: '0px 0px 0px -1px' // Trigger just before element becomes stuck horizontally
-        }
-    );
-
-    // Observe the header
-    const header = document.getElementById('rooster-grid-header');
-    if (header) {
-        verticalStickyObserver.observe(header);
-    }
-
-    // Function to observe sticky elements when they're created
-    const observeStickyElements = () => {
-        // Observe the first data row (dagen row)
-        const firstDataRow = document.querySelector('#rooster-data-rows > div:first-child');
-        if (firstDataRow) {
-            verticalStickyObserver.observe(firstDataRow);
-            console.log("Observing dagen row for vertical sticky behavior");
-        }
-
-        // Observe all medewerker name cells (first cell in each row)
-        const medewerkerCells = document.querySelectorAll('#rooster-data-rows > div > div:first-child');
-        medewerkerCells.forEach(cell => {
-            horizontalStickyObserver.observe(cell);
-        });
-        
-        if (medewerkerCells.length > 0) {
-            console.log(`Observing ${medewerkerCells.length} medewerker cells for horizontal sticky behavior`);
-        }
-    };
-
-    // Observe elements immediately if they exist
-    observeStickyElements();
-
-    // Create a mutation observer to watch for when rooster data is updated
-    const mutationObserver = new MutationObserver((mutations) => {
-        mutations.forEach(mutation => {
-            if (mutation.type === 'childList' && mutation.target.id === 'rooster-data-rows') {
-                // Re-observe sticky elements when roster is re-rendered
-                setTimeout(observeStickyElements, 100);
-            }
-        });
-    });
-
-    // Start observing changes to the rooster data rows
-    const roosterDataRows = document.getElementById('rooster-data-rows');
-    if (roosterDataRows) {
-        mutationObserver.observe(roosterDataRows, {
-            childList: true,
-            subtree: true
-        });
-    }
-
-    console.log("Enhanced sticky observer initialized for rooster navigation");
-}
-
-// Initialize sticky observer when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit for the initial render to complete
-    setTimeout(initializeStickyObserver, 500);
-});
-
-console.log("verlofrooster_logic.js Klaar met laden");
-
-/**
- * Haalt alle medewerkers op voor gebruik in select/dropdown elementen
- * @returns {Promise<Array>} Array van medewerker objecten met Id, Title en andere relevante gegevens
- */
-window.getAlleMedewerkersVoorSelect = async function() {
-    // We kunnen de reeds geladen medewerkers gebruiken indien beschikbaar
-    if (alleMedewerkers && alleMedewerkers.length > 0) {
-        return alleMedewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    }
-    
-    // Anders direct van SharePoint ophalen
-    try {
-        const lijstConfigMedewerkers = getLijstConfig(lijstNamen.Medewerkers);
-        const medewerkers = await getLijstItems(lijstConfigMedewerkers.lijstNaam, lijstConfigMedewerkers.viewXml);
-        
-        return medewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    } catch (error) {
-        console.error("[VerlofroosterLogic] Fout bij ophalen medewerkers voor select:", error);
-        return [];
-    }
-};
-
-/**
- * Update gebruikersinstellingen vanuit de instellingen pagina
- * @param {Object} nieuweInstellingen - Nieuwe instellingen object uit gebruikersInstellingenLijst
- */
-function updateGebruikersInstellingen(nieuweInstellingen) {
-    console.log("[VerlofroosterLogic] Bijwerken gebruikersinstellingen:", nieuweInstellingen);
-    
-    if (nieuweInstellingen) {
-        // Update global settings object
-        if (nieuweInstellingen.soortWeergave !== undefined) {
-            gebruikersInstellingen.soortWeergave = nieuweInstellingen.soortWeergave;
-        }
-        if (nieuweInstellingen.EigenTeamWeergeven !== undefined) {
-            gebruikersInstellingen.eigenTeamWeergeven = nieuweInstellingen.EigenTeamWeergeven;
-        }
-        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
-            gebruikersInstellingen.weekendenWeergeven = nieuweInstellingen.WeekendenWeergeven;
-        }
-        if (nieuweInstellingen.ID) {
-            gebruikersInstellingenSPId = nieuweInstellingen.ID;
-        }
-        
-        // Apply updated settings
-        pasGebruikersInstellingenToe();
-        
-        // Refresh rooster if weekend settings changed
-        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
-            renderRooster();
-        }
-    }
-}
-
-// Make the function globally available for communication with settings page
-window.updateGebruikersInstellingen = updateGebruikersInstellingen;
-
-/**
- * Renders the roster with current settings
- * Specialized function to handle re-rendering after settings changes
- */
-function renderRooster() {
-    if (domRefsLogic.roosterGridContainer) {
-        // Force a redraw by temporarily hiding and showing the container
-        const wasHidden = domRefsLogic.roosterGridContainer.classList.contains('hidden');
-        if (!wasHidden) {
-            domRefsLogic.roosterGridContainer.style.opacity = '0';
-            setTimeout(() => {
-                tekenRooster();
-                domRefsLogic.roosterGridContainer.style.opacity = '1';
-            }, 50);
-        } else {
-            tekenRooster();
-        }
-    } else {
-        tekenRooster();
-    }
-}
-
-// Export toggleFabMenu to window for use by other scripts
-window.toggleFabMenu = toggleFabMenu;
-// Export laadInitiëleData for use by modals
-window.laadInitiëleData = laadInitiëleData;
-
-/**
- * Enhanced sticky behavior with visual feedback
- * Adds shadow effects when sticky elements are "floating"
- */
-function initializeStickyObserver() {
-    // Create intersection observer to detect when sticky elements are stuck (vertical)
-    const verticalStickyObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                const target = entry.target;
-                
-                // When element is not intersecting, it means it's stuck
-                if (!entry.isIntersecting) {
-                    target.classList.add('is-stuck');
-                } else {
-                    target.classList.remove('is-stuck');
-                }
-            });
-        },
-        {
-            threshold: [0, 1],
-            rootMargin: '-1px 0px 0px 0px' // Trigger just before element becomes stuck
-        }
-    );
-
-    // Create intersection observer for horizontal sticky elements
-    const horizontalStickyObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                const target = entry.target;
-                
-                // When element is not intersecting horizontally, it means it's stuck to the left
-                if (!entry.isIntersecting) {
-                    target.classList.add('is-stuck-horizontal');
-                } else {
-                    target.classList.remove('is-stuck-horizontal');
-                }
-            });
-        },
-        {
-            threshold: [0, 1],
-            rootMargin: '0px 0px 0px -1px' // Trigger just before element becomes stuck horizontally
-        }
-    );
-
-    // Observe the header
-    const header = document.getElementById('rooster-grid-header');
-    if (header) {
-        verticalStickyObserver.observe(header);
-    }
-
-    // Function to observe sticky elements when they're created
-    const observeStickyElements = () => {
-        // Observe the first data row (dagen row)
-        const firstDataRow = document.querySelector('#rooster-data-rows > div:first-child');
-        if (firstDataRow) {
-            verticalStickyObserver.observe(firstDataRow);
-            console.log("Observing dagen row for vertical sticky behavior");
-        }
-
-        // Observe all medewerker name cells (first cell in each row)
-        const medewerkerCells = document.querySelectorAll('#rooster-data-rows > div > div:first-child');
-        medewerkerCells.forEach(cell => {
-            horizontalStickyObserver.observe(cell);
-        });
-        
-        if (medewerkerCells.length > 0) {
-            console.log(`Observing ${medewerkerCells.length} medewerker cells for horizontal sticky behavior`);
-        }
-    };
-
-    // Observe elements immediately if they exist
-    observeStickyElements();
-
-    // Create a mutation observer to watch for when rooster data is updated
-    const mutationObserver = new MutationObserver((mutations) => {
-        mutations.forEach(mutation => {
-            if (mutation.type === 'childList' && mutation.target.id === 'rooster-data-rows') {
-                // Re-observe sticky elements when roster is re-rendered
-                setTimeout(observeStickyElements, 100);
-            }
-        });
-    });
-
-    // Start observing changes to the rooster data rows
-    const roosterDataRows = document.getElementById('rooster-data-rows');
-    if (roosterDataRows) {
-        mutationObserver.observe(roosterDataRows, {
-            childList: true,
-            subtree: true
-        });
-    }
-
-    console.log("Enhanced sticky observer initialized for rooster navigation");
-}
-
-// Initialize sticky observer when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit for the initial render to complete
-    setTimeout(initializeStickyObserver, 500);
-});
-
-console.log("verlofrooster_logic.js Klaar met laden");
-
-/**
- * Haalt alle medewerkers op voor gebruik in select/dropdown elementen
- * @returns {Promise<Array>} Array van medewerker objecten met Id, Title en andere relevante gegevens
- */
-window.getAlleMedewerkersVoorSelect = async function() {
-    // We kunnen de reeds geladen medewerkers gebruiken indien beschikbaar
-    if (alleMedewerkers && alleMedewerkers.length > 0) {
-        return alleMedewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    }
-    
-    // Anders direct van SharePoint ophalen
-    try {
-        const lijstConfigMedewerkers = getLijstConfig(lijstNamen.Medewerkers);
-        const medewerkers = await getLijstItems(lijstConfigMedewerkers.lijstNaam, lijstConfigMedewerkers.viewXml);
-        
-        return medewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    } catch (error) {
-        console.error("[VerlofroosterLogic] Fout bij ophalen medewerkers voor select:", error);
-        return [];
-    }
-};
-
-/**
- * Update gebruikersinstellingen vanuit de instellingen pagina
- * @param {Object} nieuweInstellingen - Nieuwe instellingen object uit gebruikersInstellingenLijst
- */
-function updateGebruikersInstellingen(nieuweInstellingen) {
-    console.log("[VerlofroosterLogic] Bijwerken gebruikersinstellingen:", nieuweInstellingen);
-    
-    if (nieuweInstellingen) {
-        // Update global settings object
-        if (nieuweInstellingen.soortWeergave !== undefined) {
-            gebruikersInstellingen.soortWeergave = nieuweInstellingen.soortWeergave;
-        }
-        if (nieuweInstellingen.EigenTeamWeergeven !== undefined) {
-            gebruikersInstellingen.eigenTeamWeergeven = nieuweInstellingen.EigenTeamWeergeven;
-        }
-        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
-            gebruikersInstellingen.weekendenWeergeven = nieuweInstellingen.WeekendenWeergeven;
-        }
-        if (nieuweInstellingen.ID) {
-            gebruikersInstellingenSPId = nieuweInstellingen.ID;
-        }
-        
-        // Apply updated settings
-        pasGebruikersInstellingenToe();
-        
-        // Refresh rooster if weekend settings changed
-        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
-            renderRooster();
-        }
-    }
-}
-
-// Make the function globally available for communication with settings page
-window.updateGebruikersInstellingen = updateGebruikersInstellingen;
-
-/**
- * Renders the roster with current settings
- * Specialized function to handle re-rendering after settings changes
- */
-function renderRooster() {
-    if (domRefsLogic.roosterGridContainer) {
-        // Force a redraw by temporarily hiding and showing the container
-        const wasHidden = domRefsLogic.roosterGridContainer.classList.contains('hidden');
-        if (!wasHidden) {
-            domRefsLogic.roosterGridContainer.style.opacity = '0';
-            setTimeout(() => {
-                tekenRooster();
-                domRefsLogic.roosterGridContainer.style.opacity = '1';
-            }, 50);
-        } else {
-            tekenRooster();
-        }
-    } else {
-        tekenRooster();
-    }
-}
-
-// Export toggleFabMenu to window for use by other scripts
-window.toggleFabMenu = toggleFabMenu;
-// Export laadInitiëleData for use by modals
-window.laadInitiëleData = laadInitiëleData;
-
-/**
- * Enhanced sticky behavior with visual feedback
- * Adds shadow effects when sticky elements are "floating"
- */
-function initializeStickyObserver() {
-    // Create intersection observer to detect when sticky elements are stuck (vertical)
-    const verticalStickyObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                const target = entry.target;
-                
-                // When element is not intersecting, it means it's stuck
-                if (!entry.isIntersecting) {
-                    target.classList.add('is-stuck');
-                } else {
-                    target.classList.remove('is-stuck');
-                }
-            });
-        },
-        {
-            threshold: [0, 1],
-            rootMargin: '-1px 0px 0px 0px' // Trigger just before element becomes stuck
-        }
-    );
-
-    // Create intersection observer for horizontal sticky elements
-    const horizontalStickyObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                const target = entry.target;
-                
-                // When element is not intersecting horizontally, it means it's stuck to the left
-                if (!entry.isIntersecting) {
-                    target.classList.add('is-stuck-horizontal');
-                } else {
-                    target.classList.remove('is-stuck-horizontal');
-                }
-            });
-        },
-        {
-            threshold: [0, 1],
-            rootMargin: '0px 0px 0px -1px' // Trigger just before element becomes stuck horizontally
-        }
-    );
-
-    // Observe the header
-    const header = document.getElementById('rooster-grid-header');
-    if (header) {
-        verticalStickyObserver.observe(header);
-    }
-
-    // Function to observe sticky elements when they're created
-    const observeStickyElements = () => {
-        // Observe the first data row (dagen row)
-        const firstDataRow = document.querySelector('#rooster-data-rows > div:first-child');
-        if (firstDataRow) {
-            verticalStickyObserver.observe(firstDataRow);
-            console.log("Observing dagen row for vertical sticky behavior");
-        }
-
-        // Observe all medewerker name cells (first cell in each row)
-        const medewerkerCells = document.querySelectorAll('#rooster-data-rows > div > div:first-child');
-        medewerkerCells.forEach(cell => {
-            horizontalStickyObserver.observe(cell);
-        });
-        
-        if (medewerkerCells.length > 0) {
-            console.log(`Observing ${medewerkerCells.length} medewerker cells for horizontal sticky behavior`);
-        }
-    };
-
-    // Observe elements immediately if they exist
-    observeStickyElements();
-
-    // Create a mutation observer to watch for when rooster data is updated
-    const mutationObserver = new MutationObserver((mutations) => {
-        mutations.forEach(mutation => {
-            if (mutation.type === 'childList' && mutation.target.id === 'rooster-data-rows') {
-                // Re-observe sticky elements when roster is re-rendered
-                setTimeout(observeStickyElements, 100);
-            }
-        });
-    });
-
-    // Start observing changes to the rooster data rows
-    const roosterDataRows = document.getElementById('rooster-data-rows');
-    if (roosterDataRows) {
-        mutationObserver.observe(roosterDataRows, {
-            childList: true,
-            subtree: true
-        });
-    }
-
-    console.log("Enhanced sticky observer initialized for rooster navigation");
-}
-
-// Initialize sticky observer when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit for the initial render to complete
-    setTimeout(initializeStickyObserver, 500);
-});
-
-console.log("verlofrooster_logic.js Klaar met laden");
-
-/**
- * Haalt alle medewerkers op voor gebruik in select/dropdown elementen
- * @returns {Promise<Array>} Array van medewerker objecten met Id, Title en andere relevante gegevens
- */
-window.getAlleMedewerkersVoorSelect = async function() {
-    // We kunnen de reeds geladen medewerkers gebruiken indien beschikbaar
-    if (alleMedewerkers && alleMedewerkers.length > 0) {
-        return alleMedewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    }
-    
-    // Anders direct van SharePoint ophalen
-    try {
-        const lijstConfigMedewerkers = getLijstConfig(lijstNamen.Medewerkers);
-        const medewerkers = await getLijstItems(lijstConfigMedewerkers.lijstNaam, lijstConfigMedewerkers.viewXml);
-        
-        return medewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    } catch (error) {
-        console.error("[VerlofroosterLogic] Fout bij ophalen medewerkers voor select:", error);
-        return [];
-    }
-};
-
-/**
- * Update gebruikersinstellingen vanuit de instellingen pagina
- * @param {Object} nieuweInstellingen - Nieuwe instellingen object uit gebruikersInstellingenLijst
- */
-function updateGebruikersInstellingen(nieuweInstellingen) {
-    console.log("[VerlofroosterLogic] Bijwerken gebruikersinstellingen:", nieuweInstellingen);
-    
-    if (nieuweInstellingen) {
-        // Update global settings object
-        if (nieuweInstellingen.soortWeergave !== undefined) {
-            gebruikersInstellingen.soortWeergave = nieuweInstellingen.soortWeergave;
-        }
-        if (nieuweInstellingen.EigenTeamWeergeven !== undefined) {
-            gebruikersInstellingen.eigenTeamWeergeven = nieuweInstellingen.EigenTeamWeergeven;
-        }
-        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
-            gebruikersInstellingen.weekendenWeergeven = nieuweInstellingen.WeekendenWeergeven;
-        }
-        if (nieuweInstellingen.ID) {
-            gebruikersInstellingenSPId = nieuweInstellingen.ID;
-        }
-        
-        // Apply updated settings
-        pasGebruikersInstellingenToe();
-        
-        // Refresh rooster if weekend settings changed
-        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
-            renderRooster();
-        }
-    }
-}
-
-// Make the function globally available for communication with settings page
-window.updateGebruikersInstellingen = updateGebruikersInstellingen;
-
-/**
- * Renders the roster with current settings
- * Specialized function to handle re-rendering after settings changes
- */
-function renderRooster() {
-    if (domRefsLogic.roosterGridContainer) {
-        // Force a redraw by temporarily hiding and showing the container
-        const wasHidden = domRefsLogic.roosterGridContainer.classList.contains('hidden');
-        if (!wasHidden) {
-            domRefsLogic.roosterGridContainer.style.opacity = '0';
-            setTimeout(() => {
-                tekenRooster();
-                domRefsLogic.roosterGridContainer.style.opacity = '1';
-            }, 50);
-        } else {
-            tekenRooster();
-        }
-    } else {
-        tekenRooster();
-    }
-}
-
-// Export toggleFabMenu to window for use by other scripts
-window.toggleFabMenu = toggleFabMenu;
-// Export laadInitiëleData for use by modals
-window.laadInitiëleData = laadInitiëleData;
-
-/**
- * Enhanced sticky behavior with visual feedback
- * Adds shadow effects when sticky elements are "floating"
- */
-function initializeStickyObserver() {
-    // Create intersection observer to detect when sticky elements are stuck (vertical)
-    const verticalStickyObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                const target = entry.target;
-                
-                // When element is not intersecting, it means it's stuck
-                if (!entry.isIntersecting) {
-                    target.classList.add('is-stuck');
-                } else {
-                    target.classList.remove('is-stuck');
-                }
-            });
-        },
-        {
-            threshold: [0, 1],
-            rootMargin: '-1px 0px 0px 0px' // Trigger just before element becomes stuck
-        }
-    );
-
-    // Create intersection observer for horizontal sticky elements
-    const horizontalStickyObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                const target = entry.target;
-                
-                // When element is not intersecting horizontally, it means it's stuck to the left
-                if (!entry.isIntersecting) {
-                    target.classList.add('is-stuck-horizontal');
-                } else {
-                    target.classList.remove('is-stuck-horizontal');
-                }
-            });
-        },
-        {
-            threshold: [0, 1],
-            rootMargin: '0px 0px 0px -1px' // Trigger just before element becomes stuck horizontally
-        }
-    );
-
-    // Observe the header
-    const header = document.getElementById('rooster-grid-header');
-    if (header) {
-        verticalStickyObserver.observe(header);
-    }
-
-    // Function to observe sticky elements when they're created
-    const observeStickyElements = () => {
-        // Observe the first data row (dagen row)
-        const firstDataRow = document.querySelector('#rooster-data-rows > div:first-child');
-        if (firstDataRow) {
-            verticalStickyObserver.observe(firstDataRow);
-            console.log("Observing dagen row for vertical sticky behavior");
-        }
-
-        // Observe all medewerker name cells (first cell in each row)
-        const medewerkerCells = document.querySelectorAll('#rooster-data-rows > div > div:first-child');
-        medewerkerCells.forEach(cell => {
-            horizontalStickyObserver.observe(cell);
-        });
-        
-        if (medewerkerCells.length > 0) {
-            console.log(`Observing ${medewerkerCells.length} medewerker cells for horizontal sticky behavior`);
-        }
-    };
-
-    // Observe elements immediately if they exist
-    observeStickyElements();
-
-    // Create a mutation observer to watch for when rooster data is updated
-    const mutationObserver = new MutationObserver((mutations) => {
-        mutations.forEach(mutation => {
-            if (mutation.type === 'childList' && mutation.target.id === 'rooster-data-rows') {
-                // Re-observe sticky elements when roster is re-rendered
-                setTimeout(observeStickyElements, 100);
-            }
-        });
-    });
-
-    // Start observing changes to the rooster data rows
-    const roosterDataRows = document.getElementById('rooster-data-rows');
-    if (roosterDataRows) {
-        mutationObserver.observe(roosterDataRows, {
-            childList: true,
-            subtree: true
-        });
-    }
-
-    console.log("Enhanced sticky observer initialized for rooster navigation");
-}
-
-// Initialize sticky observer when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit for the initial render to complete
-    setTimeout(initializeStickyObserver, 500);
-});
-
-console.log("verlofrooster_logic.js Klaar met laden");
-
-/**
- * Haalt alle medewerkers op voor gebruik in select/dropdown elementen
- * @returns {Promise<Array>} Array van medewerker objecten met Id, Title en andere relevante gegevens
- */
-window.getAlleMedewerkersVoorSelect = async function() {
-    // We kunnen de reeds geladen medewerkers gebruiken indien beschikbaar
-    if (alleMedewerkers && alleMedewerkers.length > 0) {
-        return alleMedewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    }
-    
-    // Anders direct van SharePoint ophalen
-    try {
-        const lijstConfigMedewerkers = getLijstConfig(lijstNamen.Medewerkers);
-        const medewerkers = await getLijstItems(lijstConfigMedewerkers.lijstNaam, lijstConfigMedewerkers.viewXml);
-        
-        return medewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    } catch (error) {
-        console.error("[VerlofroosterLogic] Fout bij ophalen medewerkers voor select:", error);
-        return [];
-    }
-};
-
-/**
- * Update gebruikersinstellingen vanuit de instellingen pagina
- * @param {Object} nieuweInstellingen - Nieuwe instellingen object uit gebruikersInstellingenLijst
- */
-function updateGebruikersInstellingen(nieuweInstellingen) {
-    console.log("[VerlofroosterLogic] Bijwerken gebruikersinstellingen:", nieuweInstellingen);
-    
-    if (nieuweInstellingen) {
-        // Update global settings object
-        if (nieuweInstellingen.soortWeergave !== undefined) {
-            gebruikersInstellingen.soortWeergave = nieuweInstellingen.soortWeergave;
-        }
-        if (nieuweInstellingen.EigenTeamWeergeven !== undefined) {
-            gebruikersInstellingen.eigenTeamWeergeven = nieuweInstellingen.EigenTeamWeergeven;
-        }
-        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
-            gebruikersInstellingen.weekendenWeergeven = nieuweInstellingen.WeekendenWeergeven;
-        }
-        if (nieuweInstellingen.ID) {
-            gebruikersInstellingenSPId = nieuweInstellingen.ID;
-        }
-        
-        // Apply updated settings
-        pasGebruikersInstellingenToe();
-        
-        // Refresh rooster if weekend settings changed
-        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
-            renderRooster();
-        }
-    }
-}
-
-// Make the function globally available for communication with settings page
-window.updateGebruikersInstellingen = updateGebruikersInstellingen;
-
-/**
- * Renders the roster with current settings
- * Specialized function to handle re-rendering after settings changes
- */
-function renderRooster() {
-    if (domRefsLogic.roosterGridContainer) {
-        // Force a redraw by temporarily hiding and showing the container
-        const wasHidden = domRefsLogic.roosterGridContainer.classList.contains('hidden');
-        if (!wasHidden) {
-            domRefsLogic.roosterGridContainer.style.opacity = '0';
-            setTimeout(() => {
-                tekenRooster();
-                domRefsLogic.roosterGridContainer.style.opacity = '1';
-            }, 50);
-        } else {
-            tekenRooster();
-        }
-    } else {
-        tekenRooster();
-    }
-}
-
-// Export toggleFabMenu to window for use by other scripts
-window.toggleFabMenu = toggleFabMenu;
-// Export laadInitiëleData for use by modals
-window.laadInitiëleData = laadInitiëleData;
-
-/**
- * Enhanced sticky behavior with visual feedback
- * Adds shadow effects when sticky elements are "floating"
- */
-function initializeStickyObserver() {
-    // Create intersection observer to detect when sticky elements are stuck (vertical)
-    const verticalStickyObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                const target = entry.target;
-                
-                // When element is not intersecting, it means it's stuck
-                if (!entry.isIntersecting) {
-                    target.classList.add('is-stuck');
-                } else {
-                    target.classList.remove('is-stuck');
-                }
-            });
-        },
-        {
-            threshold: [0, 1],
-            rootMargin: '-1px 0px 0px 0px' // Trigger just before element becomes stuck
-        }
-    );
-
-    // Create intersection observer for horizontal sticky elements
-    const horizontalStickyObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                const target = entry.target;
-                
-                // When element is not intersecting horizontally, it means it's stuck to the left
-                if (!entry.isIntersecting) {
-                    target.classList.add('is-stuck-horizontal');
-                } else {
-                    target.classList.remove('is-stuck-horizontal');
-                }
-            });
-        },
-        {
-            threshold: [0, 1],
-            rootMargin: '0px 0px 0px -1px' // Trigger just before element becomes stuck horizontally
-        }
-    );
-
-    // Observe the header
-    const header = document.getElementById('rooster-grid-header');
-    if (header) {
-        verticalStickyObserver.observe(header);
-    }
-
-    // Function to observe sticky elements when they're created
-    const observeStickyElements = () => {
-        // Observe the first data row (dagen row)
-        const firstDataRow = document.querySelector('#rooster-data-rows > div:first-child');
-        if (firstDataRow) {
-            verticalStickyObserver.observe(firstDataRow);
-            console.log("Observing dagen row for vertical sticky behavior");
-        }
-
-        // Observe all medewerker name cells (first cell in each row)
-        const medewerkerCells = document.querySelectorAll('#rooster-data-rows > div > div:first-child');
-        medewerkerCells.forEach(cell => {
-            horizontalStickyObserver.observe(cell);
-        });
-        
-        if (medewerkerCells.length > 0) {
-            console.log(`Observing ${medewerkerCells.length} medewerker cells for horizontal sticky behavior`);
-        }
-    };
-
-    // Observe elements immediately if they exist
-    observeStickyElements();
-
-    // Create a mutation observer to watch for when rooster data is updated
-    const mutationObserver = new MutationObserver((mutations) => {
-        mutations.forEach(mutation => {
-            if (mutation.type === 'childList' && mutation.target.id === 'rooster-data-rows') {
-                // Re-observe sticky elements when roster is re-rendered
-                setTimeout(observeStickyElements, 100);
-            }
-        });
-    });
-
-    // Start observing changes to the rooster data rows
-    const roosterDataRows = document.getElementById('rooster-data-rows');
-    if (roosterDataRows) {
-        mutationObserver.observe(roosterDataRows, {
-            childList: true,
-            subtree: true
-        });
-    }
-
-    console.log("Enhanced sticky observer initialized for rooster navigation");
-}
-
-// Initialize sticky observer when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit for the initial render to complete
-    setTimeout(initializeStickyObserver, 500);
-});
-
-console.log("verlofrooster_logic.js Klaar met laden");
-
-/**
- * Haalt alle medewerkers op voor gebruik in select/dropdown elementen
- * @returns {Promise<Array>} Array van medewerker objecten met Id, Title en andere relevante gegevens
- */
-window.getAlleMedewerkersVoorSelect = async function() {
-    // We kunnen de reeds geladen medewerkers gebruiken indien beschikbaar
-    if (alleMedewerkers && alleMedewerkers.length > 0) {
-        return alleMedewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    }
-    
-    // Anders direct van SharePoint ophalen
-    try {
-        const lijstConfigMedewerkers = getLijstConfig(lijstNamen.Medewerkers);
-        const medewerkers = await getLijstItems(lijstConfigMedewerkers.lijstNaam, lijstConfigMedewerkers.viewXml);
-        
-        return medewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    } catch (error) {
-        console.error("[VerlofroosterLogic] Fout bij ophalen medewerkers voor select:", error);
-        return [];
-    }
-};
-
-/**
- * Update gebruikersinstellingen vanuit de instellingen pagina
- * @param {Object} nieuweInstellingen - Nieuwe instellingen object uit gebruikersInstellingenLijst
- */
-function updateGebruikersInstellingen(nieuweInstellingen) {
-    console.log("[VerlofroosterLogic] Bijwerken gebruikersinstellingen:", nieuweInstellingen);
-    
-    if (nieuweInstellingen) {
-        // Update global settings object
-        if (nieuweInstellingen.soortWeergave !== undefined) {
-            gebruikersInstellingen.soortWeergave = nieuweInstellingen.soortWeergave;
-        }
-        if (nieuweInstellingen.EigenTeamWeergeven !== undefined) {
-            gebruikersInstellingen.eigenTeamWeergeven = nieuweInstellingen.EigenTeamWeergeven;
-        }
-        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
-            gebruikersInstellingen.weekendenWeergeven = nieuweInstellingen.WeekendenWeergeven;
-        }
-        if (nieuweInstellingen.ID) {
-            gebruikersInstellingenSPId = nieuweInstellingen.ID;
-        }
-        
-        // Apply updated settings
-        pasGebruikersInstellingenToe();
-        
-        // Refresh rooster if weekend settings changed
-        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
-            renderRooster();
-        }
-    }
-}
-
-// Make the function globally available for communication with settings page
-window.updateGebruikersInstellingen = updateGebruikersInstellingen;
-
-/**
- * Renders the roster with current settings
- * Specialized function to handle re-rendering after settings changes
- */
-function renderRooster() {
-    if (domRefsLogic.roosterGridContainer) {
-        // Force a redraw by temporarily hiding and showing the container
-        const wasHidden = domRefsLogic.roosterGridContainer.classList.contains('hidden');
-        if (!wasHidden) {
-            domRefsLogic.roosterGridContainer.style.opacity = '0';
-            setTimeout(() => {
-                tekenRooster();
-                domRefsLogic.roosterGridContainer.style.opacity = '1';
-            }, 50);
-        } else {
-            tekenRooster();
-        }
-    } else {
-        tekenRooster();
-    }
-}
-
-// Export toggleFabMenu to window for use by other scripts
-window.toggleFabMenu = toggleFabMenu;
-// Export laadInitiëleData for use by modals
-window.laadInitiëleData = laadInitiëleData;
-
-/**
- * Enhanced sticky behavior with visual feedback
- * Adds shadow effects when sticky elements are "floating"
- */
-function initializeStickyObserver() {
-    // Create intersection observer to detect when sticky elements are stuck (vertical)
-    const verticalStickyObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                const target = entry.target;
-                
-                // When element is not intersecting, it means it's stuck
-                if (!entry.isIntersecting) {
-                    target.classList.add('is-stuck');
-                } else {
-                    target.classList.remove('is-stuck');
-                }
-            });
-        },
-        {
-            threshold: [0, 1],
-            rootMargin: '-1px 0px 0px 0px' // Trigger just before element becomes stuck
-        }
-    );
-
-    // Create intersection observer for horizontal sticky elements
-    const horizontalStickyObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                const target = entry.target;
-                
-                // When element is not intersecting horizontally, it means it's stuck to the left
-                if (!entry.isIntersecting) {
-                    target.classList.add('is-stuck-horizontal');
-                } else {
-                    target.classList.remove('is-stuck-horizontal');
-                }
-            });
-        },
-        {
-            threshold: [0, 1],
-            rootMargin: '0px 0px 0px -1px' // Trigger just before element becomes stuck horizontally
-        }
-    );
-
-    // Observe the header
-    const header = document.getElementById('rooster-grid-header');
-    if (header) {
-        verticalStickyObserver.observe(header);
-    }
-
-    // Function to observe sticky elements when they're created
-    const observeStickyElements = () => {
-        // Observe the first data row (dagen row)
-        const firstDataRow = document.querySelector('#rooster-data-rows > div:first-child');
-        if (firstDataRow) {
-            verticalStickyObserver.observe(firstDataRow);
-            console.log("Observing dagen row for vertical sticky behavior");
-        }
-
-        // Observe all medewerker name cells (first cell in each row)
-        const medewerkerCells = document.querySelectorAll('#rooster-data-rows > div > div:first-child');
-        medewerkerCells.forEach(cell => {
-            horizontalStickyObserver.observe(cell);
-        });
-        
-        if (medewerkerCells.length > 0) {
-            console.log(`Observing ${medewerkerCells.length} medewerker cells for horizontal sticky behavior`);
-        }
-    };
-
-    // Observe elements immediately if they exist
-    observeStickyElements();
-
-    // Create a mutation observer to watch for when rooster data is updated
-    const mutationObserver = new MutationObserver((mutations) => {
-        mutations.forEach(mutation => {
-            if (mutation.type === 'childList' && mutation.target.id === 'rooster-data-rows') {
-                // Re-observe sticky elements when roster is re-rendered
-                setTimeout(observeStickyElements, 100);
-            }
-        });
-    });
-
-    // Start observing changes to the rooster data rows
-    const roosterDataRows = document.getElementById('rooster-data-rows');
-    if (roosterDataRows) {
-        mutationObserver.observe(roosterDataRows, {
-            childList: true,
-            subtree: true
-        });
-    }
-
-    console.log("Enhanced sticky observer initialized for rooster navigation");
-}
-
-// Initialize sticky observer when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit for the initial render to complete
-    setTimeout(initializeStickyObserver, 500);
-});
-
-console.log("verlofrooster_logic.js Klaar met laden");
-
-/**
- * Haalt alle medewerkers op voor gebruik in select/dropdown elementen
- * @returns {Promise<Array>} Array van medewerker objecten met Id, Title en andere relevante gegevens
- */
-window.getAlleMedewerkersVoorSelect = async function() {
-    // We kunnen de reeds geladen medewerkers gebruiken indien beschikbaar
-    if (alleMedewerkers && alleMedewerkers.length > 0) {
-        return alleMedewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    }
-    
-    // Anders direct van SharePoint ophalen
-    try {
-        const lijstConfigMedewerkers = getLijstConfig(lijstNamen.Medewerkers);
-        const medewerkers = await getLijstItems(lijstConfigMedewerkers.lijstNaam, lijstConfigMedewerkers.viewXml);
-        
-        return medewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    } catch (error) {
-        console.error("[VerlofroosterLogic] Fout bij ophalen medewerkers voor select:", error);
-        return [];
-    }
-};
-
-/**
- * Update gebruikersinstellingen vanuit de instellingen pagina
- * @param {Object} nieuweInstellingen - Nieuwe instellingen object uit gebruikersInstellingenLijst
- */
-function updateGebruikersInstellingen(nieuweInstellingen) {
-    console.log("[VerlofroosterLogic] Bijwerken gebruikersinstellingen:", nieuweInstellingen);
-    
-    if (nieuweInstellingen) {
-        // Update global settings object
-        if (nieuweInstellingen.soortWeergave !== undefined) {
-            gebruikersInstellingen.soortWeergave = nieuweInstellingen.soortWeergave;
-        }
-        if (nieuweInstellingen.EigenTeamWeergeven !== undefined) {
-            gebruikersInstellingen.eigenTeamWeergeven = nieuweInstellingen.EigenTeamWeergeven;
-        }
-        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
-            gebruikersInstellingen.weekendenWeergeven = nieuweInstellingen.WeekendenWeergeven;
-        }
-        if (nieuweInstellingen.ID) {
-            gebruikersInstellingenSPId = nieuweInstellingen.ID;
-        }
-        
-        // Apply updated settings
-        pasGebruikersInstellingenToe();
-        
-        // Refresh rooster if weekend settings changed
-        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
-            renderRooster();
-        }
-    }
-}
-
-// Make the function globally available for communication with settings page
-window.updateGebruikersInstellingen = updateGebruikersInstellingen;
-
-/**
- * Renders the roster with current settings
- * Specialized function to handle re-rendering after settings changes
- */
-function renderRooster() {
-    if (domRefsLogic.roosterGridContainer) {
-        // Force a redraw by temporarily hiding and showing the container
-        const wasHidden = domRefsLogic.roosterGridContainer.classList.contains('hidden');
-        if (!wasHidden) {
-            domRefsLogic.roosterGridContainer.style.opacity = '0';
-            setTimeout(() => {
-                tekenRooster();
-                domRefsLogic.roosterGridContainer.style.opacity = '1';
-            }, 50);
-        } else {
-            tekenRooster();
-        }
-    } else {
-        tekenRooster();
-    }
-}
-
-// Export toggleFabMenu to window for use by other scripts
-window.toggleFabMenu = toggleFabMenu;
-// Export laadInitiëleData for use by modals
-window.laadInitiëleData = laadInitiëleData;
-
-/**
- * Enhanced sticky behavior with visual feedback
- * Adds shadow effects when sticky elements are "floating"
- */
-function initializeStickyObserver() {
-    // Create intersection observer to detect when sticky elements are stuck (vertical)
-    const verticalStickyObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                const target = entry.target;
-                
-                // When element is not intersecting, it means it's stuck
-                if (!entry.isIntersecting) {
-                    target.classList.add('is-stuck');
-                } else {
-                    target.classList.remove('is-stuck');
-                }
-            });
-        },
-        {
-            threshold: [0, 1],
-            rootMargin: '-1px 0px 0px 0px' // Trigger just before element becomes stuck
-        }
-    );
-
-    // Create intersection observer for horizontal sticky elements
-    const horizontalStickyObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                const target = entry.target;
-                
-                // When element is not intersecting horizontally, it means it's stuck to the left
-                if (!entry.isIntersecting) {
-                    target.classList.add('is-stuck-horizontal');
-                } else {
-                    target.classList.remove('is-stuck-horizontal');
-                }
-            });
-        },
-        {
-            threshold: [0, 1],
-            rootMargin: '0px 0px 0px -1px' // Trigger just before element becomes stuck horizontally
-        }
-    );
-
-    // Observe the header
-    const header = document.getElementById('rooster-grid-header');
-    if (header) {
-        verticalStickyObserver.observe(header);
-    }
-
-    // Function to observe sticky elements when they're created
-    const observeStickyElements = () => {
-        // Observe the first data row (dagen row)
-        const firstDataRow = document.querySelector('#rooster-data-rows > div:first-child');
-        if (firstDataRow) {
-            verticalStickyObserver.observe(firstDataRow);
-            console.log("Observing dagen row for vertical sticky behavior");
-        }
-
-        // Observe all medewerker name cells (first cell in each row)
-        const medewerkerCells = document.querySelectorAll('#rooster-data-rows > div > div:first-child');
-        medewerkerCells.forEach(cell => {
-            horizontalStickyObserver.observe(cell);
-        });
-        
-        if (medewerkerCells.length > 0) {
-            console.log(`Observing ${medewerkerCells.length} medewerker cells for horizontal sticky behavior`);
-        }
-    };
-
-    // Observe elements immediately if they exist
-    observeStickyElements();
-
-    // Create a mutation observer to watch for when rooster data is updated
-    const mutationObserver = new MutationObserver((mutations) => {
-        mutations.forEach(mutation => {
-            if (mutation.type === 'childList' && mutation.target.id === 'rooster-data-rows') {
-                // Re-observe sticky elements when roster is re-rendered
-                setTimeout(observeStickyElements, 100);
-            }
-        });
-    });
-
-    // Start observing changes to the rooster data rows
-    const roosterDataRows = document.getElementById('rooster-data-rows');
-    if (roosterDataRows) {
-        mutationObserver.observe(roosterDataRows, {
-            childList: true,
-            subtree: true
-        });
-    }
-
-    console.log("Enhanced sticky observer initialized for rooster navigation");
-}
-
-// Initialize sticky observer when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit for the initial render to complete
-    setTimeout(initializeStickyObserver, 500);
-});
-
-console.log("verlofrooster_logic.js Klaar met laden");
-
-/**
- * Haalt alle medewerkers op voor gebruik in select/dropdown elementen
- * @returns {Promise<Array>} Array van medewerker objecten met Id, Title en andere relevante gegevens
- */
-window.getAlleMedewerkersVoorSelect = async function() {
-    // We kunnen de reeds geladen medewerkers gebruiken indien beschikbaar
-    if (alleMedewerkers && alleMedewerkers.length > 0) {
-        return alleMedewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    }
-    
-    // Anders direct van SharePoint ophalen
-    try {
-        const lijstConfigMedewerkers = getLijstConfig(lijstNamen.Medewerkers);
-        const medewerkers = await getLijstItems(lijstConfigMedewerkers.lijstNaam, lijstConfigMedewerkers.viewXml);
-        
-        return medewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    } catch (error) {
-        console.error("[VerlofroosterLogic] Fout bij ophalen medewerkers voor select:", error);
-        return [];
-    }
-};
-
-/**
- * Update gebruikersinstellingen vanuit de instellingen pagina
- * @param {Object} nieuweInstellingen - Nieuwe instellingen object uit gebruikersInstellingenLijst
- */
-function updateGebruikersInstellingen(nieuweInstellingen) {
-    console.log("[VerlofroosterLogic] Bijwerken gebruikersinstellingen:", nieuweInstellingen);
-    
-    if (nieuweInstellingen) {
-        // Update global settings object
-        if (nieuweInstellingen.soortWeergave !== undefined) {
-            gebruikersInstellingen.soortWeergave = nieuweInstellingen.soortWeergave;
-        }
-        if (nieuweInstellingen.EigenTeamWeergeven !== undefined) {
-            gebruikersInstellingen.eigenTeamWeergeven = nieuweInstellingen.EigenTeamWeergeven;
-        }
-        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
-            gebruikersInstellingen.weekendenWeergeven = nieuweInstellingen.WeekendenWeergeven;
-        }
-        if (nieuweInstellingen.ID) {
-            gebruikersInstellingenSPId = nieuweInstellingen.ID;
-        }
-        
-        // Apply updated settings
-        pasGebruikersInstellingenToe();
-        
-        // Refresh rooster if weekend settings changed
-        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
-            renderRooster();
-        }
-    }
-}
-
-// Make the function globally available for communication with settings page
-window.updateGebruikersInstellingen = updateGebruikersInstellingen;
-
-/**
- * Renders the roster with current settings
- * Specialized function to handle re-rendering after settings changes
- */
-function renderRooster() {
-    if (domRefsLogic.roosterGridContainer) {
-        // Force a redraw by temporarily hiding and showing the container
-        const wasHidden = domRefsLogic.roosterGridContainer.classList.contains('hidden');
-        if (!wasHidden) {
-            domRefsLogic.roosterGridContainer.style.opacity = '0';
-            setTimeout(() => {
-                tekenRooster();
-                domRefsLogic.roosterGridContainer.style.opacity = '1';
-            }, 50);
-        } else {
-            tekenRooster();
-        }
-    } else {
-        tekenRooster();
-    }
-}
-
-// Export toggleFabMenu to window for use by other scripts
-window.toggleFabMenu = toggleFabMenu;
-// Export laadInitiëleData for use by modals
-window.laadInitiëleData = laadInitiëleData;
-
-/**
- * Enhanced sticky behavior with visual feedback
- * Adds shadow effects when sticky elements are "floating"
- */
-function initializeStickyObserver() {
-    // Create intersection observer to detect when sticky elements are stuck (vertical)
-    const verticalStickyObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                const target = entry.target;
-                
-                // When element is not intersecting, it means it's stuck
-                if (!entry.isIntersecting) {
-                    target.classList.add('is-stuck');
-                } else {
-                    target.classList.remove('is-stuck');
-                }
-            });
-        },
-        {
-            threshold: [0, 1],
-            rootMargin: '-1px 0px 0px 0px' // Trigger just before element becomes stuck
-        }
-    );
-
-    // Create intersection observer for horizontal sticky elements
-    const horizontalStickyObserver = new IntersectionObserver(
-        (entries) => {
-            entries.forEach(entry => {
-                const target = entry.target;
-                
-                // When element is not intersecting horizontally, it means it's stuck to the left
-                if (!entry.isIntersecting) {
-                    target.classList.add('is-stuck-horizontal');
-                } else {
-                    target.classList.remove('is-stuck-horizontal');
-                }
-            });
-        },
-        {
-            threshold: [0, 1],
-            rootMargin: '0px 0px 0px -1px' // Trigger just before element becomes stuck horizontally
-        }
-    );
-
-    // Observe the header
-    const header = document.getElementById('rooster-grid-header');
-    if (header) {
-        verticalStickyObserver.observe(header);
-    }
-
-    // Function to observe sticky elements when they're created
-    const observeStickyElements = () => {
-        // Observe the first data row (dagen row)
-        const firstDataRow = document.querySelector('#rooster-data-rows > div:first-child');
-        if (firstDataRow) {
-            verticalStickyObserver.observe(firstDataRow);
-            console.log("Observing dagen row for vertical sticky behavior");
-        }
-
-        // Observe all medewerker name cells (first cell in each row)
-        const medewerkerCells = document.querySelectorAll('#rooster-data-rows > div > div:first-child');
-        medewerkerCells.forEach(cell => {
-            horizontalStickyObserver.observe(cell);
-        });
-        
-        if (medewerkerCells.length > 0) {
-            console.log(`Observing ${medewerkerCells.length} medewerker cells for horizontal sticky behavior`);
-        }
-    };
-
-    // Observe elements immediately if they exist
-    observeStickyElements();
-
-    // Create a mutation observer to watch for when rooster data is updated
-    const mutationObserver = new MutationObserver((mutations) => {
-        mutations.forEach(mutation => {
-            if (mutation.type === 'childList' && mutation.target.id === 'rooster-data-rows') {
-                // Re-observe sticky elements when roster is re-rendered
-                setTimeout(observeStickyElements, 100);
-            }
-        });
-    });
-
-    // Start observing changes to the rooster data rows
-    const roosterDataRows = document.getElementById('rooster-data-rows');
-    if (roosterDataRows) {
-        mutationObserver.observe(roosterDataRows, {
-            childList: true,
-            subtree: true
-        });
-    }
-
-    console.log("Enhanced sticky observer initialized for rooster navigation");
-}
-
-// Initialize sticky observer when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    // Wait a bit for the initial render to complete
-    setTimeout(initializeStickyObserver, 500);
-});
-
-console.log("verlofrooster_logic.js Klaar met laden");
-
-/**
- * Haalt alle medewerkers op voor gebruik in select/dropdown elementen
- * @returns {Promise<Array>} Array van medewerker objecten met Id, Title en andere relevante gegevens
- */
-window.getAlleMedewerkersVoorSelect = async function() {
-    // We kunnen de reeds geladen medewerkers gebruiken indien beschikbaar
-    if (alleMedewerkers && alleMedewerkers.length > 0) {
-        return alleMedewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    }
-    
-    // Anders direct van SharePoint ophalen
-    try {
-        const lijstConfigMedewerkers = getLijstConfig(lijstNamen.Medewerkers);
-        const medewerkers = await getLijstItems(lijstConfigMedewerkers.lijstNaam, lijstConfigMedewerkers.viewXml);
-        
-        return medewerkers.map(m => ({
-            Id: m.Id,
-            Title: m.Naam || m.Title,
-            PersoneelsNr: m.PersoneelsNr || null,
-            E_x002d_mail: m.E_x002d_mail || '', 
-            Functie: m.Functie || '',
-            Gebruikersnaam: m.Gebruikersnaam || ''
-        }));
-    } catch (error) {
-        console.error("[VerlofroosterLogic] Fout bij ophalen medewerkers voor select:", error);
-        return [];
-    }
-};
-
-/**
- * Update gebruikersinstellingen vanuit de instellingen pagina
- * @param {Object} nieuweInstellingen - Nieuwe instellingen object uit gebruikersInstellingenLijst
- */
-function updateGebruikersInstellingen(nieuweInstellingen) {
-    console.log("[VerlofroosterLogic] Bijwerken gebruikersinstellingen:", nieuweInstellingen);
-    
-    if (nieuweInstellingen) {
-        // Update global settings object
-        if (nieuweInstellingen.soortWeergave !== undefined) {
-            gebruikersInstellingen.soortWeergave = nieuweInstellingen.soortWeergave;
-        }
-        if (nieuweInstellingen.EigenTeamWeergeven !== undefined) {
-            gebruikersInstellingen.eigenTeamWeergeven = nieuweInstellingen.EigenTeamWeergeven;
-        }
-        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
-            gebruikersInstellingen.weekendenWeergeven = nieuweInstellingen.WeekendenWeergeven;
-        }
-        if (nieuweInstellingen.ID) {
-            gebruikersInstellingenSPId = nieuweInstellingen.ID;
-        }
-        
-        // Apply updated settings
-        pasGebruikersInstellingenToe();
-        
-        // Refresh rooster if weekend settings changed
-        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
-            renderRooster();
-        }
-    }
-}
-
-// Make the function globally available for communication with settings page
-window.updateGebruikersInstellingen = updateGebruikersInstellingen;
-
-/**
- * Renders the roster with current settings
- * Specialized function to handle re-rendering after settings changes
- */
-function renderRooster() {
-    if (domRefsLogic.roosterGridContainer) {
-        // Force a redraw by temporarily hiding and showing the container
-        const wasHidden = domRefsLogic.roosterGridContainer.classList.contains('hidden');
-        if (!wasHidden) {
-            domRefsLogic.roosterGridContainer.style.opacity = '0';
-            setTimeout(() => {
-                tekenRooster();
-                domRefsLogic.roosterGridContainer.style.opacity = '1';
-            }, 50);
-        } else {
-            tekenRooster();
-        }
-    } else {
-        tekenRooster();
-    }
-}
-
-// Export toggleFabMenu to window for use by other scripts
-window.toggleFabMenu = toggleFabMenu;
-// Export laadInitiëleData for use by modals
-window.laadInitiëleData = laadInitiëleData;
-
-/**
- * Sets up a layered events popup for cells with multiple events
+ * Setup layered events popup for cells with multiple events
  * @param {HTMLElement} celDiv - The cell element
- * @param {Array} eventItems - Array of event items for this cell
- * @param {Object} medewerker - Employee information
+ * @param {Array} eventItems - Array of event objects
+ * @param {Object} medewerker - Employee data
  */
 function setupLayeredEventsPopup(celDiv, eventItems, medewerker) {
-    let popupTimeout;
-    let currentPopup;
-
-    // Mouse enter event
-    const showPopup = (e) => {
-        // Clear any existing timeout
-        if (popupTimeout) {
-            clearTimeout(popupTimeout);
-        }
-
-        // Remove any existing popup
-        const existingPopup = document.querySelector('.layered-events-popup');
-        if (existingPopup) {
-            existingPopup.remove();
-        }
-
-        // Create popup with a slight delay to prevent flickering
-        popupTimeout = setTimeout(() => {
-            const popup = document.createElement('div');
-            popup.className = 'layered-events-popup';
-            
-            // Add dark theme class if needed
-            if (document.body.classList.contains('dark-theme')) {
-                popup.classList.add('dark-theme');
-            }
-
-            // Build popup content
-            let popupHTML = '';
-            eventItems.forEach((eventItem, index) => {
-                const iconDisplay = eventItem.type === 'compensatie' ? 
-                    '<img src="Icoon/CompensatieUren.svg" alt="Compensatie" class="layered-event-icon">' :
-                    `<span class="layered-event-icon">${eventItem.icon}</span>`;
-                
-                popupHTML += `
-                    <div class="layered-event-item" data-event-type="${eventItem.type}" data-event-id="${eventItem.id}">
-                        ${iconDisplay}
-                        <div class="layered-event-details">
-                            <div class="layered-event-title">${eventItem.title}</div>
-                            <div class="layered-event-subtitle">${eventItem.subtitle}</div>
-                            ${eventItem.description ? `<div class="layered-event-subtitle">${eventItem.description}</div>` : ''}
-                        </div>
-                    </div>
-                `;
-            });
-
-            popup.innerHTML = popupHTML;
-
-            // Position popup
-            const rect = celDiv.getBoundingClientRect();
-            popup.style.left = `${rect.left + window.scrollX}px`;
-            popup.style.top = `${rect.bottom + window.scrollY + 5}px`;
-
-            // Adjust if popup would go off screen
-            document.body.appendChild(popup);
-            const popupRect = popup.getBoundingClientRect();
-            
-            if (popupRect.right > window.innerWidth) {
-                popup.style.left = `${rect.right + window.scrollX - popupRect.width}px`;
-            }
-            
-            if (popupRect.bottom > window.innerHeight) {
-                popup.style.top = `${rect.top + window.scrollY - popupRect.height - 5}px`;
-            }
-
-            // Show popup with animation
-            setTimeout(() => popup.classList.add('visible'), 10);
-            currentPopup = popup;
-
-            // Add click handlers for each event item
-            popup.querySelectorAll('.layered-event-item').forEach((item, index) => {
-                item.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const eventType = item.dataset.eventType;
-                    const eventId = item.dataset.eventId;
-                    const eventData = eventItems[index];
-                    
-                    // Close popup
-                    hidePopup();
-                    
-                    // Handle the event based on type
-                    if (eventType === 'verlof' && typeof window.openVerlofAanvraagModal === 'function') {
-                        window.openVerlofAanvraagModal(eventData.data, new Date(eventData.data.StartDatum), {
-                            Username: eventData.ownerUsername,
-                            loginNaam: eventData.ownerUsername,
-                            normalizedUsername: eventData.ownerUsername,
-                            Naam: medewerker.Naam || medewerker.Title,
-                            Title: medewerker.Title
-                        });
-                    } else if (eventType === 'compensatie' && typeof window.openCompensatieUrenModal === 'function') {
-                        window.openCompensatieUrenModal(eventData.data);
-                    }
-                });
-            });
-        }, 300);
-    };
-
-    // Mouse leave event
-    const hidePopup = () => {
-        if (popupTimeout) {
-            clearTimeout(popupTimeout);
-            popupTimeout = null;
-        }
-        
-        if (currentPopup) {
-            currentPopup.classList.remove('visible');
-            setTimeout(() => {
-                if (currentPopup && currentPopup.parentNode) {
-                    currentPopup.remove();
-                }
-                currentPopup = null;
-            }, 200);
-        }
-    };
-
-    // Add event listeners
-    celDiv.addEventListener('mouseenter', showPopup);
-    celDiv.addEventListener('mouseleave', hidePopup);
-
-    // Also hide popup if user scrolls or clicks elsewhere
-    const hideOnScroll = () => hidePopup();
-    const hideOnClick = (e) => {
-        if (currentPopup && !currentPopup.contains(e.target) && !celDiv.contains(e.target)) {
-            hidePopup();
-        }
-    };
-
-    window.addEventListener('scroll', hideOnScroll, { passive: true });
-    document.addEventListener('click', hideOnClick);
-
-    // Store cleanup function on the cell
-    celDiv._layeredEventsCleanup = () => {
-        window.removeEventListener('scroll', hideOnScroll);
-        document.removeEventListener('click', hideOnClick);
-        hidePopup();
-    };
+    if (!eventItems || eventItems.length <= 1) return;
+    
+    // Add a visual indicator for multiple events
+    const indicator = document.createElement('div');
+    indicator.className = 'layered-events-indicator';
+    indicator.style.cssText = `
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 12px;
+        height: 12px;
+        background: #f59e0b;
+        border-radius: 50%;
+        font-size: 8px;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        z-index: 10;
+    `;
+    indicator.textContent = eventItems.length;
+    celDiv.appendChild(indicator);
+    
+    // Add click handler to show popup with all events
+    celDiv.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showLayeredEventsPopup(eventItems, medewerker, e);
+    });
 }
 
-// --- Global Function Aliases for Modal Compatibility ---
+/**
+ * Show popup with layered events
+ * @param {Array} eventItems - Array of event objects
+ * @param {Object} medewerker - Employee data
+ * @param {Event} clickEvent - Click event for positioning
+ */
+function showLayeredEventsPopup(eventItems, medewerker, clickEvent) {
+    // Remove existing popup
+    const existingPopup = document.querySelector('.layered-events-popup');
+    if (existingPopup) {
+        existingPopup.remove();
+    }
+    
+    // Create popup
+    const popup = document.createElement('div');
+    popup.className = 'layered-events-popup';
+    popup.style.cssText = `
+        position: fixed;
+        background: white;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        padding: 12px;
+        max-width: 300px;
+        z-index: 1000;
+        font-size: 14px;
+    `;
+    
+    // Add content
+    let content = `<div style="font-weight: bold; margin-bottom: 8px;">${medewerker.Naam}</div>`;
+    eventItems.forEach((item, index) => {
+        const bgColor = item.type === 'verlof' ? '#dbeafe' : item.type === 'compensatie' ? '#dcfce7' : '#fef3c7';
+        content += `
+            <div style="margin-bottom: 4px; padding: 4px 6px; background: ${bgColor}; border-radius: 4px;">
+                <strong>${item.title}</strong>
+                ${item.data.StartDatum ? `<br><small>${new Date(item.data.StartDatum).toLocaleDateString('nl-NL')} - ${new Date(item.data.EindDatum).toLocaleDateString('nl-NL')}</small>` : ''}
+            </div>
+        `;
+    });
+    popup.innerHTML = content;
+    
+    // Position popup
+    document.body.appendChild(popup);
+    const rect = popup.getBoundingClientRect();
+    const x = Math.min(clickEvent.clientX, window.innerWidth - rect.width - 10);
+    const y = Math.min(clickEvent.clientY, window.innerHeight - rect.height - 10);
+    popup.style.left = x + 'px';
+    popup.style.top = y + 'px';
+    
+    // Close on outside click
+    const closeHandler = (e) => {
+        if (!popup.contains(e.target)) {
+            popup.remove();
+            document.removeEventListener('click', closeHandler);
+        }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 100);
+}
+
+// Export toggleFabMenu to window for use by other scripts
+window.toggleFabMenu = toggleFabMenu;
+// Export laadInitiëleData for use by modals
+window.Laadinitiele = laadInitiëleData;
 
 /**
- * Alias voor getAlleMedewerkersVoorSelect voor backward compatibility met ziekte modal
+ * Enhanced sticky behavior with visual feedback
+ * Adds shadow effects when sticky elements are "floating"
+ */
+function initializeStickyObserver() {
+    // Create intersection observer to detect when sticky elements are stuck (vertical)
+    const verticalStickyObserver = new IntersectionObserver(
+        (entries) => {
+            entries.forEach(entry => {
+                const target = entry.target;
+
+                // When element is not intersecting, it means it's stuck
+                if (!entry.isIntersecting) {
+                    target.classList.add('is-stuck');
+                } else {
+                    target.classList.remove('is-stuck');
+                }
+            });
+        },
+        {
+            threshold: [0, 1],
+            rootMargin: '-1px 0px 0px 0px' // Trigger just before element becomes stuck
+        }
+    );
+
+    // Create intersection observer for horizontal sticky elements
+    const horizontalStickyObserver = new IntersectionObserver(
+        (entries) => {
+            entries.forEach(entry => {
+                const target = entry.target;
+
+                // When element is not intersecting horizontally, it means it's stuck to the left
+                if (!entry.isIntersecting) {
+                    target.classList.add('is-stuck-horizontal');
+                } else {
+                    target.classList.remove('is-stuck-horizontal');
+                }
+            });
+        },
+        {
+            threshold: [0, 1],
+            rootMargin: '0px 0px 0px -1px' // Trigger just before element becomes stuck horizontally
+        }
+    );
+
+    // Observe the header
+    const header = document.getElementById('rooster-grid-header');
+    if (header) {
+        verticalStickyObserver.observe(header);
+    }
+
+    // Function to observe sticky elements when they're created
+    const observeStickyElements = () => {
+        // Observe the first data row (dagen row)
+        const firstDataRow = document.querySelector('#rooster-data-rows > div:first-child');
+        if (firstDataRow) {
+            verticalStickyObserver.observe(firstDataRow);
+            console.log("Observing dagen row for vertical sticky behavior");
+        }
+
+        // Observe all medewerker name cells (first cell in each row)
+        const medewerkerCells = document.querySelectorAll('#rooster-data-rows > div > div:first-child');
+        medewerkerCells.forEach(cell => {
+            horizontalStickyObserver.observe(cell);
+        });
+
+        if (medewerkerCells.length > 0) {
+            console.log(`Observing ${medewerkerCells.length} medewerker cells for horizontal sticky behavior`);
+        }
+    };
+
+    // Observe elements immediately if they exist
+    observeStickyElements();
+
+    // Create a mutation observer to watch for when rooster data is updated
+    const mutationObserver = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+            if (mutation.type === 'childList' && mutation.target.id === 'rooster-data-rows') {
+                // Re-observe sticky elements when roster is re-rendered
+                setTimeout(observeStickyElements, 100);
+            }
+        });
+    });
+
+    // Start observing changes to the rooster data rows
+    const roosterDataRows = document.getElementById('rooster-data-rows');
+    if (roosterDataRows) {
+        mutationObserver.observe(roosterDataRows, {
+            childList: true,
+            subtree: true
+        });
+    }
+
+    console.log("Enhanced sticky observer initialized for rooster navigation");
+}
+
+// Initialize sticky observer when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Wait a bit for the initial render to complete
+    setTimeout(initializeStickyObserver, 500);
+});
+
+/**
+ * Haalt alle medewerkers op voor gebruik in select/dropdown elementen
  * @returns {Promise<Array>} Array van medewerker objecten met Id, Title en andere relevante gegevens
  */
-window.getAlleMedewerkers = window.getAlleMedewerkersVoorSelect;
+window.getAlleMedewerkersVoorSelect = async function () {
+    // We kunnen de reeds geladen medewerkers gebruiken indien beschikbaar
+    if (alleMedewerkers && alleMedewerkers.length > 0) {
+        return alleMedewerkers.map(m => ({
+            Id: m.Id,
+            Title: m.Naam || m.Title,
+            PersoneelsNr: m.PersoneelsNr || null,
+            E_x002d_mail: m.E_x002d_mail || '',
+            Functie: m.Functie || '',
+            Gebruikersnaam: m.Gebruikersnaam || ''
+        }));
+    }
+
+    // Anders direct van SharePoint ophalen
+    try {
+        const lijstConfigMedewerkers = getLijstConfig(lijstNamen.Medewerkers);
+        const medewerkers = await getLijstItems(lijstConfigMedewerkers.lijstNaam, lijstConfigMedewerkers.viewXml);
+
+        return medewerkers.map(m => ({
+            Id: m.Id,
+            Title: m.Naam || m.Title,
+            PersoneelsNr: m.PersoneelsNr || null,
+            E_x002d_mail: m.E_x002d_mail || '',
+            Functie: m.Functie || '',
+            Gebruikersnaam: m.Gebruikersnaam || ''
+        }));
+    } catch (error) {
+        console.error("[VerlofroosterLogic] Fout bij ophalen medewerkers voor select:", error);
+        return [];
+    }
+};
+
+console.log("verlofrooster_logic.js Klaar met laden");
+
+/**
+ * Renders the roster with current settings
+ * Specialized function to handle re-rendering after settings changes
+ */
+function renderRooster() {
+    if (domRefsLogic.roosterGridContainer) {
+        // Force a redraw by temporarily hiding and showing the container
+        const wasHidden = domRefsLogic.roosterGridContainer.classList.contains('hidden');
+        if (!wasHidden) {
+            domRefsLogic.roosterGridContainer.style.opacity = '0';
+            setTimeout(() => {
+                tekenRooster();
+                domRefsLogic.roosterGridContainer.style.opacity = '1';
+            }, 50);
+        } else {
+            tekenRooster();
+        }
+    } else {
+        tekenRooster();
+    }
+}
+
+// Export toggleFabMenu to window for use by other scripts
+window.toggleFabMenu = toggleFabMenu;
+
+/**
+ * Enhanced sticky behavior with visual feedback
+ * Adds shadow effects when sticky elements are "floating"
+ */
+function initializeStickyObserver() {
+    // Create intersection observer to detect when sticky elements are stuck (vertical)
+    const verticalStickyObserver = new IntersectionObserver(
+        (entries) => {
+            entries.forEach(entry => {
+                const target = entry.target;
+
+                // When element is not intersecting, it means it's stuck
+                if (!entry.isIntersecting) {
+                    target.classList.add('is-stuck');
+                } else {
+                    target.classList.remove('is-stuck');
+                }
+            });
+        },
+        {
+            threshold: [0, 1],
+            rootMargin: '-1px 0px 0px 0px' // Trigger just before element becomes stuck
+        }
+    );
+
+    // Create intersection observer for horizontal sticky elements
+    const horizontalStickyObserver = new IntersectionObserver(
+        (entries) => {
+            entries.forEach(entry => {
+                const target = entry.target;
+
+                // When element is not intersecting horizontally, it means it's stuck to the left
+                if (!entry.isIntersecting) {
+                    target.classList.add('is-stuck-horizontal');
+                } else {
+                    target.classList.remove('is-stuck-horizontal');
+                }
+            });
+        },
+        {
+            threshold: [0, 1],
+            rootMargin: '0px 0px 0px -1px' // Trigger just before element becomes stuck horizontally
+        }
+    );
+
+    // Observe the header
+    const header = document.getElementById('rooster-grid-header');
+    if (header) {
+        verticalStickyObserver.observe(header);
+    }
+
+    // Function to observe sticky elements when they're created
+    const observeStickyElements = () => {
+        // Observe the first data row (dagen row)
+        const firstDataRow = document.querySelector('#rooster-data-rows > div:first-child');
+        if (firstDataRow) {
+            verticalStickyObserver.observe(firstDataRow);
+            console.log("Observing dagen row for vertical sticky behavior");
+        }
+
+        // Observe all medewerker name cells (first cell in each row)
+        const medewerkerCells = document.querySelectorAll('#rooster-data-rows > div > div:first-child');
+        medewerkerCells.forEach(cell => {
+            horizontalStickyObserver.observe(cell);
+        });
+
+        if (medewerkerCells.length > 0) {
+            console.log(`Observing ${medewerkerCells.length} medewerker cells for horizontal sticky behavior`);
+        }
+    };
+
+    // Observe elements immediately if they exist
+    observeStickyElements();
+
+    // Create a mutation observer to watch for when rooster data is updated
+    const mutationObserver = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+            if (mutation.type === 'childList' && mutation.target.id === 'rooster-data-rows') {
+                // Re-observe sticky elements when roster is re-rendered
+                setTimeout(observeStickyElements, 100);
+            }
+        });
+    });
+
+    // Start observing changes to the rooster data rows
+    const roosterDataRows = document.getElementById('rooster-data-rows');
+    if (roosterDataRows) {
+        mutationObserver.observe(roosterDataRows, {
+            childList: true,
+            subtree: true
+        });
+    }
+
+    console.log("Enhanced sticky observer initialized for rooster navigation");
+}
+
+// Initialize sticky observer when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Wait a bit for the initial render to complete
+    setTimeout(initializeStickyObserver, 500);
+});
+
+console.log("verlofrooster_logic.js Klaar met laden");
+
+/**
+ * Haalt alle medewerkers op voor gebruik in select/dropdown elementen
+ * @returns {Promise<Array>} Array van medewerker objecten met Id, Title en andere relevante gegevens
+ */
+window.getAlleMedewerkersVoorSelect = async function () {
+    // We kunnen de reeds geladen medewerkers gebruiken indien beschikbaar
+    if (alleMedewerkers && alleMedewerkers.length > 0) {
+        return alleMedewerkers.map(m => ({
+            Id: m.Id,
+            Title: m.Naam || m.Title,
+            PersoneelsNr: m.PersoneelsNr || null,
+            E_x002d_mail: m.E_x002d_mail || '',
+            Functie: m.Functie || '',
+            Gebruikersnaam: m.Gebruikersnaam || ''
+        }));
+    }
+
+    // Anders direct van SharePoint ophalen
+    try {
+        const lijstConfigMedewerkers = getLijstConfig(lijstNamen.Medewerkers);
+        const medewerkers = await getLijstItems(lijstConfigMedewerkers.lijstNaam, lijstConfigMedewerkers.viewXml);
+
+        return medewerkers.map(m => ({
+            Id: m.Id,
+            Title: m.Naam || m.Title,
+            PersoneelsNr: m.PersoneelsNr || null,
+            E_x002d_mail: m.E_x002d_mail || '',
+            Functie: m.Functie || '',
+            Gebruikersnaam: m.Gebruikersnaam || ''
+        }));
+    } catch (error) {
+        console.error("[VerlofroosterLogic] Fout bij ophalen medewerkers voor select:", error);
+        return [];
+    }
+};
+
+/**
+ * Update gebruikersinstellingen vanuit de instellingen pagina
+ * @param {Object} nieuweInstellingen - Nieuwe instellingen object uit gebruikersInstellingenLijst
+ */
+function updateGebruikersInstellingen(nieuweInstellingen) {
+    console.log("[VerlofroosterLogic] Bijwerken gebruikersinstellingen:", nieuweInstellingen);
+
+    if (nieuweInstellingen) {
+        // Update global settings object
+        if (nieuweInstellingen.soortWeergave !== undefined) {
+            gebruikersInstellingen.soortWeergave = nieuweInstellingen.soortWeergave;
+        }
+        if (nieuweInstellingen.EigenTeamWeergeven !== undefined) {
+            gebruikersInstellingen.eigenTeamWeergeven = nieuweInstellingen.EigenTeamWeergeven;
+        }
+        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
+            gebruikersInstellingen.weekendenWeergeven = nieuweInstellingen.WeekendenWeergeven;
+        }
+        if (nieuweInstellingen.ID) {
+            gebruikersInstellingenSPId = nieuweInstellingen.ID;
+        }
+
+        // Apply updated settings
+        pasGebruikersInstellingenToe();
+
+        // Refresh rooster if weekend settings changed
+        if (nieuweInstellingen.WeekendenWeergeven !== undefined) {
+            renderRooster();
+        }
+    }
+}
+
+// Make the function globally available for communication with settings page
+window.updateGebruikersInstellingen = updateGebruikersInstellingen;

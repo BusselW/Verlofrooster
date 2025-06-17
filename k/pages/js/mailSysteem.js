@@ -271,4 +271,71 @@ async function verzendRegistratieNotificatieEmail(huidigeGebruiker, nieuweMedewe
     await verzendEmailViaSharePointUtility(aanAdressen, ccAdres, onderwerp, emailBody);
 }
 
+/**
+ * Pure email utility - just sends emails when asked
+ * No business logic about when/if to send
+ */
+
+/**
+ * Verzend email naar ontvangers
+ * @param {Array} recipients - Email adressen van ontvangers
+ * @param {string} subject - Email onderwerp  
+ * @param {string} body - Email inhoud
+ * @param {boolean} isDebugMode - Optional: add debug markers to email
+ * @param {Array} originalRecipients - Optional: original recipients for debug info
+ */
+async function verzendEmail(recipients, subject, body, isDebugMode = false, originalRecipients = []) {
+    if (!recipients || recipients.length === 0) {
+        console.log('[MailSysteem] Geen ontvangers opgegeven - email niet verzonden');
+        return { success: false, message: 'Geen ontvangers' };
+    }
+    
+    let finalSubject = subject;
+    let finalBody = body;
+    
+    // Add debug markers if requested
+    if (isDebugMode && originalRecipients.length > 0) {
+        finalSubject = `[DEBUG MODE] ${subject}`;
+        finalBody += `
+            <hr>
+            <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 10px; margin-top: 20px;">
+                <h4 style="color: #856404; margin: 0 0 10px 0;">🔧 DEBUG INFORMATIE</h4>
+                <p style="margin: 5px 0; color: #856404;"><strong>Werkelijke Ontvangers:</strong> ${recipients.join(', ')}</p>
+                <p style="margin: 5px 0; color: #856404;"><strong>Originele Ontvangers:</strong> ${originalRecipients.join(', ')}</p>
+            </div>
+        `;
+    }
+    
+    try {
+        // Your existing SharePoint email sending logic here
+        const emailData = {
+            To: { results: recipients },
+            Subject: finalSubject,
+            Body: finalBody
+        };
+        
+        // Send via SharePoint REST API or whatever method you use
+        const response = await fetch(`${window.spWebAbsoluteUrl}/_api/SP.Utilities.Utility.SendEmail`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json;odata=verbose',
+                'Content-Type': 'application/json;odata=verbose',
+                'X-RequestDigest': await getRequestDigest()
+            },
+            body: JSON.stringify({ properties: emailData })
+        });
+        
+        if (response.ok) {
+            console.log(`[MailSysteem] Email succesvol verzonden naar ${recipients.length} ontvangers`);
+            return { success: true, message: `Email verzonden naar ${recipients.length} ontvangers` };
+        } else {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+    } catch (error) {
+        console.error('[MailSysteem] Fout bij verzenden email:', error);
+        throw error;
+    }
+}
+
 console.log("js/Mailsysteem.js geladen.");

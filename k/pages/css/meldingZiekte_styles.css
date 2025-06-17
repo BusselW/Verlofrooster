@@ -1,184 +1,260 @@
-/* Base modal styling specifiek voor ziekmeldingen */
-.ziekte-modal {
+/* Ziekte Modal Styles - Updated to mirror verlof pattern */
+
+/* Modal Container */
+.ziekte-modal-container {
     max-width: 600px;
-    border-radius: 8px;
+    margin: 0 auto;
+    padding: 1rem;
 }
 
-/* Form styling */
-.ziekte-form-group {
+/* Form Styling - Changed from .ziekmelding-form to .ziekte-form */
+.ziekte-form {
+    background: #ffffff;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Form Header */
+.ziekte-form .form-header {
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.ziekte-form .form-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+}
+
+/* Notification Area */
+.ziekte-form .notification-area {
     margin-bottom: 1rem;
+    padding: 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
 }
 
-.ziekte-form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
+.ziekte-form .notification-area.hidden {
+    display: none;
 }
 
-.ziekte-form-group input,
-.ziekte-form-group textarea,
-.ziekte-form-group select {
-    width: 100%;
-    padding: 0.5rem;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-}
-
-.ziekte-form-row {
+/* Form Row (for side-by-side inputs) */
+.ziekte-form .form-row {
     display: flex;
     gap: 1rem;
     margin-bottom: 1rem;
 }
 
-.ziekte-form-col {
+.ziekte-form .form-row .form-group {
     flex: 1;
+    margin-bottom: 0;
 }
 
-/* Notification area styling */
-#modal-notification-area {
-    border-radius: 4px;
-    padding: 0.75rem;
+/* Form Groups */
+.ziekte-form .form-group {
     margin-bottom: 1rem;
+}
+
+.ziekte-form .form-group .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151;
     font-size: 0.875rem;
 }
 
-/* Licht thema */
-body:not(.dark-theme) .ziekte-modal {
+.ziekte-form .form-label.required::after {
+    content: " *";
+    color: #ef4444;
+}
+
+/* Input Styling */
+.ziekte-form .form-input,
+.ziekte-form .form-select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
     background-color: #ffffff;
-    color: #333333;
-    border: 1px solid #e0e0e0;
+    transition: border-color 0.2s ease-in-out;
 }
 
-body:not(.dark-theme) .ziekte-form-group input,
-body:not(.dark-theme) .ziekte-form-group textarea,
-body:not(.dark-theme) .ziekte-form-group select {
-    background-color: #ffffff;
-    color: #333333;
-    border-color: #d0d0d0;
-}
-
-body:not(.dark-theme) .ziekte-form-group input:focus,
-body:not(.dark-theme) .ziekte-form-group textarea:focus,
-body:not(.dark-theme) .ziekte-form-group select:focus {
-    border-color: #4a86e8;
+.ziekte-form .form-input:focus,
+.ziekte-form .form-select:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(74, 134, 232, 0.2);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-body:not(.dark-theme) #modal-action-button {
-    background-color: #4a86e8;
-    color: white;
+.ziekte-form .form-input:readonly {
+    background-color: #f9fafb;
+    color: #6b7280;
+    cursor: not-allowed;
 }
 
-body:not(.dark-theme) #modal-action-button:hover {
-    background-color: #3a76d8;
+/* Time Input Specific */
+.ziekte-form .time-input {
+    width: auto;
+    margin-left: 0.5rem;
+    min-width: 120px;
 }
 
-/* Donker thema */
-body.dark-theme .ziekte-modal {
-    background-color: #2d2d2d;
-    color: #e0e0e0;
-    border: 1px solid #444444;
-}
-
-body.dark-theme .ziekte-form-group label {
-    color: #e0e0e0;
-}
-
-body.dark-theme .ziekte-form-group input,
-body.dark-theme .ziekte-form-group textarea,
-body.dark-theme .ziekte-form-group select {
-    background-color: #3a3a3a;
-    color: #e0e0e0;
-    border-color: #555555;
-}
-
-body.dark-theme .ziekte-form-group input:focus,
-body.dark-theme .ziekte-form-group textarea:focus,
-body.dark-theme .ziekte-form-group select:focus {
-    border-color: #6a9eee;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(106, 158, 238, 0.2);
-}
-
-body.dark-theme #modal-action-button {
-    background-color: #6a9eee;
-    color: white;
-}
-
-body.dark-theme #modal-action-button:hover {
-    background-color: #5a8ede;
-}
-
-/* Date and time pickers */
-.ziekte-date-time-container {
+/* Date Time Group */
+.ziekte-form .date-time-group {
     display: flex;
     gap: 0.5rem;
+    align-items: center;
 }
 
-.ziekte-date-container {
-    flex: 3;
+.ziekte-form .date-time-group .form-input[type="date"] {
+    flex: 1;
 }
 
-.ziekte-time-container {
-    flex: 2;
+/* Checkbox Styling */
+.ziekte-form .checkbox-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
 }
 
-/* Notifications */
-.notification-area.success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-    padding: 10px;
-    margin-bottom: 15px;
-}
-
-.notification-area.error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-    padding: 10px;
-    margin-bottom: 15px;
-}
-
-.notification-area.info {
-    background-color: #d1ecf1;
-    color: #0c5460;
-    border: 1px solid #bee5eb;
-    padding: 10px;
-    margin-bottom: 15px;
-}
-
-body.dark-theme .notification-area.success {
-    background-color: rgba(40, 167, 69, 0.2);
-    color: #8fd19e;
-    border-color: rgba(40, 167, 69, 0.4);
-}
-
-body.dark-theme .notification-area.error {
-    background-color: rgba(220, 53, 69, 0.2);
-    color: #ea868f;
-    border-color: rgba(220, 53, 69, 0.4);
-}
-
-body.dark-theme .notification-area.info {
-    background-color: rgba(23, 162, 184, 0.2);
-    color: #6edff6;
-    border-color: rgba(23, 162, 184, 0.4);
-}
-
-/* Spinner animation for loading states */
-.spinner {
-    display: inline-block;
-    width: 1rem;
-    height: 1rem;
+.ziekte-form .checkbox-group input[type="checkbox"] {
+    width: auto;
     margin-right: 0.5rem;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: #fff;
-    animation: spin 1s ease-in-out infinite;
+    transform: scale(1.1);
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
+.ziekte-form .checkbox-group label {
+    margin-bottom: 0;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+/* Textarea Styling */
+.ziekte-form .form-textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    background-color: #ffffff;
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+    transition: border-color 0.2s ease-in-out;
+}
+
+.ziekte-form .form-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Error States */
+.ziekte-form .form-input.error,
+.ziekte-form .form-select.error,
+.ziekte-form .form-textarea.error {
+    border-color: #ef4444;
+}
+
+.ziekte-form .error-message {
+    color: #ef4444;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+/* Success States */
+.ziekte-form .form-input.success,
+.ziekte-form .form-select.success {
+    border-color: #10b981;
+}
+
+/* Dark Mode Styles */
+.dark .ziekte-form {
+    background: #1f2937;
+    color: #f3f4f6;
+}
+
+.dark .ziekte-form .form-title {
+    color: #f3f4f6;
+}
+
+.dark .ziekte-form .form-group .form-label {
+    color: #f3f4f6;
+}
+
+.dark .ziekte-form .form-input,
+.dark .ziekte-form .form-select,
+.dark .ziekte-form .form-textarea {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f3f4f6;
+}
+
+.dark .ziekte-form .form-input:readonly {
+    background-color: #4b5563;
+    color: #9ca3af;
+}
+
+.dark .ziekte-form .form-input:focus,
+.dark .ziekte-form .form-select:focus,
+.dark .ziekte-form .form-textarea:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+}
+
+.dark .ziekte-form .form-input.error,
+.dark .ziekte-form .form-select.error,
+.dark .ziekte-form .form-textarea.error {
+    border-color: #f87171;
+}
+
+.dark .ziekte-form .form-input.success,
+.dark .ziekte-form .form-select.success {
+    border-color: #34d399;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+    .ziekte-modal-container {
+        padding: 0.5rem;
+    }
+    
+    .ziekte-form {
+        padding: 1rem;
+    }
+    
+    .ziekte-form .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .ziekte-form .form-row .form-group {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Body styling for modal context */
+.ziekte-modal-body {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f9fafb;
+    color: #1f2937;
+}
+
+.ziekte-modal-body .form-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 1rem;
+    width: 100%;
+}
+
+/* Dark mode for body */
+.dark .ziekte-modal-body {
+    background-color: #111827;
+    color: #f3f4f6;
 }

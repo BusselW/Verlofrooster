@@ -1213,8 +1213,8 @@ async function handleCommentaarBewerken() {
             }
             
             // Refresh the roster
-            if (typeof window.laadInitiëleData === 'function') {
-                await window.laadInitiëleData(false);
+            if (typeof window.Laadinitiele === 'function') {
+                await window.Laadinitiele(false);
             }
         }
     } catch (error) {
@@ -1269,8 +1269,8 @@ async function verwijderItemUitSharePoint(type, id) {
     }
     
     // Refresh roster data
-    if (typeof window.laadInitiëleData === 'function') {
-        await window.laadInitiëleData(false);
+    if (typeof window.Laadinitiele === 'function') {
+        await window.Laadinitiele(false);
     }
 }
 

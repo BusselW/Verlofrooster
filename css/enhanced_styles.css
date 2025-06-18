@@ -1051,3 +1051,75 @@ body.verlof-modal-body { /* Scoped for modal usage */
 #modal-content > .verlof-modal-body {
     background-color: transparent !important; /* Override if form sets its own body background */
 }
+
+/* Verlof Modal Specific Styles */
+.verlof-form-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.verlof-form {
+    background: #ffffff;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+}
+
+.verlof-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.verlof-form .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.verlof-form .form-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+}
+
+.verlof-form .time-input {
+    width: auto;
+    margin-left: 0.5rem;
+}
+
+.verlof-form .checkbox-group {
+    display: flex;
+    align-items: center;
+}
+
+.verlof-form .checkbox-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 0.5rem;
+}
+
+.verlof-form .form-textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    resize: vertical;
+}
+
+/* Dark mode styles */
+.dark .verlof-form {
+    background: #1f2937;
+}
+
+.dark .verlof-form .form-group label {
+    color: #f3f4f6;
+}
+
+.dark .verlof-form .form-input,
+.dark .verlof-form .form-textarea {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f3f4f6;
+}

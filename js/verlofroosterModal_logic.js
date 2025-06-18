@@ -15,6 +15,21 @@ window.verlofModalMedewerkerContext = null;
 // Globale variabele voor de geselecteerde medewerker in de zittingvrij modal
 window.zittingVrijModalGeselecteerdeMedewerker = { gebruikersnaam: null, displayName: null };
 
+// Helper function to check supervisor status (can be moved to a shared utility like util_auth.js or machtigingen.js if preferred)
+function checkCurrentUserSupervisorStatusModalLogic() {
+    if (!window.huidigeGebruiker || !window.huidigeGebruiker.sharePointGroepen) {
+        console.warn("[VerlofroosterModalLogic] Kan supervisor status niet bepalen: huidigeGebruiker of sharePointGroepen niet beschikbaar.");
+        return false;
+    }
+    // Groups that grant supervisor rights for modals, aligned with meldingVerlof_logic.js
+    const privilegedGroups = ["1. Sharepoint beheer", "1.1. Mulder MT", "2.6. Roosteraars", "2.3. Senioren beoordelen"];
+    return window.huidigeGebruiker.sharePointGroepen.some(groep =>
+        privilegedGroups.some(privilegedGroup =>
+            groep.toLowerCase().includes(privilegedGroup.toLowerCase())
+        )
+    );
+}
+
 
 /**
  * Hulpfunctie om HTML-speciale tekens te escapen.
@@ -349,7 +364,7 @@ function closeModal() {
     // Voorkomt interactie met sluitknoppen tijdens de animatie.
     if (window.domRefsLogic.modalCloseButtonX && window.domRefsLogic.modalCloseButtonX.style) window.domRefsLogic.modalCloseButtonX.style.pointerEvents = 'none';
     if (window.domRefsLogic.modalCloseButton && window.domRefsLogic.modalCloseButton.style) window.domRefsLogic.modalCloseButton.style.pointerEvents = 'none';
-    if (window.domRefsLogic.modalPlaceholder && window.domRefsLogic.modalPlaceholder.style) window.domRefsLogic.modalPlaceholder.style.pointerEvents = 'none';
+    if (window.domRefsLogic.modalPlaceholder && window.domRefsLogic.modalPlaceholder.style) window.domRefsLogic.modalCloseButton.style.pointerEvents = 'none';
     
     // Wacht tot de animatie voltooid is voordat de modal volledig verborgen wordt.
     setTimeout(() => {
@@ -431,7 +446,7 @@ function getCompensatieUrenFormulierHtml() {
                 <legend class="text-sm font-semibold text-gray-700 dark:text-gray-300 px-2">Start Compensatie</legend>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label for="ModalStartCompensatieDatum" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Startdatum <span class="text-red-500">*</span></label>
+                        <label
                         <input type="date" id="ModalStartCompensatieDatum" name="StartCompensatieDatum" class="form-input mt-1 w-full" required title="Selecteer de startdatum van de compensatie.">
                     </div>
                     <div>
@@ -715,8 +730,8 @@ async function handleCompensatieFormulierVerzenden() {
         setTimeout(() => {
             closeModal();
             // Optioneel: ververs de hoofd rooster data
-            if (typeof window.laadInitiëleData === 'function') {
-                window.laadInitiëleData(false); // false om niet opnieuw modal data te forceren
+            if (typeof window.Laadinitiele === 'function') {
+                window.Laadinitiele(false); // false om niet opnieuw modal data te forceren
             }
         }, 2000); // Geef gebruiker tijd om succesmelding te lezen
 
@@ -797,94 +812,223 @@ function openCompensatieUrenModal(medewerkerGegevens, geselecteerdeDatum) {
  * @param {object} [medewerkerGegevens=null] - Medewerker context (alleen voor nieuwe items van huidige gebruiker).
  */
 async function openVerlofAanvraagModal(itemData = null, geselecteerdeDatum = new Date(), medewerkerGegevens = null) {
-    const functieNaam = "openVerlofAanvraagModal";
-    const isEditMode = itemData !== null;
-    console.log(`[${functieNaam}] Start. Modus: ${isEditMode ? 'Bewerken' : 'Nieuw'}. ItemData:`, itemData);
-
-    let contextMedewerker;
-    if (isEditMode) {
-        const medewerkerInfo = alleMedewerkers.find(m => m.Username === itemData.MedewerkerID);
-        contextMedewerker = {
-            loginNaam: medewerkerInfo ? medewerkerInfo.Username : itemData.MedewerkerID,
-            displayName: itemData.Medewerker,
-            normalizedUsername: itemData.MedewerkerID,
-            medewerkerNaamVolledig: itemData.Medewerker
-        };
-    } else {
-        contextMedewerker = medewerkerGegevens || window.huidigeGebruiker;
-    }
-
-    if (!contextMedewerker || !(contextMedewerker.normalizedUsername || contextMedewerker.loginNaam)) {
-        console.error(`[${functieNaam}] Ongeldige of incomplete medewerkergegevens.`);
-        toonModalNotificatie('Fout: Medewerkerinformatie is onvolledig.', 'error', false);
-        return;
-    }
-    window.verlofModalMedewerkerContext = contextMedewerker;
-
-    // --- GECORRIGEERDE URL OPBOUW ---
-    // Verwijder de oude, problematische manier en bouw het pad direct en correct op.
-    const basisUrl = (window.spWebAbsoluteUrl || "").replace(/\/$/, ""); // Zorgt voor een basis-URL zonder slash op het eind
-    const modalFormUrl = `${basisUrl}/CPW/Rooster/pages/meldingVerlof.aspx`; // Bouw het pad direct op
-
+    console.log("[VerlofroosterModalLogic] Opening verlof aanvraag modal");
+    
     try {
-        console.log(`[${functieNaam}] Ophalen modal content van: ${modalFormUrl}`);
-        const response = await fetch(modalFormUrl);
-        if (!response.ok) {
-            throw new Error(`Fout bij ophalen van ${modalFormUrl}: ${response.status} ${response.statusText}`);
-        }
+        // Zorg ervoor dat de CSS eerst wordt geladen
+        await ensureVerlofModalCSS();
         
-        const rawHtml = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(rawHtml, 'text/html');
-        const formElement = doc.querySelector('form#verlof-form');
-
-        if (!formElement) throw new Error(`<form id="verlof-form"> niet gevonden in de geladen HTML.`);
-
-        formElement.querySelector('.form-header')?.remove();
-        formElement.querySelector('.form-actions')?.remove();
-        if (!formElement.querySelector('#modal-notification-area')) {
-            const notificationDiv = document.createElement('div');
-            notificationDiv.id = 'modal-notification-area';
-            notificationDiv.className = 'notification-area hidden';
-            formElement.insertBefore(notificationDiv, formElement.firstChild);
-        }
+        const modalTitle = "Verlof Aanvragen";
         
-        const modalTitle = isEditMode ? 'Verlofaanvraag Bewerken' : 'Verlof Aanvragen';
-        const actionButtonText = isEditMode ? 'Wijzigingen Opslaan' : 'Aanvraag Indienen';
+        const formContainer = document.createElement('div');
+        formContainer.className = 'verlof-modal-container';
+        
+        // VOLLEDIGE HTML GENERATIE - spiegelt precies de ziekte modal structuur
+        formContainer.innerHTML = `
+            <form id="verlof-form" class="verlof-form" novalidate>                <!-- Verborgen velden -->
+                <input type="hidden" id="Title" name="Title">
+                <input type="hidden" id="MedewerkerID" name="MedewerkerID">
+                <input type="hidden" id="MedewerkerSharePointName" name="MedewerkerSharePointName">
+                <input type="hidden" id="AanvraagTijdstip" name="AanvraagTijdstip">
+                <input type="hidden" id="StartDatum" name="StartDatum">
+                <input type="hidden" id="EindDatum" name="EindDatum">
+                <input type="hidden" id="Status" name="Status" value="Nieuw">
+                <input type="hidden" id="RedenId" name="RedenId">
+                <input type="hidden" id="Reden" name="Reden" value="Verlof/vakantie">
 
-        openModal(
+                <!-- Formulier kop -->
+                <div class="form-header">
+                    <h2 class="form-title">Verlofaanvraag Indienen</h2>
+                </div>
+
+                <!-- Notificatiegebied -->
+                <div id="modal-notification-area" class="notification-area hidden" role="alert"></div>
+
+                <!-- Medewerker velden rij -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ModalMedewerkerDisplay" class="form-label">Medewerker</label>
+                        <input type="text" id="ModalMedewerkerDisplay" name="MedewerkerDisplay" 
+                               class="form-input bg-gray-50 dark:bg-gray-800 cursor-not-allowed" 
+                               readonly title="Je naam zoals bekend in het systeem.">
+                        <select id="ModalMedewerkerSelect" name="MedewerkerSelect" class="form-select hidden">
+                            <option value="">Selecteer medewerker...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="ModalMedewerkerIDDisplay" class="form-label">Medewerker ID</label>
+                        <input type="text" id="ModalMedewerkerIDDisplay" name="MedewerkerIDDisplay" 
+                               class="form-input bg-gray-50 dark:bg-gray-800 cursor-not-allowed" 
+                               readonly title="Je gebruikersnaam.">
+                    </div>
+                </div>
+
+                <!-- Start datum/tijd rij -->
+                <div class="form-row">
+                    <div class="form-group flex-2">
+                        <label for="ModalStartDatePicker" class="form-label required">Startdatum</label>
+                        <input type="date" id="ModalStartDatePicker" name="StartDatePicker" 
+                               class="form-input focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                               required title="Selecteer de startdatum van je verlof.">
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="ModalStartTimePicker" class="form-label required">Starttijd</label>
+                        <input type="time" id="ModalStartTimePicker" name="StartTimePicker" 
+                               class="form-input focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                               value="09:00" required title="Selecteer de starttijd van je verlof.">
+                    </div>
+                </div>
+
+                <!-- Eind datum/tijd rij -->
+                <div class="form-row">
+                    <div class="form-group flex-2">
+                        <label for="ModalEndDatePicker" class="form-label required">Einddatum</label>
+                        <input type="date" id="ModalEndDatePicker" name="EndDatePicker" 
+                               class="form-input focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                               required title="Selecteer de einddatum van je verlof.">
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="ModalEndTimePicker" class="form-label required">Eindtijd</label>
+                        <input type="time" id="ModalEndTimePicker" name="EndTimePicker" 
+                               class="form-input focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                               value="17:00" required title="Selecteer de eindtijd van je verlof.">
+                    </div>
+                </div>
+
+                <!-- Reden veld (alleen-lezen zoals ziekte) -->
+                <div class="form-group">
+                    <label class="form-label">Reden</label>
+                    <input type="text" class="form-input bg-gray-100 dark:bg-gray-700 cursor-not-allowed" value="Verlof/vakantie" readonly title="De reden voor deze aanvraag is standaard Verlof/vakantie.">
+                </div>
+
+                <!-- Beschrijving veld -->
+                <div class="form-group">
+                    <label for="ModalOmschrijving" class="form-label">Omschrijving (optioneel)</label>
+                    <textarea id="ModalOmschrijving" name="Omschrijving" class="form-textarea" placeholder="Eventuele toelichting bij je verlofaanvraag." title="Geef hier eventueel een extra toelichting op je verlofaanvraag."></textarea>
+                </div>
+            </form>
+        `;
+        
+        window.openModal(
             modalTitle,
-            formElement.outerHTML,
-            actionButtonText,
+            formContainer.innerHTML,
+            "Verlofaanvraag Opslaan",
             async () => {
-                if (typeof window.handleVerlofModalFormSubmit === 'function') {
-                    const success = await window.handleVerlofModalFormSubmit(document.getElementById('verlof-form'), window.verlofModalMedewerkerContext, geselecteerdeDatum, isEditMode ? itemData.ID : null);
-                    if (success) {
-                        closeModal();
-                        if (typeof window.laadInitiëleData === 'function') window.laadInitiëleData(false);
-                    }
-                } else {
-                    console.error(`[${functieNaam}] Functie handleVerlofModalFormSubmit niet gevonden.`);
+                if (typeof window.submitVerlofAanvraag === 'function') {
+                    await window.submitVerlofAanvraag();
                 }
+                return true;
             },
-            true, false, null, 'max-w-2xl'
+            true, // showCancelButton
+            false, // showPrevButton
+            null, // prevButtonCallback
+            'max-w-2xl' // modalSizeClass - wider for this form
         );
-
-        if (window.domRefsLogic && window.domRefsLogic.modalContent) {
-            window.domRefsLogic.modalContent.classList.add('verlof-modal-body');
-        }
-
+        
+        // Initialiseer na het openen van de modal met de JUISTE parameters
         setTimeout(() => {
-            if (typeof window.initializeVerlofModalForm === 'function') {
-                window.initializeVerlofModalForm(geselecteerdeDatum, contextMedewerker, itemData);
+            const ingelogdeGebruiker = window.huidigeGebruiker;
+            
+            let contextVoorVerlof;
+            if (medewerkerGegevens && medewerkerGegevens.loginNaam && 
+                medewerkerGegevens.loginNaam !== ingelogdeGebruiker.loginNaam) {
+                contextVoorVerlof = medewerkerGegevens;
+            } else {
+                contextVoorVerlof = ingelogdeGebruiker;
             }
-        }, 50);
-
+            
+            // Stel globale datumvariabelen in voordat je de initialisatie aanroept
+            if (geselecteerdeDatum) {
+                window.verlofModalStartDate = geselecteerdeDatum;
+                window.verlofModalEndDate = geselecteerdeDatum;
+            }
+            
+            // JUISTE parameter volgorde (spiegel ziekte patroon)
+            if (typeof window.initializeVerlofModalForm === 'function') {
+                window.initializeVerlofModalForm(
+                    contextVoorVerlof,          // 1e param: medewerkerContext (zoals ziekte)
+                    geselecteerdeDatum,         // 2e param: geselecteerdeDatum (zoals ziekte)
+                    itemData                    // 3e param: itemData (zoals ziekte)
+                );
+                console.log("[openVerlofAanvraagModal] initializeVerlofModalForm succesvol aangeroepen.");
+            } else {
+                console.error("[openVerlofAanvraagModal] Functie initializeVerlofModalForm niet gevonden.");
+            }
+        }, 100);
+        
     } catch (error) {
-        console.error(`[${functieNaam}] Algemene fout:`, error);
-        toonModalNotificatie('Er is een fout opgetreden bij het laden van het verlofaanvraagformulier.', 'error', false);
+        console.error("[VerlofroosterModalLogic] Fout bij het openen van verlof modal:", error);
+        if (typeof window.toonModalNotificatie === 'function') {
+            window.toonModalNotificatie(`Fout bij openen verlofaanvraag: ${error.message}`, "error");
+        }
     }
 }
+// --- Function to load Ziekte Modal CSS ---
+/**
+ * Dynamisch laden van CSS voor de Ziekte Modal indien nog niet aanwezig.
+ * Zorgt ervoor dat de specifieke CSS voor ziekteMelden.aspx wordt geladen.
+ */
+async function ensureZiekteModalCSS() {
+    const cssPath = 'pages/css/meldingZiekte_styles.css'; // Relative to the /cpw/k/ structure
+    const cssId = 'ziekte-modal-styles';
+
+    if (document.getElementById(cssId)) {
+        // console.log('[VerlofroosterModalLogic] meldingZiekte_styles.css already loaded.');
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+        const link = document.createElement('link');
+        link.id = cssId;
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        
+        let fullCssPath = cssPath;
+        if (window.spWebAbsoluteUrl) {
+            const baseUrl = window.spWebAbsoluteUrl.replace(/\/$/, ''); // Remove trailing slash
+            // Corrected path to include /cpw/k/
+            const basePathSegment = '/cpw/k/'; 
+            fullCssPath = `${baseUrl}${basePathSegment}${cssPath}`;
+        } else {
+            // Fallback if spWebAbsoluteUrl is not defined. 
+            // This assumes the application is served from a path where '/cpw/k/' is appropriate.
+            // Or, if running locally, ensure 'pages/css/meldingZiekte_styles.css' is relative to 'k' directory.
+            // For development, if verlofRooster.aspx is in 'k', this might become '/k/pages/css/...'
+            // However, the error indicates a server context, so spWebAbsoluteUrl should ideally be present.
+            // If directly in 'k', then 'pages/css/...' might be intended.
+            // A more robust solution might involve a global configuration for base paths.
+            console.warn('[VerlofroosterModalLogic] spWebAbsoluteUrl not found, attempting relative path construction for CSS. This might not work in all deployment scenarios.');
+            // Attempting a path relative to where verlofRooster.aspx (in 'k') would expect 'pages'
+            // This part is tricky without knowing the exact local vs. server setup differences.
+            // The user's error points to a server path, so the spWebAbsoluteUrl case is primary.
+            // If spWebAbsoluteUrl is missing, it's hard to guess the correct base.
+            // Let's assume for now if spWebAbsoluteUrl is missing, it's a local scenario where 'pages/...' from 'k/' is fine.
+            // However, the user explicitly mentioned /cpw/k/, so we should try to respect that.
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('/k/')) {
+                 // If current page is in /k/, then 'pages/css/...' should be relative from there.
+                 // This is simpler than trying to guess /cpw/
+            } else {
+                // If not in /k/, it's harder to guess. Defaulting to the simple cssPath.
+            }
+        }
+        
+        link.href = fullCssPath; 
+        console.log(`[VerlofroosterModalLogic] Attempting to load CSS from: ${fullCssPath}`);
+
+        link.onload = () => {
+            console.log(`[VerlofroosterModalLogic] ${cssPath} loaded successfully.`);
+            resolve();
+        };
+        link.onerror = () => {
+            console.error(`[VerlofroosterModalLogic] Error loading ${fullCssPath}. Check path and server response.`);
+            // Resolve to allow modal to open, albeit potentially unstyled.
+            resolve(); 
+        };
+        document.head.appendChild(link);
+    });
+}
+
 // --- HTML voor Ziek/Beter Melden Formulier ---
 /**
  * Genereert de HTML voor het ziek/beter melden formulier.
@@ -967,337 +1111,227 @@ function getMeldingMakenFormulierHtml(typeMelding = 'ziek') {
  * @param {Date} geselecteerdeDatum - De datum waarop de melding betrekking heeft.
  * @param {string} [typeMelding='ziek'] - Het type melding: 'ziek' of 'beter'.
  */
-function openZiekBeterMeldenModal(medewerkerGegevens, geselecteerdeDatum, typeMelding = 'ziek') {
-    const functieNaam = "openZiekBeterMeldenModal";
-    console.log(`[${functieNaam}] Start. Type: ${typeMelding}, Medewerker:`, medewerkerGegevens, "Datum:", geselecteerdeDatum);
+async function openZiekBeterMeldenModal(medewerkerGegevens, geselecteerdeDatum, typeMelding = 'ziek') {
+    console.log("[openZiekBeterMeldenModal] Opening ziekte modal", { medewerkerGegevens, geselecteerdeDatum, typeMelding });
+    
+    try {
+        // Check if modal system is available
+        if (typeof window.openModal !== 'function') {
+            console.error("[openZiekBeterMeldenModal] Modal system not available");
+            return;
+        }
 
-    let contextMedewerker = medewerkerGegevens;
-    if (!contextMedewerker && window.huidigeGebruiker) {
-        contextMedewerker = { 
-            Id: window.huidigeGebruiker.medewerkerData ? window.huidigeGebruiker.medewerkerData.ID : window.huidigeGebruiker.Id,
-            Naam: window.huidigeGebruiker.Title,
-            Username: window.huidigeGebruiker.normalizedUsername,
-            Email: window.huidigeGebruiker.Email,
-            loginNaam: window.huidigeGebruiker.loginNaam
-        };
+        const modalTitle = typeMelding === 'ziek' ? "Ziek Melden" : "Beter Melden";
+        
+        // Create the form container with correct classes
+        const formContainer = document.createElement('div');
+        formContainer.className = 'ziekte-modal-container'; // This is where this line belongs
+    
+        // Build the form HTML exactly matching ziekteMelden.aspx structure
+        formContainer.innerHTML = `
+            <form id="ziekte-form" class="ziekte-form" novalidate> <!-- Updated class name -->
+                <input type="hidden" id="Title" name="Title">
+                <input type="hidden" id="MedewerkerID" name="MedewerkerID"> 
+                <input type="hidden" id="AanvraagTijdstip" name="AanvraagTijdstip">
+                <input type="hidden" id="StartDatum" name="StartDatum"> 
+                <input type="hidden" id="EindDatum" name="EindDatum">   
+                <input type="hidden" id="Status" name="Status" value="Nieuw">
+                <input type="hidden" id="RedenId" name="RedenId" value="1"> 
+                <input type="hidden" id="Reden" name="Reden" value="Ziekte"> 
+
+                <div class="form-header">
+                    <h2 class="form-title">${modalTitle}</h2>
+                </div>
+
+                <div id="modal-notification-area" class="notification-area hidden" role="alert"></div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ModalMedewerkerDisplay" class="form-label">Medewerker</label>
+                        <input type="text" id="ModalMedewerkerDisplay" name="MedewerkerDisplay" class="form-input bg-gray-100 dark:bg-gray-700 cursor-not-allowed" readonly title="Je naam zoals bekend in het systeem.">
+                    </div>
+                    <div class="form-group">
+                        <label for="ModalMedewerkerIDDisplay" class="form-label">Medewerker ID</label>
+                        <input type="text" id="ModalMedewerkerIDDisplay" name="MedewerkerIDDisplay" class="form-input bg-gray-100 dark:bg-gray-700 cursor-not-allowed" readonly title="Je gebruikersnaam.">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ModalStartDatePicker" class="form-label required">Startdatum</label>
+                        <input type="date" id="ModalStartDatePicker" name="StartDatePicker" class="form-input" required title="Selecteer de startdatum van je ziekmelding.">
+                    </div>
+                    <div class="form-group">
+                        <label for="ModalStartTimePicker" class="form-label required">Starttijd</label>
+                        <input type="time" id="ModalStartTimePicker" name="StartTimePicker" class="form-input" value="09:00" required title="Selecteer de starttijd van je ziekmelding.">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="ModalEndDatePicker" class="form-label required">Einddatum</label>
+                        <input type="date" id="ModalEndDatePicker" name="EndDatePicker" class="form-input" required title="Selecteer de einddatum van je ziekmelding.">
+                    </div>
+                    <div class="form-group">
+                        <label for="ModalEndTimePicker" class="form-label required">Eindtijd</label>
+                        <input type="time" id="ModalEndTimePicker" name="EndTimePicker" class="form-input" value="17:00" required title="Selecteer de eindtijd van je ziekmelding.">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Reden</label>
+                    <input type="text" class="form-input bg-gray-100 dark:bg-gray-700 cursor-not-allowed" value="Ziekte" readonly title="De reden voor deze aanvraag is standaard Ziekte.">
+                </div>
+
+                <div class="form-group">
+                    <label for="ModalOmschrijving" class="form-label">Omschrijving (optioneel)</label>
+                    <textarea id="ModalOmschrijving" name="Omschrijving" class="form-textarea" placeholder="Eventuele toelichting, bijv. specifieke details over gedeeltelijke dag." title="Geef hier eventueel een extra toelichting op je ziekmelding."></textarea>
+                </div>
+            </form>
+        `;
+        
+        // Open the modal with the controlled content
+        window.openModal(
+            modalTitle,
+            formContainer.innerHTML,
+            "Melding Opslaan",
+            async () => {
+                // Call the specific submission handler from meldingZiekte_logic.js
+                if (typeof window.submitZiekmelding === 'function') {
+                    // Create a fake event object to prevent form submission
+                    const fakeEvent = { preventDefault: () => {} };
+                    await window.submitZiekmelding(fakeEvent);
+                } else {
+                    console.error("Functie submitZiekmelding niet gevonden in window scope.");
+                    if (typeof window.toonModalNotificatie === 'function') {
+                        window.toonModalNotificatie("Fout bij opslaan: submitfunctie niet gevonden.", "error");
+                    }
+                }
+                return true;
+            },
+            true, // showCancelButton
+            false, // showPrevButton
+            null, // prevButtonCallback
+            'max-w-2xl' // modalSizeClass - wider for this form
+        );
+        
+        // Initialize the form after modal opens (mirror verlof pattern)
+        setTimeout(() => {
+            // Determine employee context like verlof modal does
+            const ingelogdeGebruiker = window.huidigeGebruiker;
+            
+            let contextVoorZiekmelding;
+            if (medewerkerGegevens && medewerkerGegevens.loginNaam && 
+                medewerkerGegevens.loginNaam !== ingelogdeGebruiker.loginNaam) {
+                contextVoorZiekmelding = medewerkerGegevens;
+            } else {
+                contextVoorZiekmelding = ingelogdeGebruiker;
+            }
+            
+            // FIX: Set global date variables before calling initialization
+            if (geselecteerdeDatum) {
+                window.ziekmeldingModalStartDate = geselecteerdeDatum;
+                window.ziekmeldingModalEndDate = geselecteerdeDatum;
+            }
+            
+            // FIX: Correct parameter order
+            if (typeof window.initializeZiekmeldingModal === 'function') {
+                window.initializeZiekmeldingModal(
+                    contextVoorZiekmelding,     // 1st param: medewerkerContext
+                    geselecteerdeDatum,         // 2nd param: geselecteerdeDatum  
+                    null                        // 3rd param: itemData (null for new)
+                );
+                console.log("[openZiekBeterMeldenModal] initializeZiekmeldingModal called successfully.");
+            } else {
+                console.error("[openZiekBeterMeldenModal] Function initializeZiekmeldingModal not found.");
+            }
+        }, 100);
+        
+    } catch (error) {
+        console.error("[openZiekBeterMeldenModal] Error opening ziekte modal:", error);
+        if (typeof window.toonModalNotificatie === 'function') {
+            window.toonModalNotificatie(`Fout bij openen ziekmelding: ${error.message}`, "error");
+        }
     }
+}
 
-    if (!contextMedewerker || !contextMedewerker.Username) {
-        toonModalNotificatie("Fout: Medewerkerinformatie is onvolledig.", "error", false);
+async function ensureVerlofModalCSS() {
+    const cssPath = 'pages/css/meldingVerlof_styles.css';
+    
+    // Check if CSS is already loaded
+    if (document.querySelector(`link[href*="${cssPath}"]`)) {
+        console.log(`[VerlofroosterModalLogic] ${cssPath} already loaded.`);
         return;
     }
 
-    const modalTitel = typeMelding === 'beter' ? 'Beter Melden' : 'Ziek Melden';
-    const actieKnopTekst = typeMelding === 'beter' ? 'Beter Melding Indienen' : 'Ziekmelding Indienen';
-    const modalContentHtml = getMeldingMakenFormulierHtml(typeMelding);
-
-    openModal(
-        modalTitel,
-        modalContentHtml,
-        actieKnopTekst,
-        async () => { // De actie callback
-            if (typeof window.handleZiekmeldingFormulierVerzenden === 'function') {
-                // Zorg ervoor dat het formulier element correct wordt doorgegeven
-                const formElement = document.getElementById('ziekmelding-form');
-                if (formElement) {
-                    const success = await window.handleZiekmeldingFormulierVerzenden(formElement, contextMedewerker, geselecteerdeDatum);
-                    if (success) {
-                        closeModal();
-                        if (typeof window.laadInitiëleData === 'function') window.laadInitiëleData(false);
-                    }
-                } else {
-                    console.error(`[${functieNaam}] Formulier #ziekmelding-form niet gevonden in modal.`);
-                    toonModalNotificatie('Interne fout: Formulier niet gevonden.', 'error', false);
-                }
-            } else {
-                console.error(`[${functieNaam}] Functie handleZiekmeldingFormulierVerzenden niet gevonden.`);
-                toonModalNotificatie('Interne fout bij verwerken formulier.', 'error', false);
-            }
-        },
-        true, false, null, 'max-w-lg' // Modal grootte
-    );
-
-    if (window.domRefsLogic && window.domRefsLogic.modalContent) {
-        window.domRefsLogic.modalContent.classList.add('melding-maken-modal-body');
-    }
-    
-    setTimeout(() => {
-        if (typeof window.initializeZiekModalForm === 'function') {
-            window.initializeZiekModalForm(typeMelding, contextMedewerker, geselecteerdeDatum || new Date());
-        } else {
-            console.warn(`[${functieNaam}] Functie initializeZiekModalForm niet gevonden.`);
+    return new Promise((resolve) => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        
+        let fullCssPath = cssPath;
+        if (window.spWebAbsoluteUrl) {
+            const baseUrl = window.spWebAbsoluteUrl.replace(/\/$/, '');
+            const basePathSegment = '/cpw/k/'; 
+            fullCssPath = `${baseUrl}${basePathSegment}${cssPath}`;
         }
-    }, 50);
+        
+        link.href = fullCssPath;
+        
+        link.onload = () => {
+            console.log(`[VerlofroosterModalLogic] ${cssPath} loaded successfully.`);
+            resolve();
+        };
+        
+        link.onerror = () => {
+            console.error(`[VerlofroosterModalLogic] Failed to load ${cssPath}`);
+            resolve(); // Still resolve to not block execution
+        };
+        
+        document.head.appendChild(link);
+    });
 }
 
-
-/**
- * Opent een modal voor het beheren van zittingvrije dagen (incidenteel) door beheerders.
- * @param {Object} medewerkerGegevens - Optioneel. Informatie over de medewerker. Indien niet meegegeven, wordt huidige gebruiker gebruikt.
- * @param {boolean} isBeheerder - Of de huidige gebruiker beheerdersrechten heeft. Wordt intern gecheckt indien niet meegegeven.
- */
-// /k.zip/js/verlofroosterModal_logic.js (VERVANG deze functie ook)
-
-function openAdminZittingVrijModal(medewerkerGegevens, isBeheerder) {
-    console.log("[VerlofModalLogic] openAdminZittingVrijModal aangeroepen. Medewerker:", medewerkerGegevens);
+/* Add this to verlofroosterModal_logic.js for debugging */
+window.debugVerlofModalFlow = function() {
+    console.log('=== VERLOF MODAL FLOW DEBUG ===');
     
-    if (medewerkerGegevens) { 
-        window.zittingVrijModalGeselecteerdeMedewerker.gebruikersnaam = medewerkerGegevens.LoginName || medewerkerGegevens.Username;
-        window.zittingVrijModalGeselecteerdeMedewerker.displayName = medewerkerGegevens.Title || medewerkerGegevens.Naam;
-        console.log("[VerlofModalLogic] zittingVrijModalGeselecteerdeMedewerker ingesteld:", window.zittingVrijModalGeselecteerdeMedewerker);
-    } else {
-        window.zittingVrijModalGeselecteerdeMedewerker.gebruikersnaam = null;
-        window.zittingVrijModalGeselecteerdeMedewerker.displayName = null;
-    }
-
-    // --- GECORRIGEERDE URL OPBOUW ---
-    const basisUrl = (window.spWebAbsoluteUrl || "").replace(/\/$/, ""); 
-    const modalContentUrlStr = `${basisUrl}/CPW/Rooster/pages/meldingZittingsvrij.aspx`;
-
-    const modalTitle = window.zittingVrijModalGeselecteerdeMedewerker.displayName ? `Zittingvrij Melden voor ${window.zittingVrijModalGeselecteerdeMedewerker.displayName}` : 'Incidenteel Zittingvrij Melden';
-
-    openModal(modalTitle, `<div class="flex justify-center items-center h-64">${getSpinnerSvg()}</div>`, null, null, true, false, null, 'max-w-2xl');
-
-    if (window.domRefsLogic.modalActionsContainer) {
-        window.domRefsLogic.modalActionsContainer.classList.add('hidden');
-    }
-
-    fetch(modalContentUrlStr)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Netwerkfout bij laden van modal content (${response.status}): ${response.statusText} URL: ${modalContentUrlStr}`);
-            }
-            return response.text();
-        })
-        .then(html => {
-            const modalContentArea = window.domRefsLogic && window.domRefsLogic.modalContent;
-
-            if (modalContentArea) {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const formContainer = doc.querySelector('#app-container > div:first-child'); 
-
-                if (formContainer) {
-                    modalContentArea.innerHTML = formContainer.outerHTML;
-                    applyDarkThemeToModal();                    
-                    if (typeof window.initializeZittingsvrijModalForm === 'function') {
-                        let normalizedUsername = null;
-                        if (window.zittingVrijModalGeselecteerdeMedewerker?.gebruikersnaam) {
-                            normalizedUsername = typeof window.trimLoginNaamPrefix === 'function' ? 
-                                window.trimLoginNaamPrefix(window.zittingVrijModalGeselecteerdeMedewerker.gebruikersnaam) :
-                                window.zittingVrijModalGeselecteerdeMedewerker.gebruikersnaam.replace(/^i:0#\.w\|/, '');
-                        }
-                        
-                        const medewerkerContext = {
-                            loginNaam: window.zittingVrijModalGeselecteerdeMedewerker?.gebruikersnaam || window.huidigeGebruiker?.loginNaam,
-                            displayName: window.zittingVrijModalGeselecteerdeMedewerker?.displayName || window.huidigeGebruiker?.displayName,
-                            normalizedUsername: normalizedUsername || window.huidigeGebruiker?.normalizedUsername,
-                            medewerkerNaamVolledig: window.zittingVrijModalGeselecteerdeMedewerker?.displayName || window.huidigeGebruiker?.medewerkerNaamVolledig,
-                            email: window.huidigeGebruiker?.email
-                        };
-                        
-                        const selectedDate = window.geselecteerdeDatum instanceof Date ? window.geselecteerdeDatum : new Date();
-                        
-                        window.initializeZittingsvrijModalForm(selectedDate, medewerkerContext);
-                    } else if (typeof initializeModalContextMeldingZV === 'function') {
-                        initializeModalContextMeldingZV(); 
-                    } else {
-                        console.error('[VerlofModalLogic] Initialisatiefunctie voor zittingsvrij-formulier niet gevonden.');
-                        toonModalNotificatie('Kritische fout: Initialisatiefunctie voor het formulier ontbreekt.', 'error', false);
-                    }
-                } else {
-                    throw new Error("Formulierstructuur niet gevonden in de geladen content.");
-                }
-            } else {
-                 throw new Error("Modal content area niet gevonden in de DOM om formulier in te laden.");
-            }
-        })
-        .catch(error => {
-            console.error("Fout bij het openen/laden van Zittingvrij modal:", error);
-            const modalContentArea = window.domRefsLogic && window.domRefsLogic.modalContent;
-            if (modalContentArea) {
-                modalContentArea.innerHTML = `<div class="p-4 bg-red-100 text-red-700 rounded"><h3>Kon het formulier niet laden</h3><p>${escapeHTML(error.message)}</p></div>`;
-            }
-            if (window.domRefsLogic.modalActionsContainer) {
-                window.domRefsLogic.modalActionsContainer.classList.remove('hidden');
+    // Check if modal exists
+    const modal = document.querySelector('.modal-content') || document.querySelector('#modal-container');
+    console.log('Modal container found:', !!modal);
+    
+    // Check form
+    const form = document.getElementById('verlof-form');
+    console.log('Verlof form found:', !!form);
+    
+    if (form) {
+        console.log('Form HTML source length:', form.innerHTML.length);
+        console.log('Form fields found:');
+        
+        const expectedFields = [
+            'ModalMedewerkerDisplay',
+            'ModalMedewerkerIDDisplay', 
+            'ModalMedewerkerSelect',
+            'ModalStartDatePicker',
+            'ModalEndDatePicker',
+            'ModalStartTimePicker',
+            'ModalEndTimePicker',
+            'ModalOmschrijving'
+        ];
+        
+        expectedFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            console.log(`  ${fieldId}: ${field ? '✅ Found' : '❌ Missing'}`);
+            if (field) {
+                console.log(`    Value: "${field.value}", Visible: ${!field.classList.contains('hidden')}`);
             }
         });
-}
-
-// /k.zip/js/verlofroosterModal_logic.js (toevoeging)
-
-/**
- * Dient als 'router' om de juiste modal voor bewerken te openen.
- * Haalt eerst de itemdata op basis van type en ID.
- * @param {string} type - Het type event ('verlof', 'compensatie', 'zittingvrij').
- * @param {number|string} id - Het ID van het SharePoint-item.
- */
-async function openModalVoorBewerken(type, id) {
-    if (!type || !id) {
-        console.error("Type of ID ontbreekt voor het openen van de bewerk-modal.");
-        return;
     }
-
-    let lijstKey = '';
-    let openFunctie;
-
-    // Bepaal de SharePoint lijst en de functie om de modal te openen
-    switch(type) {
-        case 'verlof':
-            lijstKey = 'Verlof';
-            openFunctie = window.openVerlofAanvraagModal;
-            break;
-        case 'compensatie':
-            lijstKey = 'CompensatieUren';
-            openFunctie = window.openCompensatieModal;
-            break;
-        case 'zittingvrij':
-            lijstKey = 'IncidenteelZittingVrij';
-            openFunctie = window.openZittingvrijModal;
-            break;
-        default:
-            console.error(`Onbekend event type voor bewerken: ${type}`);
-            toonNotificatie(`Kan item van type '${type}' niet bewerken.`, 'error');
-            return;
-    }
-
-    if (typeof openFunctie !== 'function') {
-        console.error(`De modal-open-functie voor type '${type}' is niet gevonden.`);
-        toonNotificatie('De benodigde functie om de modal te openen ontbreekt.', 'error');
-        return;
-    }
-
-    try {
-        toonNotificatie('Gegevens ophalen...', 'info');
-        const filterQuery = `$filter=ID eq ${id}`;
-        const items = await window.getLijstItemsAlgemeen(lijstKey, "", filterQuery);
-
-        if (items && items.length > 0) {
-            const itemData = items[0];
-            toonNotificatie('Gegevens opgehaald. Modal wordt geopend.', 'success', 1000);
-            // Roep de specifieke modal-functie aan met de opgehaalde data
-            openFunctie(itemData);
-        } else {
-            throw new Error(`Item met ID ${id} niet gevonden in lijst ${lijstKey}.`);
-        }
-    } catch (error) {
-        console.error(`Fout bij ophalen van item voor bewerken:`, error);
-        toonNotificatie(`Kon de gegevens voor bewerken niet ophalen: ${error.message}`, 'error');
-    }
-}
-
-// Maak de functie globaal beschikbaar
-window.openModalVoorBewerken = openModalVoorBewerken;
-
-// --- Registratie Modal Functies (Placeholder, nog te implementeren) ---
-function openRegistratieModal() {
-    // Opent de modal voor gebruikersregistratie.
-    // Toont een placeholder bericht, daadwerkelijke implementatie volgt.
-    console.log("[VerlofroosterModalLogic] openRegistratieModal aangeroepen (placeholder).");
-    openModal(
-        'Gebruikersregistratie',
-        '<p class="text-center py-4">Registratieformulier wordt hier geladen...</p>',
-        'Registreren',
-        () => {
-            console.log("Placeholder registratie actie.");
-            toonModalNotificatie("Registratie functionaliteit nog niet geïmplementeerd.", "info");
-        },
-        true, false, null, 'max-w-xl'
-    );
-}
-
-/**
- * Vult een formulier met bestaande data voor bewerken
- */
-window.vulFormulierMetBestaandeData = function(formId, data) {
-    const form = document.getElementById(formId);
-    if (!form) return;
     
-    Object.keys(data).forEach(key => {
-        const input = form.querySelector(`[name="${key}"], #${key}`);
-        if (input) {
-            if (input.type === 'checkbox') {
-                input.checked = data[key];
-            } else if (input.type === 'date' && data[key]) {
-                // Converteer datum naar YYYY-MM-DD format
-                const date = new Date(data[key]);
-                input.value = date.toISOString().split('T')[0];
-            } else if (input.type === 'time' && data[key]) {
-                // Extract tijd uit datetime
-                const date = new Date(data[key]);
-                input.value = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-            } else {
-                input.value = data[key] || '';
-            }
-        }
-    });
+    // Check initialization
+    console.log('Global functions available:');
+    console.log('  window.initializeVerlofModalForm:', typeof window.initializeVerlofModalForm);
+    console.log('  window.submitVerlofAanvraag:', typeof window.submitVerlofAanvraag);
+    
+    console.log('=== END DEBUG ===');
 };
-
-/**
- * Controleert en past bewerkingsmodus toe
- */
-window.checkAndApplyEditMode = function(modalType) {
-    let bewerkItem = null;
-    let bewerkingsmodus = false;
-    
-    switch(modalType) {
-        case 'verlof':
-            bewerkingsmodus = window.verlofModalBewerkingsmodus || false;
-            bewerkItem = window.verlofModalBewerkItem || null;
-            break;
-        case 'compensatie':
-            bewerkingsmodus = window.compensatieModalBewerkingsmodus || false;
-            bewerkItem = window.compensatieModalBewerkItem || null;
-            break;
-        case 'ziekte':
-            bewerkingsmodus = window.ziekteModalBewerkingsmodus || false;
-            bewerkItem = window.ziekteModalBewerkItem || null;
-            break;
-        case 'zittingvrij':
-            bewerkingsmodus = window.zittingvrijModalBewerkingsmodus || false;
-            bewerkItem = window.zittingvrijModalBewerkItem || null;
-            break;
-    }
-    
-    if (bewerkingsmodus && bewerkItem) {
-        // Pas modal titel aan
-        const modalTitle = document.getElementById('modal-title');
-        if (modalTitle) {
-            modalTitle.textContent = modalTitle.textContent.replace('Aanvragen', 'Bewerken').replace('Registreren', 'Bewerken').replace('Melden', 'Bewerken');
-        }
-        
-        // Pas actieknop aan
-        const actionButton = document.getElementById('modal-action-button');
-        if (actionButton) {
-            actionButton.textContent = 'Wijzigingen Opslaan';
-        }
-        
-        // Voeg hidden field toe voor ID
-        const form = document.querySelector('form');
-        if (form && !form.querySelector('input[name="ItemID"]')) {
-            const idField = document.createElement('input');
-            idField.type = 'hidden';
-            idField.name = 'ItemID';
-            idField.value = bewerkItem.ID || '';
-            form.appendChild(idField);
-        }
-        
-        return { bewerkingsmodus, bewerkItem };
-    }
-    
-    return { bewerkingsmodus: false, bewerkItem: null };
-};
-
-// Exporteert de belangrijkste functies voor globaal gebruik
-window.openModal = openModal;
-window.closeModal = closeModal;
-window.initializeVerlofroosterModals = initializeVerlofroosterModals;
-window.openRegistratieModal = openRegistratieModal;
-window.openVerlofAanvraagModal = openVerlofAanvraagModal;
-window.openCompensatieUrenModal = openCompensatieUrenModal;
-window.openAdminZittingVrijModal = openAdminZittingVrijModal; 
-window.openZiekBeterMeldenModal = openZiekBeterMeldenModal; // Nieuwe functie toegevoegd
-window.toonModalNotificatie = toonModalNotificatie; // Maakt de notificatiefunctie globaal beschikbaar
-
-// Logt dat het script volledig is geladen
-console.log("[VerlofroosterModalLogic] Alle modale functies zijn succesvol geregistreerd in het globale bereik.");

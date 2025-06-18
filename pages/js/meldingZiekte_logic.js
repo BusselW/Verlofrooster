@@ -1,10 +1,8 @@
-// Rooster/pages/js/meldingZiekte_logic.js
-
+/* filepath: k/pages/js/meldingZiekte_logic.js */
 /**
  * Logica voor de Ziek/Beter melden functionaliteit, specifiek wanneer deze
  * binnen een modal wordt geladen vanuit het hoofd verlofrooster.
- * Deze code is grotendeels gebaseerd op MeldingZiekte_logic.js, maar aangepast
- * voor ziekmeldingen.
+ * Gebaseerd op de structuur van meldingVerlof_logic.js voor consistentie.
  */
 
 // Globale variabelen specifiek voor de ziekmelding modal context
@@ -19,11 +17,10 @@ let huidigeGebruikerZiekmeldingContext = { // Wordt gevuld bij het openen van de
 };
 let ziekteRedenId = null; // ID van de "Ziekte" reden uit de Verlofredenen lijst
 
-/**
- * Utility functie om SharePoint claims prefix van loginnaam te verwijderen.
- * @param {string} loginNaam - De volledige SharePoint loginnaam.
- * @returns {string} De genormaliseerde loginnaam.
- */
+// --- Configuration for Email Logic ---
+const ziekteEmailMode = 1; // 0=off, 1=seniors get email, 9=debug mode (w.van.bussel only)
+const ziekteEmailDebugRecipient = "w.van.bussel@om.nl";
+// --- End Configuration ---
 
 /**
  * Haalt een X-RequestDigest op, nodig voor POST/PUT/DELETE operaties.
@@ -40,700 +37,378 @@ async function getRequestDigestZiekmelding() {
         headers: { 'Accept': 'application/json;odata=verbose' }
     });
     if (!response.ok) {
-        const errorTekst = await response.text().catch(()=>"Onbekende serverfout");
+        const errorTekst = await response.text().catch(() => "Onbekende serverfout");
         console.error("[MeldingZiekte] Fout bij ophalen request digest:", response.status, errorTekst);
-        throw new Error(`Kon request digest niet ophalen: ${response.status} - ${errorTekst.substring(0,100)}`);
+        throw new Error(`Kon request digest niet ophalen: ${response.status} - ${errorTekst.substring(0, 100)}`);
     }
     const data = await response.json();
-    console.log("[MeldingZiekte] Request Digest succesvol opgehaald.");
     return data.d.GetContextWebInformation.FormDigestValue;
 }
 
 /**
- * Diagnosticeert potentiële thema-gerelateerde problemen in de modal
- * en toont deze in de console.
- */
-function diagnoseThemeIssues() {
-    const isDarkTheme = document.body.classList.contains('dark-theme');
-    console.log("[MeldingZiekte] Thema diagnose:");
-    console.log(`- Document body heeft dark-theme class: ${isDarkTheme}`);
-    
-    const cssVariables = [
-        '--table-header-bg-beheer',
-        '--main-text-color-beheer',
-        '--table-row-border-beheer',
-        '--background-color',
-        '--text-color'
-    ];
-    
-    const testElement = document.createElement('div');
-    document.body.appendChild(testElement);
-    
-    console.log("- CSS variabelen gecontroleerd op test element:");
-    cssVariables.forEach(variable => {
-        const value = getComputedStyle(testElement).getPropertyValue(variable);
-        console.log(`  ${variable}: "${value}"`);
-    });
-    
-    document.body.removeChild(testElement);
-    
-    // Controleer modal styling
-    const modalElement = document.querySelector('.modal-content');
-    if (modalElement) {
-        console.log("- Modal element styling:");
-        const modalBg = getComputedStyle(modalElement).backgroundColor;
-        const modalText = getComputedStyle(modalElement).color;
-        console.log(`  backgroundColor: "${modalBg}"`);
-        console.log(`  color: "${modalText}"`);
-    } else {
-        console.log("- Geen modal element gevonden voor styling diagnose");
-    }
-
-    // Controleer of CSS geladen is
-    const cssLink = document.getElementById('ziekte-melding-styles');
-    console.log(`- Ziekte CSS is geladen: ${cssLink !== null}`);
-    if (cssLink) {
-        console.log(`  href: ${cssLink.href}`);
-    }
-}
-
-/**
- * Toont een notificatie bericht aan de gebruiker BINNEN DE MODAL.
- * Verbeterde versie met betere thema-ondersteuning.
- * @param {string} berichtHTML - Het te tonen bericht (kan HTML bevatten).
- * @param {'success'|'error'|'info'} type - Het type notificatie.
- * @param {number|false} [autoHideDelay=7000] - Vertraging in ms voor auto-hide, of false om niet automatisch te verbergen.
+ * Toont een notificatie in de ziekmelding modal.
+ * @param {string} berichtHTML - De HTML van het bericht.
+ * @param {string} type - Het type notificatie (success, error, warning, info).
+ * @param {number|boolean} autoHideDelay - Vertraging in ms voor auto-verbergen, of false om niet te verbergen.
  */
 function toonNotificatieInZiekmeldingModal(berichtHTML, type = 'info', autoHideDelay = 7000) {
-    const modalNotificationArea = document.getElementById('modal-notification-area'); // ID binnen de modal
-    if (!modalNotificationArea) {
-        console.warn("[MeldingZiekte] Notificatiegebied (#modal-notification-area) niet gevonden in modal voor bericht:", berichtHTML);
-        // Fallback naar een globale notificatie indien beschikbaar, of log simpelweg.
-        if (typeof window.toonModalNotificatie === 'function') { // Gebruik de globale modal notificatie functie
-            window.toonModalNotificatie(berichtHTML.replace(/<[^>]*>?/gm, ''), type, autoHideDelay);
-        } else {
-            console.log(`[MeldingZiekte ModalNotificatie] Type: ${type}, Bericht: ${berichtHTML}`);
-        }
+    // Probeer eerst de modal-specifieke notificatiefunctie
+    if (typeof toonModalNotificatie === 'function') {
+        toonModalNotificatie(berichtHTML, type, autoHideDelay);
+    } else if (typeof toonNotificatie === 'function') {
+        // Fallback naar globale notificatiefunctie
+        toonNotificatie(berichtHTML, type);
+    } else {
+        // Laatste fallback: console log
+        console.log(`[MeldingZiekte] ${type.toUpperCase()}: ${berichtHTML}`);
+    }
+}
+
+/**
+ * Initialiseert het ziekmeldingformulier in de modal.
+ * @param {Object} medewerkerContext - Context van de medewerker voor wie de ziekmelding wordt gemeld.
+ * @param {Date} geselecteerdeDatum - De datum die geselecteerd is voor de ziekmelding.
+ * @param {Object} itemData - Optioneel: bestaande ziekmelding gegevens voor bewerkingsmodus.
+ */
+async function initializeZiekmeldingModal(medewerkerContext, geselecteerdeDatum, itemData = null) {
+    const isEditMode = itemData !== null;
+    console.log(`[MeldingZiekte] Initialiseren formulier. Modus: ${isEditMode ? 'Bewerken' : 'Nieuw'}.`);
+
+    spWebAbsoluteUrlZiekmelding = window.spWebAbsoluteUrl;
+    if (!spWebAbsoluteUrlZiekmelding) {
+        toonNotificatieInZiekmeldingModal("Kritieke fout: Serverlocatie onbekend.", "error", false);
         return;
     }
 
-    console.log(`[MeldingZiekte ModalNotificatie] Type: ${type}, Bericht: ${berichtHTML}`);
-    
-    // Clean existing classes
-    modalNotificationArea.className = 'notification-area';
-    
-    // Set type-specific class
-    modalNotificationArea.classList.add(type);
-    
-    // Set content
-    modalNotificationArea.innerHTML = berichtHTML;
-    
-    // Make visible
-    modalNotificationArea.style.display = 'block';
-
-    // Clear any previous timers
-    if (modalNotificationArea.timeoutId) {
-        clearTimeout(modalNotificationArea.timeoutId);
-    }
-
-    // Set auto-hide if requested
-    if (autoHideDelay !== false && autoHideDelay > 0) {
-        modalNotificationArea.timeoutId = setTimeout(() => {
-            if (modalNotificationArea) {
-                modalNotificationArea.style.display = 'none';
-            }
-        }, autoHideDelay);
-    }
-}
-
-/**
- * Preview functie die potentiële ontvangers toont voordat het formulier wordt verzonden.
- * @param {Object} medewerkerContext - De context van de huidige medewerker.
- */
-async function previewVerlofNotificationRecipients(medewerkerContext) {
-    console.log("[MeldingZiekte] Voorvertoning van e-mail ontvangers...");
-    
-    if (!spWebAbsoluteUrlVerlof) {
-        console.error("[MeldingZiekte] SharePoint site URL niet beschikbaar voor e-mailvoorvertoning.");
-        return;
-    }
-
-    let toEmails = [];
-    let ccEmails = [];
-    let logResults = [];
-
-    // Voeg logfunctie toe die resultaten verzamelt
-    const logPreview = (message) => {
-        console.log(message);
-        logResults.push(message);
-    };
-
-    // Voeg e-mail van aanvrager toe aan CC
-    if (medewerkerContext && medewerkerContext.email) {
-        ccEmails.push(medewerkerContext.email);
-        logPreview(`▶️ Aanvrager e-mail: ${medewerkerContext.email} (als CC)`);
-    } else if (huidigeGebruikerVerlofContext && huidigeGebruikerVerlofContext.email) {
-        ccEmails.push(huidigeGebruikerVerlofContext.email);
-        logPreview(`▶️ Fallback aanvrager e-mail: ${huidigeGebruikerVerlofContext.email} (als CC)`);
-    } else {
-        logPreview("⚠️ Kon e-mail van aanvrager niet vinden voor CC");
-    }
-
-    if (verlofEmailDebugMode) {
-        toEmails.push(verlofEmailDebugRecipient);
-        logPreview(`ℹ️ DEBUG MODE: E-mail gaat alleen naar ${verlofEmailDebugRecipient} (als TO)`);
-    } else {
-        ccEmails.push(verlofEmailDebugRecipient);
-        logPreview(`▶️ Debug e-mail: ${verlofEmailDebugRecipient} (als CC)`);
-        logPreview("🔍 PRODUCTIE MODE: Zoeken naar teamleider en seniors...");
-
-        // 1. Haal team van aanvrager op
-        let aanvragerTeamNaam = null;
-        if (medewerkerContext && medewerkerContext.normalizedUsername) {
-            const medewerkersConfigKey = 'Medewerkers';
-            const filterQueryMedewerker = `$filter=Username eq \'${medewerkerContext.normalizedUsername}\'&$select=Team`;
-            try {
-                const medewerkerItems = await window.getLijstItemsAlgemeen(medewerkersConfigKey, filterQueryMedewerker);
-                if (medewerkerItems && medewerkerItems.length > 0 && medewerkerItems[0].Team) {
-                    aanvragerTeamNaam = medewerkerItems[0].Team;
-                    logPreview(`📋 Team gevonden: "${aanvragerTeamNaam}" voor ${medewerkerContext.normalizedUsername}`);
-                } else {
-                    logPreview(`⚠️ Geen team gevonden voor ${medewerkerContext.normalizedUsername}`);
-                }
-            } catch (e) {
-                logPreview(`❌ Fout bij ophalen team: ${e.message}`);
-            }
-        }
-
-        if (aanvragerTeamNaam) {
-            // 2. Haal teamleider op
-            const teamsConfigKey = 'Teams';
-            const filterQueryTeam = `$filter=Title eq '${aanvragerTeamNaam}'&$select=TeamleiderId,Title`;
-            
-            try {
-                logPreview(`🔍 Zoeken naar teamleider voor team "${aanvragerTeamNaam}"...`);
-                let teamItems = await window.getLijstItemsAlgemeen(teamsConfigKey, filterQueryTeam);
-                
-                if (!teamItems || teamItems.length === 0) {
-                    logPreview(`⚠️ Geen exact team match gevonden, probeer alternatieve zoekopties...`);
-                    // Haal alle teams op voor alternatieve matching
-                    const allTeamsQuery = "$select=TeamleiderId,Title";
-                    const allTeams = await window.getLijstItemsAlgemeen(teamsConfigKey, allTeamsQuery);
-                    
-                    if (allTeams && allTeams.length > 0) {
-                        logPreview(`ℹ️ ${allTeams.length} teams gevonden voor handmatige matching`);
-                        // Zoek case-insensitive match
-                        teamItems = allTeams.filter(team => 
-                            team.Title && team.Title.toLowerCase() === aanvragerTeamNaam.toLowerCase());
-                    }
-                }
-                
-                if (teamItems && teamItems.length > 0) {
-                    const teamWithTeamleider = teamItems.find(team => team.TeamleiderId);
-                    
-                    if (teamWithTeamleider && teamWithTeamleider.TeamleiderId) {
-                        const teamleiderLoginName = teamWithTeamleider.TeamleiderId;
-                        logPreview(`📋 Teamleider gebruikersnaam gevonden: ${teamleiderLoginName}`);
-                        const teamleiderEmail = await fetchUserEmailByLoginName(teamleiderLoginName);
-                        if (teamleiderEmail) {
-                            toEmails.push(teamleiderEmail);
-                            logPreview(`✅ Teamleider e-mail: ${teamleiderEmail} (als TO)`);
-                        } else {
-                            logPreview(`❌ Kon e-mail voor teamleider ${teamleiderLoginName} niet vinden`);
-                        }
-                    } else {
-                        logPreview("⚠️ Geen TeamleiderId veld gevonden in team data");
-                    }
-                } else {
-                    logPreview(`❌ Kon geen team vinden met naam "${aanvragerTeamNaam}"`);
-                }
-            } catch (e) {
-                logPreview(`❌ Fout bij ophalen teamleider: ${e.message}`);
-            }
-
-            // 3. Haal seniors op
-            const seniorsConfigKey = 'Seniors';
-            const filterQuerySeniors = `$filter=Team eq \'${aanvragerTeamNaam}\'&$select=MedewerkerID`; 
-            try {
-                logPreview(`🔍 Zoeken naar seniors voor team "${aanvragerTeamNaam}"...`);
-                const seniorItems = await window.getLijstItemsAlgemeen(seniorsConfigKey, filterQuerySeniors);
-                if (seniorItems && seniorItems.length > 0) {
-                    logPreview(`📋 ${seniorItems.length} seniors gevonden`);
-                    for (const senior of seniorItems) {
-                        if (senior.MedewerkerID) {
-                            logPreview(`ℹ️ Senior gebruikersnaam: ${senior.MedewerkerID}`);
-                            const seniorEmail = await fetchUserEmailByLoginName(senior.MedewerkerID);
-                            if (seniorEmail) {
-                                toEmails.push(seniorEmail);
-                                logPreview(`✅ Senior e-mail: ${seniorEmail} (als TO)`);
-                            } else {
-                                logPreview(`❌ Kon e-mail voor senior ${senior.MedewerkerID} niet vinden`);
-                            }
-                        }
-                    }
-                } else {
-                    logPreview(`⚠️ Geen seniors gevonden voor team "${aanvragerTeamNaam}"`);
-                }
-            } catch (e) {
-                logPreview(`❌ Fout bij ophalen seniors: ${e.message}`);
-            }
-        }
-
-        if (toEmails.length === 0) {
-            logPreview(`⚠️ Geen teamleiders of seniors gevonden, ${verlofEmailDebugRecipient} wordt gebruikt als TO`);
-            toEmails.push(verlofEmailDebugRecipient);
-        }
-    }
-
-    // Verwijder duplicaten
-    toEmails = [...new Set(toEmails.filter(email => email))];
-    ccEmails = [...new Set(ccEmails.filter(email => email))];
-    
-    // Verwijder ccEmails die al in toEmails staan
-    ccEmails = ccEmails.filter(email => !toEmails.includes(email));
-    
-    logPreview("\n📧 SAMENVATTING E-MAIL ONTVANGERS 📧");
-    logPreview(`TO (${toEmails.length}): ${toEmails.join(", ")}`);
-    logPreview(`CC (${ccEmails.length}): ${ccEmails.join(", ")}`);
-    
-    // Toon een samenvatting op de console met duidelijke formatting
-    console.log("%c📧 E-MAIL ONTVANGERS VOORVERTONING 📧", "font-size: 14px; font-weight: bold; color: blue;");
-    console.log("%cAAN:", "font-weight: bold;", toEmails.join(", "));
-    console.log("%cCC:", "font-weight: bold;", ccEmails.join(", "));
-    
-    return { toEmails, ccEmails, logs: logResults };
-}
-
-
-
-/**
- * Genereert een spinner SVG voor gebruik in loading states.
- * @returns {string} HTML string voor spinner SVG.
- */
-function getSpinnerSvg() {
-    return '<div class="spinner mr-2 inline-block"></div>';
-}
-
-/**
- * Voegt dynamisch een CSS link element toe voor de ziekmelding styling.
- * Moet aangeroepen worden bij het initialiseren van de modal.
- */
-function laadZiekmeldingCSS() {
-    const cssId = 'ziekte-melding-styles';
-    // Controleer of de stylesheet al is toegevoegd
-    if (!document.getElementById(cssId)) {
-        console.log("[MeldingZiekte] CSS styling wordt geladen...");
-        const baseUrl = spWebAbsoluteUrlZiekmelding || window.spWebAbsoluteUrl || '';
-        const head = document.getElementsByTagName('head')[0];
-        const link = document.createElement('link');
-        link.id = cssId;
-        link.rel = 'stylesheet';
-        link.type = 'text/css';
-        link.href = `${baseUrl}/css/meldingZiekte_styles.css`;
-        link.media = 'all';
-        head.appendChild(link);
-    }
-}
-
-/**
- * Voegt dynamisch een style element toe aan de <head> voor ziekmeldingsformulier styling
- * Gebruikt inline CSS omdat het laden van externe CSS bestanden problematisch kan zijn.
- */
-function laadZiekmeldingInlineCSS() {
-    const styleId = 'ziekte-melding-inline-styles';
-    
-    // Controleer of de stylesheet al is toegevoegd
-    if (!document.getElementById(styleId)) {
-        console.log("[MeldingZiekte] Inline CSS styling wordt toegevoegd...");
-        
-        const head = document.getElementsByTagName('head')[0];
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.type = 'text/css';
-        
-        // Inline CSS regels
-        style.textContent = `
-/* Base modal styling specifiek voor ziekmeldingen */
-.ziekte-modal {
-    max-width: 600px;
-    border-radius: 8px;
-}
-
-/* Form styling */
-.ziekte-form-group {
-    margin-bottom: 1rem;
-}
-
-.ziekte-form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-}
-
-.ziekte-form-group input,
-.ziekte-form-group textarea,
-.ziekte-form-group select {
-    width: 100%;
-    padding: 0.5rem;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-}
-
-.ziekte-form-row {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-.ziekte-form-col {
-    flex: 1;
-}
-
-/* Notification area styling */
-#modal-notification-area {
-    border-radius: 4px;
-    padding: 0.75rem;
-    margin-bottom: 1rem;
-    font-size: 0.875rem;
-}
-
-/* Licht thema */
-body:not(.dark-theme) .ziekte-modal {
-    background-color: #ffffff;
-    color: #333333;
-    border: 1px solid #e0e0e0;
-}
-
-body:not(.dark-theme) .ziekte-form-group input,
-body:not(.dark-theme) .ziekte-form-group textarea,
-body:not(.dark-theme) .ziekte-form-group select {
-    background-color: #ffffff;
-    color: #333333;
-    border-color: #d0d0d0;
-}
-
-body:not(.dark-theme) .ziekte-form-group input:focus,
-body:not(.dark-theme) .ziekte-form-group textarea:focus,
-body:not(.dark-theme) .ziekte-form-group select:focus {
-    border-color: #4a86e8;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(74, 134, 232, 0.2);
-}
-
-body:not(.dark-theme) #modal-action-button {
-    background-color: #4a86e8;
-    color: white;
-}
-
-body:not(.dark-theme) #modal-action-button:hover {
-    background-color: #3a76d8;
-}
-
-/* Donker thema */
-body.dark-theme .ziekte-modal {
-    background-color: #2d2d2d;
-    color: #e0e0e0;
-    border: 1px solid #444444;
-}
-
-body.dark-theme .ziekte-form-group label {
-    color: #e0e0e0;
-}
-
-body.dark-theme .ziekte-form-group input,
-body.dark-theme .ziekte-form-group textarea,
-body.dark-theme .ziekte-form-group select {
-    background-color: #3a3a3a;
-    color: #e0e0e0;
-    border-color: #555555;
-}
-
-body.dark-theme .ziekte-form-group input:focus,
-body.dark-theme .ziekte-form-group textarea:focus,
-body.dark-theme .ziekte-form-group select:focus {
-    border-color: #6a9eee;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(106, 158, 238, 0.2);
-}
-
-body.dark-theme #modal-action-button {
-    background-color: #6a9eee;
-    color: white;
-}
-
-body.dark-theme #modal-action-button:hover {
-    background-color: #5a8ede;
-}
-
-/* Date and time pickers */
-.ziekte-date-time-container {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.ziekte-date-container {
-    flex: 3;
-}
-
-.ziekte-time-container {
-    flex: 2;
-}
-
-/* Notifications */
-.notification-area.success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-    padding: 10px;
-    margin-bottom: 15px;
-}
-
-.notification-area.error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-    padding: 10px;
-    margin-bottom: 15px;
-}
-
-.notification-area.info {
-    background-color: #d1ecf1;
-    color: #0c5460;
-    border: 1px solid #bee5eb;
-    padding: 10px;
-    margin-bottom: 15px;
-}
-
-body.dark-theme .notification-area.success {
-    background-color: rgba(40, 167, 69, 0.2);
-    color: #8fd19e;
-    border-color: rgba(40, 167, 69, 0.4);
-}
-
-body.dark-theme .notification-area.error {
-    background-color: rgba(220, 53, 69, 0.2);
-    color: #ea868f;
-    border-color: rgba(220, 53, 69, 0.4);
-}
-
-body.dark-theme .notification-area.info {
-    background-color: rgba(23, 162, 184, 0.2);
-    color: #6edff6;
-    border-color: rgba(23, 162, 184, 0.4);
-}
-
-/* Spinner animation for loading states */
-.spinner {
-    display: inline-block;
-    width: 1rem;
-    height: 1rem;
-    margin-right: 0.5rem;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    border-top-color: #fff;
-    animation: spin 1s ease-in-out infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-        `;
-        
-        head.appendChild(style);
-        console.log("[MeldingZiekte] Inline CSS styling toegevoegd aan <head>");
-    } else {
-        console.log("[MeldingZiekte] Inline CSS styling is al aanwezig.");
-    }
-}
-
-/**
- * Past thema styling toe op de modal elementen.
- */
-function applyThemeToDynamicModal() {
-    const isDarkTheme = document.body.classList.contains('dark-theme');
-    const modalContent = document.querySelector('.modal-content');
-    const modalTitle = document.querySelector('.modal-title');
-    const modalBody = document.querySelector('.modal-body');
-    const modalFooter = document.querySelector('.modal-footer');
-    const actionButton = document.getElementById('modal-action-button');
-    const cancelButton = document.getElementById('modal-cancel-button');
-
-    if (!modalContent) {
-        console.warn("[MeldingZiekte] Modal elementen niet gevonden voor thema toepassing.");
-        return;
-    }
-
-    // Voeg specifieke klasse voor ziekmelding modal toe
-    modalContent.classList.add('ziekte-modal');
-
-    // Pas formulier elementen classes toe
-    const formGroups = modalBody.querySelectorAll('.form-group');
-    formGroups.forEach(group => group.classList.add('ziekte-form-group'));
-
-    const datumTijdRows = modalBody.querySelectorAll('.datum-tijd-row');
-    datumTijdRows.forEach(row => {
-        row.classList.add('ziekte-form-row');
-        // Voeg container classes toe aan datum en tijd containers
-        const datumContainer = row.querySelector('.datum-container');
-        const tijdContainer = row.querySelector('.tijd-container');
-        if (datumContainer) datumContainer.classList.add('ziekte-date-container');
-        if (tijdContainer) tijdContainer.classList.add('ziekte-time-container');
+    // Bepaal voor wie de ziekmelding wordt gemeld
+    let targetMedewerkerContext;
+    const isSuperUser = isUserSuperUser();
+    console.log('[MeldingZiekte] Initialisatie context:', {
+        isSuperUser,
+        medewerkerContext: medewerkerContext,
+        currentUser: window.huidigeGebruiker,
+        isEdit: isEditMode,
+        'medewerkerContext type': typeof medewerkerContext,
+        'medewerkerContext properties': medewerkerContext ? Object.keys(medewerkerContext) : null
     });
-
-    if (isDarkTheme) {
-        console.log("[MeldingZiekte] Donker thema toegepast op modal.");
+    
+    if (isSuperUser && medewerkerContext && 
+        medewerkerContext.normalizedUsername !== window.huidigeGebruiker.normalizedUsername &&
+        medewerkerContext.Username !== window.huidigeGebruiker.normalizedUsername &&
+        medewerkerContext.loginNaam !== window.huidigeGebruiker.loginNaam) {
+        // Super-user meldt ziekte voor een andere medewerker
+        targetMedewerkerContext = medewerkerContext;
+        console.log('[MeldingZiekte] Super-user meldt ziekte voor andere medewerker:', targetMedewerkerContext);
     } else {
-        console.log("[MeldingZiekte] Licht thema toegepast op modal.");
+        // Gewone gebruiker OF super-user meldt ziekte voor zichzelf
+        targetMedewerkerContext = window.huidigeGebruiker;
+        console.log('[MeldingZiekte] Ziekmelding wordt gemeld voor de ingelogde gebruiker:', targetMedewerkerContext);
     }
-}
-
-/**
- * Initialiseert het ziekmeldingsformulier wanneer het in een modal wordt geladen.
- * @param {string} typeMelding - Momenteel alleen 'ziek', kan uitgebreid worden.
- * @param {Object} medewerkerContext - De context van de huidige medewerker.
- * @param {Date} [geselecteerdeDatum=new Date()] - De initieel geselecteerde datum.
- * @param {string} [siteUrl] - De SharePoint site URL (optioneel, valt terug op window.spWebAbsoluteUrl).
- */
-async function initializeZiekModalForm(typeMelding, medewerkerContext, geselecteerdeDatum = new Date(), siteUrl = null) {
-    console.log("[MeldingZiekte] Initialiseren van ziekmelding modal formulier. Type:", typeMelding);
-
-    // Set the site URL first
-    spWebAbsoluteUrlZiekmelding = siteUrl || window.spWebAbsoluteUrl || window._spPageContextInfo?.webAbsoluteUrl;
     
-    if (!spWebAbsoluteUrlZiekmelding) {
-        console.error("[MeldingZiekte] SharePoint site URL is niet beschikbaar. Controleer de initialisatie.");
-        toonNotificatieInZiekmeldingModal("Kritieke fout: Serverlocatie onbekend. Kan formulier niet initialiseren.", "error", false);
-        return false;
+    huidigeGebruikerZiekmeldingContext = targetMedewerkerContext;
+    
+    if (!huidigeGebruikerZiekmeldingContext || !(huidigeGebruikerZiekmeldingContext.normalizedUsername || huidigeGebruikerZiekmeldingContext.loginNaam)) {
+        toonNotificatieInZiekmeldingModal("Gebruikersinformatie kon niet worden geladen.", "error", false);
+        return;
+    }
+    
+    // --- Velden ophalen ---
+    const medewerkerDisplayVeld = document.getElementById('ModalMedewerkerDisplay');
+    const medewerkerSelectVeld = document.getElementById('ModalMedewerkerSelect');
+    const medewerkerIdDisplayVeld = document.getElementById('ModalMedewerkerIDDisplay');
+    const verborgenMedewerkerIdVeld = document.getElementById('MedewerkerID');
+
+    // Configureer UI op basis van gebruikersrechten
+    if (isSuperUser) {
+        // Super-user: toon dropdown, verberg readonly veld
+        console.log('[MeldingZiekte] Configureer UI voor super-user');
+        if (medewerkerDisplayVeld) {
+            medewerkerDisplayVeld.classList.add('hidden');
+        }
+        if (medewerkerSelectVeld) {
+            medewerkerSelectVeld.classList.remove('hidden');
+            await populateEmployeeDropdownZiekmelding(medewerkerSelectVeld, targetMedewerkerContext);
+        }
+    } else {
+        // Gewone gebruiker: toon readonly veld, verberg dropdown
+        console.log('[MeldingZiekte] Configureer UI voor gewone gebruiker');
+        if (medewerkerDisplayVeld) {
+            medewerkerDisplayVeld.classList.remove('hidden');
+            // Zorg dat het veld zichtbaar en readonly is
+            medewerkerDisplayVeld.style.display = '';
+            medewerkerDisplayVeld.readOnly = true;
+        }
+        if (medewerkerSelectVeld) {
+            medewerkerSelectVeld.classList.add('hidden');
+        }
     }
 
-    console.log("[MeldingZiekte] Gebruikte site URL:", spWebAbsoluteUrlZiekmelding);
+    const titleInput = document.getElementById('Title');
+    const aanvraagTijdstipInput = document.getElementById('AanvraagTijdstip');
+    
+    const startDatePicker = document.getElementById('ModalStartDatePicker');
+    const endDatePicker = document.getElementById('ModalEndDatePicker');
+    const startTimePicker = document.getElementById('ModalStartTimePicker');
+    const endTimePicker = document.getElementById('ModalEndTimePicker');
+    const omschrijvingTextarea = document.getElementById('ModalOmschrijving');
+    
+    // === KRITIEKE DEBUG INFORMATIE ===
+    console.log('[MeldingZiekte] === DEBUGGING START ===');
+    console.log('[MeldingZiekte] Fields aanwezig:', {
+        ModalMedewerkerDisplay: !!medewerkerDisplayVeld,
+        ModalMedewerkerIDDisplay: !!medewerkerIdDisplayVeld,
+        MedewerkerID: !!verborgenMedewerkerIdVeld
+    });
+    console.log('[MeldingZiekte] Current context:', huidigeGebruikerZiekmeldingContext);
+    console.log('[MeldingZiekte] Available alleMedewerkers:', window.alleMedewerkers ? window.alleMedewerkers.length : 'not available');
+    
+    if (!medewerkerDisplayVeld) {
+        console.error('[MeldingZiekte] KRITIEKE FOUT: ModalMedewerkerDisplay veld niet gevonden!');
+        return;
+    }
 
-    try {
-        // Voeg inline CSS toe voor de ziekmelding styling
-        laadZiekmeldingInlineCSS();
+    // === INVULLEN VAN MEDEWERKER INFORMATIE ===
+    let foundEmployee = null;
+    let displayName = '';
+    let medewerkerId = '';
+    
+    if (!window.alleMedewerkers || window.alleMedewerkers.length === 0) {
+        console.error('[MeldingZiekte] KRITIEKE FOUT: alleMedewerkers niet beschikbaar!');
+        // Probeer alsnog met fallback waarden
+        if (huidigeGebruikerZiekmeldingContext && huidigeGebruikerZiekmeldingContext.Title) {
+            displayName = huidigeGebruikerZiekmeldingContext.Title;
+            medewerkerId = huidigeGebruikerZiekmeldingContext.normalizedUsername || 'Onbekend';
+            console.log('[MeldingZiekte] Fallback waarden gebruikt');
+        }
+    } else {
+        // Zoek de medewerker in de lijst met verbeterde matching logica
+        console.log('[MeldingZiekte] Searching for employee in Medewerkers list...');
         
-        // Initialiseer gebruikers info en vorm elementen
-        await initializeModalGebruikersInfoEnThemaVoorZiekte(geselecteerdeDatum, medewerkerContext);
+        // Probeer verschillende methoden om de gebruiker te matchen
+        const searchTerms = [
+            huidigeGebruikerZiekmeldingContext.normalizedUsername,
+            huidigeGebruikerZiekmeldingContext.loginNaam,
+            huidigeGebruikerZiekmeldingContext.Username,
+            // Remove domain prefix if present (i:0#.w|domain\user -> domain\user)
+            huidigeGebruikerZiekmeldingContext.loginNaam ? huidigeGebruikerZiekmeldingContext.loginNaam.replace(/^i:0#\.w\|/, '') : null,
+            // Extract just username part (domain\user -> user)
+            huidigeGebruikerZiekmeldingContext.normalizedUsername ? huidigeGebruikerZiekmeldingContext.normalizedUsername.split('\\').pop() : null
+        ].filter(term => term); // Remove null/undefined values
+        
+        console.log('[MeldingZiekte] Search terms for employee matching:', searchTerms);
+        console.log('[MeldingZiekte] Available employee usernames:', window.alleMedewerkers.map(m => ({ Username: m.Username, Naam: m.Naam })));
+        
+        // Try exact matches first
+        for (const searchTerm of searchTerms) {
+            foundEmployee = window.alleMedewerkers.find(m => m.Username === searchTerm);
+            if (foundEmployee) {
+                console.log(`[MeldingZiekte] Found employee with exact match for "${searchTerm}":`, foundEmployee);
+                break;
+            }
+        }
+        
+        // If no exact match, try partial matches
+        if (!foundEmployee) {
+            console.log('[MeldingZiekte] No exact match found, trying partial matches...');
+            for (const searchTerm of searchTerms) {
+                foundEmployee = window.alleMedewerkers.find(m => 
+                    m.Username && (
+                        m.Username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        searchTerm.toLowerCase().includes(m.Username.toLowerCase())
+                    )
+                );
+                if (foundEmployee) {
+                    console.log(`[MeldingZiekte] Found employee with partial match for "${searchTerm}":`, foundEmployee);
+                    break;
+                }
+            }
+        }
+        
+        if (foundEmployee) {
+            // Gebruik specifiek het 'Naam' veld uit de Medewerkers lijst voor volledige naam
+            displayName = foundEmployee.Naam;
+            // Gebruik specifiek het 'Username' veld uit de Medewerkers lijst voor MedewerkerID  
+            medewerkerId = foundEmployee.Username;
+            
+            console.log('[MeldingZiekte] Successfully matched employee:');
+            console.log('[MeldingZiekte] - Naam field (for display):', displayName);
+            console.log('[MeldingZiekte] - Username field (for ID):', medewerkerId);
+        } else {
+            console.warn('[MeldingZiekte] Employee not found in Medewerkers list after all matching attempts');
+        }
+    }
+    
+    // Fallback naar context eigenschappen indien niet gevonden in Medewerkers lijst
+    if (!displayName || !medewerkerId) {
+        console.warn('[MeldingZiekte] Employee not found in Medewerkers lijst, using fallback values');
+        
+        if (!displayName) {
+            displayName = huidigeGebruikerZiekmeldingContext.Title || 
+                         huidigeGebruikerZiekmeldingContext.displayName || 
+                         huidigeGebruikerZiekmeldingContext.Naam ||
+                         huidigeGebruikerZiekmeldingContext.normalizedUsername || 
+                         'Onbekende gebruiker';
+            console.log('[MeldingZiekte] Using fallback display name:', displayName);
+        }
+        
+        if (!medewerkerId) {
+            medewerkerId = huidigeGebruikerZiekmeldingContext.normalizedUsername || 
+                          huidigeGebruikerZiekmeldingContext.loginNaam || 
+                          huidigeGebruikerZiekmeldingContext.Username || 
+                          'Onbekend';
+            console.log('[MeldingZiekte] Using fallback medewerker ID:', medewerkerId);
+        }
+    }
+    
+    // Vul de velden in op basis van UI configuratie
+    console.log('[MeldingZiekte] === INVULLEN VAN VELDEN ===');
+    console.log('[MeldingZiekte] Te gebruiken waarden:', { displayName, medewerkerId, isSuperUser });
+    
+    if (!isSuperUser) {
+        // Gewone gebruiker: vul readonly velden in
+        if (medewerkerDisplayVeld) {
+            medewerkerDisplayVeld.value = displayName || 'Onbekende gebruiker';
+            console.log('[MeldingZiekte] ✓ ModalMedewerkerDisplay ingevuld voor gewone gebruiker:', medewerkerDisplayVeld.value);
+        }
+        if (medewerkerIdDisplayVeld) {
+            medewerkerIdDisplayVeld.value = medewerkerId || 'Onbekend';
+            console.log('[MeldingZiekte] ✓ ModalMedewerkerIDDisplay ingevuld:', medewerkerIdDisplayVeld.value);
+        }
+        if (verborgenMedewerkerIdVeld) {
+            verborgenMedewerkerIdVeld.value = medewerkerId || 'Onbekend';
+            console.log('[MeldingZiekte] ✓ MedewerkerID hidden field ingevuld:', verborgenMedewerkerIdVeld.value);
+        }
+    } else {
+        // Super-user: dropdown is al gevuld, initiële waarden zetten
+        if (medewerkerIdDisplayVeld) {
+            medewerkerIdDisplayVeld.value = medewerkerId || 'Onbekend';
+            console.log('[MeldingZiekte] ✓ ModalMedewerkerIDDisplay ingevuld voor super-user:', medewerkerIdDisplayVeld.value);
+        }
+        if (verborgenMedewerkerIdVeld) {
+            verborgenMedewerkerIdVeld.value = medewerkerId || 'Onbekend';
+            console.log('[MeldingZiekte] ✓ MedewerkerID hidden field ingevuld voor super-user:', verborgenMedewerkerIdVeld.value);
+        }
+    }
+    
+    console.log('[MeldingZiekte] === INVULLEN VOLTOOID ===');
+
+    if (isEditMode) {
+        // --- BEWERK MODUS ---
+        titleInput.value = itemData.Title || `Ziekmelding Bewerken`;
+        aanvraagTijdstipInput.value = new Date(itemData.AanvraagTijdstip || Date.now()).toISOString();
+        
+        startDatePicker.value = new Date(itemData.StartDatum).toISOString().split('T')[0];
+        startTimePicker.value = new Date(itemData.StartDatum).toTimeString().slice(0, 5);
+        endDatePicker.value = new Date(itemData.EindDatum).toISOString().split('T')[0];
+        endTimePicker.value = new Date(itemData.EindDatum).toTimeString().slice(0, 5);
+        
+        omschrijvingTextarea.value = itemData.Omschrijving || '';
+
+        // Laad redenen en selecteer de juiste
+        await laadZiekteRedenId(itemData.RedenId);
+    } else {
+        // --- NIEUW MODUS ---
+        const vandaag = new Date();
+        const datumString = vandaag.toLocaleDateString('nl-NL');
+        titleInput.value = `Ziekmelding ${displayName} - ${datumString}`;
+        aanvraagTijdstipInput.value = vandaag.toISOString();
+        
+        // Use selected date range from context menu or FAB
+        let initStartDatum, initEindDatum;
+        
+        if (window.ziekmeldingModalStartDate && window.ziekmeldingModalEndDate) {
+            // Use dates from selection (context menu or other selection)
+            initStartDatum = new Date(window.ziekmeldingModalStartDate);
+            initEindDatum = new Date(window.ziekmeldingModalEndDate);
+            console.log('[MeldingZiekte] Using selected date range:', { start: initStartDatum, end: initEindDatum });
+        } else if (geselecteerdeDatum instanceof Date && !isNaN(geselecteerdeDatum)) {
+            // Use passed date as both start and end
+            initStartDatum = new Date(geselecteerdeDatum);
+            initEindDatum = new Date(geselecteerdeDatum);
+            console.log('[MeldingZiekte] Using passed date:', initStartDatum);
+        } else {
+            // Fallback to today
+            initStartDatum = new Date();
+            initEindDatum = new Date();
+            console.log('[MeldingZiekte] Using fallback (today):', initStartDatum);
+        }
+
+        const initStartDatumISO = initStartDatum.toISOString().split('T')[0];
+        const initEindDatumISO = initEindDatum.toISOString().split('T')[0];
+
+        startDatePicker.value = initStartDatumISO;
+        endDatePicker.value = initEindDatumISO;
+        startTimePicker.value = "09:00";
+        endTimePicker.value = "17:00";
+        omschrijvingTextarea.value = '';
+
+        // Clear the global date variables after use
+        window.ziekmeldingModalStartDate = null;
+        window.ziekmeldingModalEndDate = null;
+
+        // Laad redenen zonder een specifieke selectie
         await laadZiekteRedenId();
-        
-        // Pas thema styling toe op de modal elementen
-        applyThemeToDynamicModal();
-        
-        // Diagnose eventuele thema-problemen
-        diagnoseThemeIssues();
-        
-        console.log("[MeldingZiekte] Modal formulier succesvol geïnitialiseerd.");
-        return true;
-    } catch (error) {
-        console.error("[MeldingZiekte] Fout bij initialiseren modal formulier:", error);
-        toonNotificatieInZiekmeldingModal("Er is een fout opgetreden bij het laden van het formulier. Probeer het later opnieuw.", "error", false);
-        return false;
-    }
-}
-
-/**
- * Initialiseert gebruikersinformatie en thema voor de ziekmelding modal.
- */
-async function initializeModalGebruikersInfoEnThemaVoorZiekte(geselecteerdeDatum, medewerkerContext) {
-    console.log("[MeldingZiekte] Start initialisatie gebruikersinfo en thema voor ziekmelding modal. Context:", medewerkerContext);
-    
-    // spWebAbsoluteUrlZiekmelding should already be set by initializeZiekModalForm
-    if (!spWebAbsoluteUrlZiekmelding) {
-        console.error("[MeldingZiekte] SharePoint site URL is niet ingesteld. Initialiseer eerst via initializeZiekModalForm.");
-        toonNotificatieInZiekmeldingModal("Kritieke fout: Serverlocatie onbekend. Kan formulier niet initialiseren.", "error", false);
-        return;
     }
 
-    huidigeGebruikerZiekmeldingContext = medewerkerContext || window.huidigeGebruiker;
-
-    // More defensive validation - check what properties actually exist
-    if (!huidigeGebruikerZiekmeldingContext) {
-        console.error("[MeldingZiekte] Geen gebruikerscontext beschikbaar:", huidigeGebruikerZiekmeldingContext);
-        toonNotificatieInZiekmeldingModal("Gebruikersinformatie kon niet worden geladen. Probeer het later opnieuw.", "error", false);
-        return;
-    }
-
-    // Log what we actually have
-    console.log("[MeldingZiekte] Beschikbare gebruikerscontext eigenschappen:", Object.keys(huidigeGebruikerZiekmeldingContext));
-
-    // Set fallback values for missing properties
-    if (!huidigeGebruikerZiekmeldingContext.displayName) {
-        huidigeGebruikerZiekmeldingContext.displayName = huidigeGebruikerZiekmeldingContext.medewerkerNaamVolledig || 
-                                                          huidigeGebruikerZiekmeldingContext.loginNaam || 
-                                                          'Onbekende gebruiker';
-    }
-    
-    if (!huidigeGebruikerZiekmeldingContext.normalizedUsername) {
-        huidigeGebruikerZiekmeldingContext.normalizedUsername = window.trimLoginNaamPrefix(
-            huidigeGebruikerZiekmeldingContext.loginNaam || huidigeGebruikerZiekmeldingContext.MedewerkerID || ''
-        );
-    }
-
-    console.log(`[MeldingZiekte] Huidige gebruiker voor modal: ${huidigeGebruikerZiekmeldingContext.displayName} (Genormaliseerd: ${huidigeGebruikerZiekmeldingContext.normalizedUsername})`);
-
-    const medewerkerDisplayElement = document.getElementById('MedewerkerDisplay');
-    const medewerkerIdElement = document.getElementById('MedewerkerID');
-    const titleElement = document.getElementById('Title');
-    const aanvraagTijdstipElement = document.getElementById('AanvraagTijdstip');
-
-    if (medewerkerDisplayElement) medewerkerDisplayElement.value = huidigeGebruikerZiekmeldingContext.displayName;
-    if (medewerkerIdElement) medewerkerIdElement.value = huidigeGebruikerZiekmeldingContext.normalizedUsername;
-
-    const vandaag = new Date();
-    const datumString = vandaag.toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    if (titleElement) titleElement.value = `Ziekmelding ${huidigeGebruikerZiekmeldingContext.displayName} - ${datumString}`;
-    if (aanvraagTijdstipElement) aanvraagTijdstipElement.value = vandaag.toISOString();
-
-    // Standaard datum en tijd instellen
-    const startDatePicker = document.getElementById('StartDatePicker');
-    const endDatePicker = document.getElementById('EndDatePicker');
-    const startTimePicker = document.getElementById('StartTimePicker');
-    const endTimePicker = document.getElementById('EndTimePicker');
-
-    const initDatum = geselecteerdeDatum instanceof Date && !isNaN(geselecteerdeDatum) ? new Date(geselecteerdeDatum) : new Date();
-    const initDatumISO = initDatum.toISOString().split('T')[0];
-
-    if (startDatePicker) startDatePicker.value = initDatumISO;
-    if (endDatePicker) endDatePicker.value = initDatumISO; // Standaard ook vandaag, gebruiker kan aanpassen
-    if (startTimePicker) startTimePicker.value = "09:00";
-    if (endTimePicker) endTimePicker.value = "17:00";
-
-    console.log("[MeldingZiekte] Gebruikersinfo en standaard datums ingesteld voor ziekmelding modal.");
+    console.log("[MeldingZiekte] Gebruikersinfo en datums ingesteld voor ziekmelding modal.");
 }
 
 /**
  * Haalt het ID van de "Ziekte" reden uit de Verlofredenen lijst.
+ * @param {string|number} specificRedenId - Optioneel: specifiek reden ID voor bewerkmodus
  */
-async function laadZiekteRedenId() {
+async function laadZiekteRedenId(specificRedenId = null) {
     const redenIdInput = document.getElementById('RedenId');
-    if (ziekteRedenId && redenIdInput) {
+    
+    // Als er een specifieke reden ID is opgegeven (bewerkmodus), gebruik die
+    if (specificRedenId && redenIdInput) {
+        redenIdInput.value = String(specificRedenId);
+        console.log("[MeldingZiekte] Specifieke reden ID ingesteld voor bewerkmodus:", specificRedenId);
+        return;
+    }
+    
+    if (ziekteRedenId && redenIdInput) { // Als al geladen en input bestaat
         console.log("[MeldingZiekte] ID voor 'Ziekte' reden al geladen:", ziekteRedenId);
-        redenIdInput.value = String(ziekteRedenId);
+        redenIdInput.value = String(ziekteRedenId); // Ensure it's always a string
         return;
     }
     console.log("[MeldingZiekte] Laden van ID voor verlofreden 'Ziekte'...");
 
-    // Change this line - use the configuration key instead of the config object
+    const redenenConfigKey = 'Verlofredenen';
+    const redenenConfig = typeof window.getLijstConfig === 'function' ? window.getLijstConfig(redenenConfigKey) : null;
+    if (!redenenConfig || !(redenenConfig.lijstId || redenenConfig.lijstTitel)) {
+        console.error(`[MeldingZiekte] Configuratie voor '${redenenConfigKey}' lijst niet gevonden of incompleet (lijstId/lijstTitel ontbreekt). Controleer of configLijst.js correct is geladen en getLijstConfig werkt.`);
+        toonNotificatieInZiekmeldingModal("Kon configuratie voor verlofredenen niet laden.", "error", false);
+        ziekteRedenId = null; // Zorg dat het null is bij fout
+        if (redenIdInput) redenIdInput.value = ''; // Maak veld leeg
+        return;
+    }
+
+    // Try to find by exact title
     const filterQuery = `$filter=Title eq 'Ziekte'`;
     const selectQuery = "$select=ID,Title";
-    
+
     try {
-        // Use 'Verlofredenen' as the configuration key, not the config object
-        const redenen = await window.getLijstItemsAlgemeen('Verlofredenen', `${selectQuery}&${filterQuery}`);
+        if (typeof window.getLijstItemsAlgemeen !== 'function') {
+            console.error("[MeldingZiekte] Functie getLijstItemsAlgemeen is niet beschikbaar.");
+            throw new Error("Benodigde datafunctie ontbreekt.");
+        }
+        let redenen = await window.getLijstItemsAlgemeen(redenenConfigKey, selectQuery, filterQuery);
+
+        // If exact match not found, try a wider search
+        if (!redenen || redenen.length === 0) {
+            console.warn("[MeldingZiekte] Exact match voor 'Ziekte' niet gevonden, probeer een bredere zoekopdracht...");
+            const broaderFilterQuery = `$filter=substringof('Ziekte', Title)`;
+            redenen = await window.getLijstItemsAlgemeen(redenenConfigKey, selectQuery, broaderFilterQuery);
+        }
+
         if (redenen && redenen.length > 0) {
-            ziekteRedenId = redenen[0].ID;
-            if (redenIdInput) {
-                redenIdInput.value = String(ziekteRedenId);
-                console.log("[MeldingZiekte] ID voor 'Ziekte' reden succesvol geladen:", ziekteRedenId, "als string:", redenIdInput.value);
-            }
-            
-            if (redenen.length > 1) {
-                console.info(`[MeldingZiekte] Meerdere verlofredenen gevonden (${redenen.length}), eerste wordt gebruikt:`, 
-                    redenen.map(r => `ID:${r.ID}, Title:${r.Title}`).join(', '));
-            }
+            const ziekteReden = redenen[0];
+            ziekteRedenId = ziekteReden.ID;
+            console.log(`[MeldingZiekte] ID voor 'Ziekte' succesvol geladen: ${ziekteRedenId} (Title: "${ziekteReden.Title}")`);
+            if (redenIdInput) redenIdInput.value = String(ziekteRedenId);
         } else {
-            console.warn("[MeldingZiekte] Verlofreden 'Ziekte' niet gevonden in de lijst. Kan ID niet instellen.");
-            toonNotificatieInZiekmeldingModal("Standaard reden 'Ziekte' kon niet worden gevonden. Controleer de configuratie.", "error", false);
+            console.warn("[MeldingZiekte] Kon geen redenen vinden die overeenkomen met 'Ziekte'. Controleer of de Verlofredenen lijst correct is ingesteld.");
             ziekteRedenId = null;
             if (redenIdInput) redenIdInput.value = '';
         }
@@ -746,225 +421,481 @@ async function laadZiekteRedenId() {
 }
 
 /**
- * Valideert het ziekmeldingsformulier.
- * @returns {boolean} True als valide, anders false.
+ * Controleert of de huidige gebruiker lid is van super-user groepen (kan voor anderen ziekmelding doen)
  */
-function valideerZiekmeldingFormulier() {
-    const startDatePicker = document.getElementById('StartDatePicker');
-    const startTimePicker = document.getElementById('StartTimePicker');
-    const endDatePicker = document.getElementById('EndDatePicker');
-    const endTimePicker = document.getElementById('EndTimePicker');
-
-    if (!startDatePicker || !startTimePicker || !endDatePicker || !endTimePicker) {
-        console.error("[MeldingZiekte] Een of meer validatievelden niet gevonden in modal.");
-        toonNotificatieInZiekmeldingModal("Fout: Formulier validatie kan niet worden uitgevoerd (elementen missen).", "error", false);
+function isUserPrivilegedGroupZiekmelding() {
+    if (!window.huidigeGebruiker || !window.huidigeGebruiker.sharePointGroepen) {
+        console.log('[MeldingZiekte] Geen SharePoint groepsinformatie beschikbaar, gebruiker is geen super-user');
         return false;
     }
 
-    if (!startDatePicker.value || !startTimePicker.value || !endDatePicker.value || !endTimePicker.value) {
-        toonNotificatieInZiekmeldingModal('Vul alle verplichte datum- en tijdvelden (*) in.', 'error', false);
-        return false;
-    }
+    const privilegedGroups = ["1. Sharepoint beheer", "1.1. Mulder MT", "2.6. Roosteraars", "2.3. Senioren beoordelen"];
+    const hasPrivilegedAccess = window.huidigeGebruiker.sharePointGroepen.some(groep => 
+        privilegedGroups.some(privilegedGroup => 
+            groep.toLowerCase().includes(privilegedGroup.toLowerCase())
+        )
+    );
+    
+    console.log('[MeldingZiekte] Gebruiker groepslidmaatschap check:', {
+        userGroups: window.huidigeGebruiker.sharePointGroepen,
+        privilegedGroups: privilegedGroups,
+        hasPrivilegedAccess: hasPrivilegedAccess
+    });
+    
+    return hasPrivilegedAccess;
+}
 
-    const startDateTime = new Date(`${startDatePicker.value}T${startTimePicker.value}`);
-    const endDateTime = new Date(`${endDatePicker.value}T${endTimePicker.value}`);
+/**
+ * Controleert of de gebruiker een super-user is die voor anderen mag melden
+ */
+function isUserSuperUser() {
+    return isUserPrivilegedGroupZiekmelding();
+}
 
-    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
-        toonNotificatieInZiekmeldingModal('Ongeldige datum of tijd ingevoerd.', 'error', false);
-        return false;
-    }
-
-    if (endDateTime < startDateTime) { // Kan gelijk zijn als het om 1 dag gaat.
-        toonNotificatieInZiekmeldingModal('De einddatum en -tijd mogen niet voor de startdatum en -tijd liggen.', 'error', false);
-        return false;
-    }
+/**
+ * Controleert of de gebruiker ziekmelding voor zichzelf mag doen
+ * Iedereen mag voor zichzelf ziekmelding doen (zowel gewone gebruikers als super-users)
+ */
+function canUserReportSickForSelf() {
+    // Alle gebruikers mogen voor zichzelf ziekmelding doen
+    console.log('[MeldingZiekte] Ziekmelding controle: Alle gebruikers mogen voor zichzelf ziekmelding doen');
     return true;
 }
 
 /**
- * Verwerkt het verzenden van het ziekmeldingsformulier.
- * Wordt aangeroepen door de actieknop van de generieke modal.
- * @param {HTMLFormElement} formElement - Het formulier element uit de modal.
- * @param {Object} medewerkerContext - De context van de huidige medewerker.
- * @param {Date} geselecteerdeDatum - De initieel geselecteerde datum (kan relevant zijn).
- * @returns {Promise<boolean>} True als succesvol, anders false.
+ * Vult de medewerker dropdown voor super-users
+ * @param {HTMLSelectElement} selectElement - Het dropdown element
+ * @param {Object} selectedEmployee - De momenteel geselecteerde medewerker
  */
-async function handleZiekmeldingFormulierVerzenden(formElement, medewerkerContext, geselecteerdeDatum) {
-    console.log("[MeldingZiekte] Ziekmelding formulierverwerking gestart...");
-    const submitButton = document.getElementById('modal-action-button'); // De generieke modal actieknop
-
-    if (!valideerZiekmeldingFormulier()) {
-        return false; // Validatie mislukt
-    }
-    if (!ziekteRedenId) {
-        toonNotificatieInZiekmeldingModal("Fout: De standaard reden 'Ziekte' kon niet worden geladen. Kan melding niet opslaan.", "error", false);
-        return false;
+async function populateEmployeeDropdownZiekmelding(selectElement, selectedEmployee = null) {
+    if (!selectElement || !window.alleMedewerkers) {
+        console.warn('[MeldingZiekte] Kan dropdown niet vullen: element of data ontbreekt');
+        return;
     }
 
-    if (submitButton) {
-        submitButton.disabled = true;
-        submitButton.innerHTML = (typeof getSpinnerSvg === 'function' ? getSpinnerSvg() : '') + 'Bezig met indienen...';
-    }
-    toonNotificatieInZiekmeldingModal('Bezig met indienen van uw ziekmelding...', 'info', false);
+    // Clear existing options (except first default option)
+    selectElement.innerHTML = '<option value="">Selecteer medewerker...</option>';
 
-    // Velden uit het formulier halen
-    const startDatePicker = document.getElementById('StartDatePicker');
-    const startTimePicker = document.getElementById('StartTimePicker');
-    const endDatePicker = document.getElementById('EndDatePicker');
-    const endTimePicker = document.getElementById('EndTimePicker');
-    const omschrijvingTextarea = document.getElementById('Omschrijving');
+    // Add all employees to dropdown
+    window.alleMedewerkers.forEach(employee => {
+        const option = document.createElement('option');
+        option.value = employee.Username;
+        option.textContent = employee.Naam;
+        option.dataset.employeeData = JSON.stringify(employee);
+        
+        // Select current employee if this matches
+        if (selectedEmployee && (
+            employee.Username === selectedEmployee.normalizedUsername ||
+            employee.Username === selectedEmployee.Username ||
+            employee.Naam === selectedEmployee.Title ||
+            employee.Naam === selectedEmployee.displayName
+        )) {
+            option.selected = true;
+        }
+        
+        selectElement.appendChild(option);
+    });
+
+    // Add event listener for dropdown changes
+    selectElement.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.value && selectedOption.dataset.employeeData) {
+            const employeeData = JSON.parse(selectedOption.dataset.employeeData);
+            updateEmployeeFieldsZiekmelding(employeeData.Naam, employeeData.Username);
+        } else {
+            // Clear fields if no selection
+            updateEmployeeFieldsZiekmelding('', '');
+        }
+    });
+
+    console.log('[MeldingZiekte] Dropdown gevuld met', window.alleMedewerkers.length, 'medewerkers');
+}
+
+/**
+ * Werkt de medewerker velden bij
+ * @param {string} displayName - Naam om weer te geven
+ * @param {string} username - Gebruikersnaam/ID
+ */
+function updateEmployeeFieldsZiekmelding(displayName, username) {
+    const medewerkerIdDisplayVeld = document.getElementById('ModalMedewerkerIDDisplay');
+    const verborgenMedewerkerIdVeld = document.getElementById('MedewerkerID');
     
-    // Verborgen velden die al gevuld zouden moeten zijn
+    if (medewerkerIdDisplayVeld) {
+        medewerkerIdDisplayVeld.value = username;
+    }
+    if (verborgenMedewerkerIdVeld) {
+        verborgenMedewerkerIdVeld.value = username;
+    }
+    
+    console.log('[MeldingZiekte] Medewerker velden bijgewerkt:', { displayName, username });
+}
+
+/**
+ * Verzend de ziekmelding naar SharePoint
+ */
+async function submitZiekmelding(event) {
+    if (event) event.preventDefault();
+    console.log("[MeldingZiekte] Poging tot opslaan ziekmelding...");
+
+    // Validatie
+    const startDatePicker = document.getElementById('ModalStartDatePicker');
+    if (!startDatePicker || !startDatePicker.value) {
+        toonNotificatieInZiekmeldingModal("Startdatum is verplicht.", "error");
+        return;
+    }    // Prepare data structure matching the working version
     const titleInput = document.getElementById('Title');
-    const medewerkerDisplayInput = document.getElementById('MedewerkerDisplay');
+    const medewerkerDisplayInput = document.getElementById('ModalMedewerkerDisplay');
     const medewerkerIdInput = document.getElementById('MedewerkerID');
     const aanvraagTijdstipInput = document.getElementById('AanvraagTijdstip');
-    const statusInput = document.getElementById('Status');
-    const redenIdInput = document.getElementById('RedenId'); // Moet gevuld zijn met ziekteRedenId
-    const redenInput = document.getElementById('Reden');     // Moet "Ziekte" bevatten
+    const startTimePicker = document.getElementById('ModalStartTimePicker');
+    const endTimePicker = document.getElementById('ModalEndTimePicker');
+    const endDatePicker = document.getElementById('ModalEndDatePicker');
+    const omschrijvingTextarea = document.getElementById('ModalOmschrijving');
 
-    // Combineer datum en tijd en zet naar ISO string voor verborgen velden
-    const startDateTime = new Date(`${startDatePicker.value}T${startTimePicker.value}`);
-    const endDateTime = new Date(`${endDatePicker.value}T${endTimePicker.value}`);
-    
-    const startDatumElement = document.getElementById('StartDatum');
-    const eindDatumElement = document.getElementById('EindDatum');
-    
-    if (startDatumElement) startDatumElement.value = startDateTime.toISOString();
-    if (eindDatumElement) eindDatumElement.value = endDateTime.toISOString();
+    // Combineer datum en tijd EERST voordat we formData maken
+    const startDateTime = new Date(`${startDatePicker.value}T${startTimePicker?.value || '09:00'}:00`);
+    const endDateTime = new Date(`${endDatePicker?.value || startDatePicker.value}T${endTimePicker?.value || '17:00'}:00`);
 
-    if (typeof window.getLijstConfig !== 'function') {
-        toonNotificatieInZiekmeldingModal('Fout: Systeemfunctie voor configuratie niet beschikbaar.', 'error', false);
-        if (submitButton) {
-            submitButton.disabled = false;
-            submitButton.textContent = 'Melding Indienen';
-        }
-        return false;
-    }
-
-    const verlofLijstConfig = window.getLijstConfig('Verlof'); // Ziekmeldingen gaan ook naar de Verlof lijst
-    if (!verlofLijstConfig || !verlofLijstConfig.lijstId || !verlofLijstConfig.lijstTitel) {
-        toonNotificatieInZiekmeldingModal('Fout: Ziekmelding kan niet worden verwerkt (configuratie ontbreekt).', 'error', false);
-        console.error("[MeldingZiekte] Configuratie voor 'Verlof' lijst niet gevonden of incompleet.");
-        if (submitButton) {
-            submitButton.disabled = false;
-            submitButton.textContent = 'Melding Indienen';
-        }
-        return false;
-    }
-
-    const listNameForMetadata = verlofLijstConfig.lijstTitel.replace(/\s+/g, '_');
-    const formDataPayload = {
-        __metadata: { type: `SP.Data.${listNameForMetadata}ListItem` },
-        Title: titleInput ? titleInput.value : '',
-        Medewerker: medewerkerDisplayInput ? medewerkerDisplayInput.value : '',
-        MedewerkerID: medewerkerIdInput ? medewerkerIdInput.value : '',
-        AanvraagTijdstip: aanvraagTijdstipInput ? aanvraagTijdstipInput.value : '',
-        StartDatum: startDatumElement ? startDatumElement.value : '',
-        EindDatum: eindDatumElement ? eindDatumElement.value : '',
-        Omschrijving: omschrijvingTextarea ? omschrijvingTextarea.value : '',
-        Reden: redenInput ? redenInput.value : 'Ziekte', // Zou "Ziekte" moeten zijn
-        RedenId: redenIdInput ? redenIdInput.value : '', // ID van "Ziekte"
-        Status: statusInput ? statusInput.value : 'Nieuw'  // "Nieuw"
+    // Create form data structure that matches working version exactly
+    const formData = {
+        Title: titleInput?.value || `Ziekmelding ${new Date().toLocaleDateString('nl-NL')}`,
+        Medewerker: medewerkerDisplayInput?.value || 'Onbekende Medewerker', // This field was missing!
+        MedewerkerID: medewerkerIdInput?.value,
+        AanvraagTijdstip: aanvraagTijdstipInput?.value || new Date().toISOString(),
+        StartDatum: startDateTime.toISOString(),
+        EindDatum: endDateTime.toISOString(),
+        Omschrijving: omschrijvingTextarea?.value || '',
+        Reden: 'Ziekte',
+        RedenId: ziekteRedenId ? String(ziekteRedenId) : '', // Ensure string conversion
+        Status: 'Nieuw'
     };
 
-    console.log('[MeldingZiekte] Voor te bereiden payload voor SharePoint (Verlof lijst):', JSON.stringify(formDataPayload, null, 2));
-
-    try {
-        // Gebruik de globale createSPListItem functie
-        if (typeof window.createSPListItem !== 'function') {
-            throw new Error("Functie createSPListItem is niet beschikbaar. Controleer of machtigingen.js correct geladen is.");
+    // Verwijder lege velden
+    Object.keys(formData).forEach(key => {
+        if (formData[key] === null || formData[key] === undefined || formData[key] === '') {
+            delete formData[key];
         }
-        await window.createSPListItem('Verlof', formDataPayload); // Gebruik de lijstConfigKey "Verlof"
+    });    // SharePoint metadata - use the pattern from working version
+    const verlofListConfig = typeof window.getLijstConfig === 'function' ? window.getLijstConfig('Verlof') : null;
+    if (!verlofListConfig) {
+        throw new Error('Kon configuratie voor Verlof lijst niet vinden');
+    }
+    
+    // Use the exact same pattern as the working version: underscore replacement
+    const listNameForMetadata = verlofListConfig.lijstTitel.replace(/\s+/g, '_');
+    formData.__metadata = { type: `SP.Data.${listNameForMetadata}ListItem` };
 
-        console.log("[MeldingZiekte] Ziekmelding succesvol opgeslagen in SharePoint.");
-        toonNotificatieInZiekmeldingModal('Ziekmelding succesvol ingediend!', 'success');
-        
-        if (formElement) formElement.reset(); // Reset het formulier binnen de modal
+    console.log("[MeldingZiekte] Voorbereide data voor SharePoint:", JSON.stringify(formData, null, 2));
 
-        // Roep de initialisatiefunctie opnieuw aan om velden te resetten naar default
-        // (inclusief de gebruikersnaam en de titel)
-        await initializeModalGebruikersInfoEnThemaVoorZiekte(geselecteerdeDatum, medewerkerContext);
-        await laadZiekteRedenId(); // Zorg dat RedenId opnieuw wordt ingesteld in het verborgen veld
+    const submitButton = document.getElementById('modal-action-button') || document.getElementById('submitZiekmeldingBtnStandalone');
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Opslaan...';
+    }
 
-        // Sluit de modal na succes
-        setTimeout(() => {
-            if (typeof window.closeModal === 'function') window.closeModal(); // Gebruik de globale closeModal
-            // Optioneel: ververs de hoofd rooster data
-            if (typeof window.laadInitiëleData === 'function') {
-                window.laadInitiëleData(false); 
-            }
-        }, 2000); 
+    try {        const digest = await getRequestDigestZiekmelding();
+        const verlofListConfig = typeof window.getLijstConfig === 'function' ? window.getLijstConfig('Verlof') : null;
+        if (!verlofListConfig) {
+            throw new Error('Kon configuratie voor Verlof lijst niet vinden');
+        }
+        const lijstNaam = verlofListConfig.lijstTitel;
 
-        return true;
+        const response = await fetch(`${spWebAbsoluteUrlZiekmelding.replace(/\/$/, "")}/_api/web/lists/getbytitle('${lijstNaam}')/items`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json;odata=verbose',
+                'Content-Type': 'application/json;odata=verbose',
+                'X-RequestDigest': digest
+            },
+            body: JSON.stringify(formData)
+        });
 
-    } catch (error) {
-        console.error('[MeldingZiekte] Fout bij indienen ziekmelding:', error);
-        toonNotificatieInZiekmeldingModal(`Fout bij indienen: ${error.message}. Probeer het opnieuw.`, 'error', false);
-        return false;
-    } finally {
         if (submitButton) {
             submitButton.disabled = false;
-            submitButton.textContent = 'Melding Indienen';
+            submitButton.textContent = 'Melding Opslaan';
         }
+
+        if (response.ok) {
+            const responseData = await response.json();
+            console.log("[MeldingZiekte] Ziekmelding succesvol opgeslagen:", responseData);
+            toonNotificatieInZiekmeldingModal("Ziekmelding succesvol opgeslagen.", "success");
+            if (typeof window.refreshCalendarData === 'function') {
+                window.refreshCalendarData();
+            }
+            if (typeof closeModal === 'function') closeModal();
+        } else {
+            const errorData = await response.json().catch(() => ({ error: { message: { value: "Onbekende serverfout bij opslaan." } } }));
+            const errorMessage = errorData.error && errorData.error.message ? errorData.error.message.value : `Fout ${response.status}: ${response.statusText}`;
+            console.error("[MeldingZiekte] Fout bij opslaan ziekmelding:", errorMessage, errorData);
+            toonNotificatieInZiekmeldingModal(`Fout bij opslaan: ${errorMessage}`, "error", false);
+        }
+    } catch (error) {
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Melding Opslaan';
+        }
+        console.error("[MeldingZiekte] Kritieke fout bij opslaan ziekmelding:", error);
+        toonNotificatieInZiekmeldingModal(`Kritieke fout: ${error.message}`, "error", false);
+    }
+}
+
+
+
+// Test functies voor debugging - Mirror verlof logic test functions
+window.forceVulZiekmeldingVelden = function() {
+    console.log('=== FORCE FILL ZIEKMELDING VELDEN ===');
+    
+    const medewerkerDisplayVeld = document.getElementById('ModalMedewerkerDisplay');
+    const medewerkerIdDisplayVeld = document.getElementById('ModalMedewerkerIDDisplay');
+    const verborgenMedewerkerIdVeld = document.getElementById('MedewerkerID');
+    
+    if (!medewerkerDisplayVeld) {
+        console.error('Ziekmelding modal is niet open of ModalMedewerkerDisplay veld niet gevonden');
+        return;
+    }
+    
+    let naam = 'Test Gebruiker';
+    let username = 'test\\gebruiker';
+    
+    // Probeer echte waarden als beschikbaar
+    if (window.huidigeGebruiker) {
+        naam = window.huidigeGebruiker.Title || naam;
+        username = window.huidigeGebruiker.normalizedUsername || username;
+    }
+    
+    // Probeer uit Medewerkers lijst
+    if (window.alleMedewerkers && window.alleMedewerkers.length > 0) {
+        const found = window.alleMedewerkers.find(m => 
+            m.Username === window.huidigeGebruiker?.normalizedUsername ||
+            m.Username === window.huidigeGebruiker?.loginNaam?.replace(/^i:0#\.w\|/, '')
+        );
+        
+        if (found) {
+            naam = found.Naam || naam;
+            username = found.Username || username;
+            console.log('Gevonden in Medewerkers lijst:', found);
+        } else {
+            console.log('Niet gevonden in Medewerkers lijst, gebruik fallback waarden');
+        }
+    }
+    
+    // Vul velden in
+    medewerkerDisplayVeld.value = naam;
+    if (medewerkerIdDisplayVeld) medewerkerIdDisplayVeld.value = username;
+    if (verborgenMedewerkerIdVeld) verborgenMedewerkerIdVeld.value = username;
+    
+    console.log('Velden ingevuld:', { naam, username });
+    console.log('=== EINDE FORCE FILL ===');
+};
+
+window.debugZiekmeldingMedewerkerMatching = function() {
+    console.log('=== DEBUG ZIEKMELDING MEDEWERKER MATCHING ===');
+    console.log('huidigeGebruiker:', window.huidigeGebruiker);
+    console.log('alleMedewerkers count:', window.alleMedewerkers ? window.alleMedewerkers.length : 'not available');
+    
+    if (window.alleMedewerkers && window.alleMedewerkers.length > 0) {
+        console.log('Sample employee:', window.alleMedewerkers[0]);
+        window.alleMedewerkers.forEach((emp, index) => {
+            console.log(`Employee ${index + 1}: Username="${emp.Username}", Naam="${emp.Naam}"`);
+        });
+    }
+    
+    if (window.huidigeGebruiker) {
+        const searchTerms = [
+            window.huidigeGebruiker.normalizedUsername,
+            window.huidigeGebruiker.loginNaam,
+            window.huidigeGebruiker.loginNaam ? window.huidigeGebruiker.loginNaam.replace(/^i:0#\.w\|/, '') : null
+        ].filter(term => term);
+        
+        console.log('Search terms:', searchTerms);
+        
+        searchTerms.forEach(term => {
+            const found = window.alleMedewerkers?.find(m => m.Username === term);
+            console.log(`Searching for "${term}": ${found ? 'FOUND' : 'NOT FOUND'}`, found);
+        });
+    }
+    console.log('=== END DEBUG ===');
+};
+
+window.testZiekmeldingSuperUserStatus = function() {
+    console.log('=== ZIEKMELDING SUPER-USER STATUS TEST ===');
+    
+    const isSuperUser = isUserSuperUser();
+    const canReport = canUserReportSickForSelf();
+    
+    console.log('Current user:', window.huidigeGebruiker);
+    console.log('Is super-user:', isSuperUser);
+    console.log('Can report sick for self:', canReport);
+    console.log('SharePoint groups:', window.huidigeGebruiker?.sharePointGroepen);
+    
+    return { isSuperUser, canReport };
+};
+
+// Emergency functie om medewerker velden zichtbaar te maken
+window.toonZiekmeldingMedewerkerVelden = function() {
+    console.log('=== FORCE SHOW ZIEKMELDING MEDEWERKER VELDEN ===');
+    
+    const medewerkerDisplayVeld = document.getElementById('ModalMedewerkerDisplay');
+    const medewerkerSelectVeld = document.getElementById('ModalMedewerkerSelect');
+    
+    if (medewerkerDisplayVeld) {
+        medewerkerDisplayVeld.classList.remove('hidden');
+        medewerkerDisplayVeld.style.display = '';
+        medewerkerDisplayVeld.style.visibility = 'visible';
+        console.log('✓ ModalMedewerkerDisplay zichtbaar gemaakt');
+    } else {
+        console.error('✗ ModalMedewerkerDisplay niet gevonden');
+    }
+    
+    if (medewerkerSelectVeld) {
+        medewerkerSelectVeld.classList.add('hidden');
+        console.log('✓ ModalMedewerkerSelect verborgen');
+    } else {
+        console.error('✗ ModalMedewerkerSelect niet gevonden');
+    }
+    
+    // Force vul het veld
+    if (medewerkerDisplayVeld && window.huidigeGebruiker) {
+        const naam = window.huidigeGebruiker.Title || 'Huidige Gebruiker';
+        medewerkerDisplayVeld.value = naam;
+        console.log('✓ Veld ingevuld met:', naam);
+    }
+    
+    console.log('=== EINDE FORCE SHOW ===');
+};
+
+// Export functions to global window object for modal access
+window.initializeZiekmeldingModal = initializeZiekmeldingModal;
+window.submitZiekmelding = submitZiekmelding;
+
+console.log("Rooster/pages/js/meldingZiekte_logic.js geladen - ziekmelding velden automatische invulling en super-user functionaliteit geïmplementeerd.");
+
+window.determineZiekteEmailRecipients = function(originalRecipients) {
+    switch (ziekteEmailMode) {
+        case 0:
+            console.log('[MeldingZiekte] Email mode 0: Ziekte emails uitgeschakeld');
+            return {
+                shouldSend: false,
+                recipients: [],
+                isDebug: false,
+                debugInfo: 'Ziekte emails zijn uitgeschakeld (mode 0)'
+            };
+            
+        case 1:
+            console.log('[MeldingZiekte] Email mode 1: Ziekte emails naar seniors');
+            return {
+                shouldSend: true,
+                recipients: originalRecipients,
+                isDebug: false,
+                debugInfo: `Ziekte emails naar ${originalRecipients.length} seniors`
+            };
+            
+        case 9:
+            console.log(`[MeldingZiekte] Email mode 9: Ziekte emails debug mode naar ${ziekteEmailDebugRecipient}`);
+            return {
+                shouldSend: true,
+                recipients: [ziekteEmailDebugRecipient],
+                isDebug: true,
+                originalRecipients: originalRecipients,
+                debugInfo: `Debug mode: ziekte emails naar ${ziekteEmailDebugRecipient}`
+            };
+            
+        default:
+            console.warn(`[MeldingZiekte] Onbekende email mode: ${ziekteEmailMode}. Emails uitgeschakeld.`);
+            return {
+                shouldSend: false,
+                recipients: [],
+                isDebug: false,
+                debugInfo: `Onbekende mode ${ziekteEmailMode} - emails uitgeschakeld`
+            };
     }
 }
 
 /**
- * Initialiseert het ziekmeldingsformulier wanneer het in een modal wordt geladen.
- * Deze functie wordt aangeroepen vanuit verlofroosterModal_logic.js.
- * @param {string} typeMelding - Momenteel alleen 'ziek', kan uitgebreid worden.
- * @param {Object} medewerkerContext - De context van de huidige medewerker.
- * @param {Date} [geselecteerdeDatum=new Date()] - De initieel geselecteerde datum.
- * @param {string} [siteUrl] - De SharePoint site URL (optioneel, valt terug op window.spWebAbsoluteUrl).
+ * Verzend ziekmelding notificatie email
  */
-async function initializeZiekModalForm(typeMelding, medewerkerContext, geselecteerdeDatum = new Date(), siteUrl = null) {
-    console.log(`[MeldingZiekte] Start initialisatie. Type: ${typeMelding}, Datum:`, geselecteerdeDatum);
-    
-    // Stel eerst de site URL in met meerdere fallbacks
-    spWebAbsoluteUrlZiekmelding = siteUrl || 
-                                window.spWebAbsoluteUrl || 
-                                window._spPageContextInfo?.webAbsoluteUrl ||
-                                window._spPageContextInfo?.siteAbsoluteUrl ||
-                                (window.configLijst?.siteUrl);
-    
-    if (!spWebAbsoluteUrlZiekmelding) {
-        console.error(`[MeldingZiekte] Geen enkele bron voor SharePoint site URL beschikbaar! Controleer initialisatie.`);
-        console.log(`[MeldingZiekte] window.spWebAbsoluteUrl: ${window.spWebAbsoluteUrl}, _spPageContextInfo:`, window._spPageContextInfo);
-        toonNotificatieInZiekmeldingModal("Kritieke configuratiefout. Kan formulier niet laden.", "error", false);
-        return false;
-    }
-    
-    console.log(`[MeldingZiekte] SharePoint site URL: ${spWebAbsoluteUrlZiekmelding}`);
-
+async function verzendZiekteNotificatieEmail(formData, medewerkerContext) {
     try {
-        // Voeg inline CSS toe voor de ziekmelding styling
-        laadZiekmeldingInlineCSS();
+        // Get potential recipients
+        const seniorsEmails = await getEmailAddressesFromSeniors();
         
-        // Initialiseer gebruikersinfo en standaardwaarden
-        await initializeModalGebruikersInfoEnThemaVoorZiekte(geselecteerdeDatum, medewerkerContext);
+        if (!seniorsEmails || seniorsEmails.length === 0) {
+            console.warn('[MeldingZiekte] Geen senior email adressen gevonden');
+            return;
+        }
         
-        // Laad het ID van de verlofreden "Ziekte"
-        await laadZiekteRedenId();
-
-        // Pas thema toe op de formulierelementen binnen de modal
-        applyThemeToDynamicModal();
+        // Determine if and where to send based on mode
+        const emailConfig = determineZiekteEmailRecipients(seniorsEmails);
         
-        // Diagnose eventuele thema-problemen
-        diagnoseThemeIssues();
-
-        console.log(`[MeldingZiekte] Initialisatie voltooid.`);
-        return true;
+        if (!emailConfig.shouldSend) {
+            console.log(`[MeldingZiekte] Email niet verzonden: ${emailConfig.debugInfo}`);
+            return;
+        }
+        
+        // Prepare email content
+        const subject = `Nieuwe Ziekmelding: ${medewerkerContext.Title || 'Onbekende medewerker'}`;
+        const body = `
+            <h3>Nieuwe Ziekmelding Ontvangen</h3>
+            <table style="border-collapse: collapse; width: 100%;">
+                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Medewerker:</strong></td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${medewerkerContext.Title}</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Startdatum:</strong></td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${new Date(formData.StartDatum).toLocaleDateString('nl-NL')}</td></tr>
+                <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Einddatum:</strong></td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">${new Date(formData.EindDatum).toLocaleDateString('nl-NL')}</td></tr>
+            </table>
+            <p><em>Deze melding is automatisch gegenereerd door het Verlofrooster systeem.</em></p>
+        `;
+        
+        // Send email via mailSysteem utility
+        await verzendEmail(
+            emailConfig.recipients,
+            subject,
+            body,
+            emailConfig.isDebug,
+            emailConfig.originalRecipients || []
+        );
+        
+        console.log(`[MeldingZiekte] ${emailConfig.debugInfo}`);
+        
     } catch (error) {
-        console.error(`[MeldingZiekte] Fout bij initialiseren: ${error.message}`);
-        toonNotificatieInZiekmeldingModal("Er is een fout opgetreden bij het initialiseren. Probeer het later opnieuw.", "error", false);
-        return false;
+        console.error('[MeldingZiekte] Fout bij verzenden ziekmelding email:', error);
+        // Don't throw - email failure shouldn't break the main process
     }
 }
 
-// Exporteer de initialisatiefunctie zodat deze vanuit verlofroosterModal_logic.js kan worden aangeroepen
-window.initializeZiekModalForm = initializeZiekModalForm;
-// Exporteer ook de submit handler
-window.handleZiekmeldingFormulierVerzenden = handleZiekmeldingFormulierVerzenden;
+/* Add this to both meldingVerlof_logic.js and meldingZiekte_logic.js */
 
-console.log("Rooster/pages/js/meldingZiekte_logic.js geladen.");
+window.debugFieldPopulation = function() {
+    console.log('=== DEBUG FIELD POPULATION ===');
+    console.log('Current user context:', window.huidigeGebruiker);
+    console.log('alleMedewerkers available:', !!window.alleMedewerkers);
+    console.log('alleMedewerkers count:', window.alleMedewerkers?.length);
+    
+    // Check form fields
+    const fields = {
+        ModalMedewerkerDisplay: document.getElementById('ModalMedewerkerDisplay'),
+        ModalMedewerkerIDDisplay: document.getElementById('ModalMedewerkerIDDisplay'),
+        MedewerkerID: document.getElementById('MedewerkerID'),
+        ModalStartDatePicker: document.getElementById('ModalStartDatePicker'),
+        ModalEndDatePicker: document.getElementById('ModalEndDatePicker')
+    };
+    
+    Object.entries(fields).forEach(([name, element]) => {
+        console.log(`${name}:`, {
+            exists: !!element,
+            value: element?.value,
+            visible: element ? !element.classList.contains('hidden') : false
+        });
+    });
+    
+    // Check global date variables
+    console.log('Global date variables:', {
+        verlofModalStartDate: window.verlofModalStartDate,
+        verlofModalEndDate: window.verlofModalEndDate,
+        ziekmeldingModalStartDate: window.ziekmeldingModalStartDate,
+        ziekmeldingModalEndDate: window.ziekmeldingModalEndDate
+    });
+    
+    console.log('=== END DEBUG ===');
+};

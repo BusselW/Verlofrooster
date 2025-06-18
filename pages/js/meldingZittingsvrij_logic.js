@@ -506,9 +506,9 @@ async function handleZittingsvrijModalFormSubmit() {
                 window.closeModal();
 
                 // Herlaad de data in het hoofdscherm indien mogelijk
-                if (window.laadInitiëleData) {
+                if (window.Laadinitiele) {
                     console.log("[MeldingZittingsvrij] Hoofdscherm data wordt ververst");
-                    window.laadInitiëleData(true);
+                    window.Laadinitiele(true);
                 }
             }
         }, 1500);

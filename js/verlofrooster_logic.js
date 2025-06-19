@@ -1731,20 +1731,82 @@ function initEventListenersLogic() {
             }
             toggleFabMenu(true); // Sluit FAB menu
         });
-    } else { console.warn("[VerlofroosterLogic] fabVerlofAanvragenLink niet gevonden in domRefsLogic."); }
-
-    // Event listener voor de "CompensatieUren doorgeven" FAB knop
+    } else { console.warn("[VerlofroosterLogic] fabVerlofAanvragenLink niet gevonden in domRefsLogic."); }    // Event listener voor de "CompensatieUren doorgeven" FAB knop
     if (domRefsLogic.fabCompensatieAanvragenLink) {
         domRefsLogic.fabCompensatieAanvragenLink.addEventListener('click', (e) => {
             e.preventDefault();
             console.log("[VerlofroosterLogic] 'Compensatieuren doorgeven' FAB item geklikt.");
 
             if (typeof window.openCompensatieUrenModal === 'function') {
-                window.openCompensatieUrenModal();
-                toggleFabMenu(true); // Sluit FAB menu
+                // Always use current user for FAB compensatie request
+                if (window.huidigeGebruiker && (window.huidigeGebruiker.normalizedUsername || window.huidigeGebruiker.loginNaam)) {
+                    const medewerkerContext = {
+                        Username: window.huidigeGebruiker.normalizedUsername,
+                        loginNaam: window.huidigeGebruiker.loginNaam,
+                        normalizedUsername: window.huidigeGebruiker.normalizedUsername,
+                        Naam: window.huidigeGebruiker.Title || window.huidigeGebruiker.Naam,
+                        Title: window.huidigeGebruiker.Title,
+                        displayName: window.huidigeGebruiker.Title,
+                        Id: window.huidigeGebruiker.Id,
+                        Email: window.huidigeGebruiker.Email
+                    };
+
+                    // Check if there's a date selection available
+                    let startDate = new Date();
+                    let hasDateSelection = false;
+
+                    // Check for selectedRange from contextMenu (available globally)
+                    if (window.selectedRange && window.selectedRange.start) {
+                        startDate = new Date(window.selectedRange.start);
+                        hasDateSelection = true;
+
+                        // Store the selection for the modal
+                        window.compensatieModalStartDate = window.selectedRange.start;
+                        window.compensatieModalEndDate = window.selectedRange.end || window.selectedRange.start;
+
+                        console.log("[VerlofroosterLogic] FAB compensatie gebruikt geselecteerde datums:", {
+                            start: window.selectedRange.start,
+                            end: window.selectedRange.end,
+                            totalDays: window.selectedRange.cells ? window.selectedRange.cells.length : 1
+                        });
+                    } else {
+                        console.log("[VerlofroosterLogic] FAB compensatie geen datumselectie gevonden, gebruikt vandaag als standaard");
+                    }
+
+                    console.log("[VerlofroosterLogic] FAB compensatie met medewerker context:", medewerkerContext);
+                    
+                    window.openCompensatieUrenModal(null, startDate, medewerkerContext);
+
+                    // Show helpful message if dates were pre-selected
+                    if (hasDateSelection) {
+                        setTimeout(() => {
+                            if (window.toonModalNotificatie) {
+                                const endDate = window.selectedRange.end || window.selectedRange.start;
+                                const isRange = window.selectedRange.end && window.selectedRange.end !== window.selectedRange.start;
+                                const totalDays = window.selectedRange.cells ? window.selectedRange.cells.length : 1;
+
+                                let message;
+                                if (isRange) {
+                                    message = `Datums vooringevuld: ${window.selectedRange.start} - ${endDate} (${totalDays} dagen)`;
+                                } else {
+                                    message = `Datum vooringevuld: ${window.selectedRange.start}`;
+                                }
+
+                                window.toonModalNotificatie(message, 'info');
+                            }
+                        }, 500);
+                    }
+
+                    toggleFabMenu(true); // Sluit FAB menu
+                } else {
+                    console.error("[VerlofroosterLogic] Huidige gebruiker context niet beschikbaar voor FAB compensatie aanvraag.");
+                    toonNotificatie("Fout: Uw gebruikersinformatie is niet beschikbaar.", "error");
+                    toggleFabMenu(true);
+                }
             } else {
-                console.warn("[VerlofroosterLogic] openCompensatieUrenModal functie niet beschikbaar.");
-                alert("De functie voor het doorgeven van compensatie-uren is momenteel niet beschikbaar.");
+                console.error("[VerlofroosterLogic] openCompensatieUrenModal functie niet beschikbaar.");
+                toonNotificatie("De functie voor het doorgeven van compensatie-uren is momenteel niet beschikbaar.", "error");
+                toggleFabMenu(true);
             }
         });
     } else { console.warn("[VerlofroosterLogic] fabCompensatieAanvragenLink niet gevonden in domRefsLogic."); }
@@ -1837,22 +1899,35 @@ function initEventListenersLogic() {
                 const adminGroups = ["1. Sharepoint beheer", "1.1. Mulder MT", "2.6. Roosteraars", "2.3. Senioren beoordelen"];
                 isBeheerder = window.huidigeGebruiker.sharePointGroepen.some(groep => adminGroups.includes(groep));
                 console.log("[VerlofroosterLogic] Gebruiker behoort tot beheerders groepen:", isBeheerder);
-            }
-
-            if (typeof window.openAdminZittingVrijModal === 'function') {
-                // Pass the selected employee data
+            }            if (typeof window.openZittingVrijModal === 'function') {
+                // Pass the selected employee data and selected date
                 const selectedMedewerker = {
                     Username: geselecteerdeMedewerkerUsername,
+                    loginNaam: geselecteerdeMedewerkerUsername,
+                    normalizedUsername: geselecteerdeMedewerkerUsername,
                     Naam: geselecteerdeMedewerkerNaam,
+                    displayName: geselecteerdeMedewerkerNaam,
+                    medewerkerNaamVolledig: geselecteerdeMedewerkerNaam,
                     Id: geselecteerdeMedewerkerId
                 };
 
-                console.log("[VerlofroosterLogic] Zittingvrij modal openen voor:", selectedMedewerker);
+                // Get selected date from context menu or default to today
+                let selectedDate = new Date();
+                if (window.selectedRange && window.selectedRange.start) {
+                    selectedDate = new Date(window.selectedRange.start);
+                }
 
-                window.openAdminZittingVrijModal(selectedMedewerker, isBeheerder);
-                toggleFabMenu(true); // Close FAB menu
+                console.log("[VerlofroosterLogic] Zittingvrij modal openen voor:", selectedMedewerker, "op datum:", selectedDate);
+
+                try {
+                    window.openZittingVrijModal(null, selectedDate, selectedMedewerker);
+                    toggleFabMenu(true); // Close FAB menu
+                } catch (error) {
+                    console.error("[VerlofroosterLogic] Error opening Zittingvrij modal:", error);
+                    toonNotificatie(`Fout bij openen zittingsvrij modal: ${error.message}`, "error");
+                }
             } else {
-                console.warn("[VerlofroosterLogic] Functie window.openAdminZittingVrijModal niet gevonden.");
+                console.warn("[VerlofroosterLogic] Functie window.openZittingVrijModal niet gevonden.");
                 toonNotificatie("Functionaliteit voor zittingvrij melden is momenteel niet beschikbaar.", "error");
             }
         });

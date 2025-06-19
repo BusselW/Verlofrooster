@@ -9,10 +9,10 @@
 
 // DECLAREER HIER DE GLOBALE VARIABELEN EENMALIG
 let spWebAbsoluteUrl = '';
-let huidigeGebruiker = { 
-    loginNaam: null, 
+let huidigeGebruiker = {
+    loginNaam: null,
     normalizedUsername: null,
-    Id: null, 
+    Id: null,
     Title: null,
     Email: null,
     isSiteAdmin: false,
@@ -70,7 +70,7 @@ async function initializeSharePointContextViaAPI() {
             throw new Error(`HTTP error ${userResponse.status} bij ophalen huidige gebruiker.`);
         }
         const userData = await userResponse.json();
-        
+
         // Zet het globale `window.huidigeGebruiker` object
         window.huidigeGebruiker = {
             loginNaam: userData.d.LoginName,
@@ -79,14 +79,14 @@ async function initializeSharePointContextViaAPI() {
             Title: userData.d.Title,
             Email: userData.d.Email,
             isSiteAdmin: userData.d.IsSiteAdmin,
-            sharePointGroepen: [] 
+            sharePointGroepen: []
         };
         console.log("[Machtigingen] Basis gebruikersinfo opgehaald:", window.huidigeGebruiker.Title, window.huidigeGebruiker.loginNaam);
 
         window.huidigeGebruiker.sharePointGroepen = await getGebruikerSharePointGroepenViaAPI();
 
         console.log("[Machtigingen] Context init VOLTOOID. Globals (spWebAbsoluteUrl, huidigeGebruiker) zijn nu gezet.");
-        
+
         if (resolveMachtigingenPromise) resolveMachtigingenPromise(); // Resolve de promise NA het zetten van globals
         return true;
     } catch (error) {
@@ -133,16 +133,16 @@ window.getGebruikerSharePointGroepenViaAPI = getGebruikerSharePointGroepenViaAPI
  */
 function normalizeSharePointDates(items, dateFields = ['StartDatum', 'EindDatum']) {
     if (!Array.isArray(items) || items.length === 0) return items;
-    
+
     console.log(`[Machtigingen] Normalizing dates for ${items.length} items on fields:`, dateFields);
-    
+
     return items.map(item => {
-        const processedItem = {...item};
-        
+        const processedItem = { ...item };
+
         dateFields.forEach(field => {
             if (processedItem[field]) {
                 const dateObj = new Date(processedItem[field]);
-                
+
                 if (!isNaN(dateObj.getTime()) && dateObj.getFullYear() > 1970) {
                     processedItem[field] = dateObj.toISOString();
                 } else {
@@ -151,7 +151,7 @@ function normalizeSharePointDates(items, dateFields = ['StartDatum', 'EindDatum'
                 }
             }
         });
-        
+
         return processedItem;
     });
 }
@@ -163,28 +163,28 @@ window.normalizeSharePointDates = normalizeSharePointDates;
 async function getLijstItemsAlgemeen(lijstConfigKey, selectQuery = "", filterQuery = "", expandQuery = "", orderbyQuery = "") {
     if (!window.spWebAbsoluteUrl) { return []; }
     const lijstConfig = typeof window.getLijstConfig === 'function' ? window.getLijstConfig(lijstConfigKey) : null;
-    if (!lijstConfig || !lijstConfig.lijstId) { 
+    if (!lijstConfig || !lijstConfig.lijstId) {
         console.error(`[getLijstItemsAlgemeen] Lijstconfiguratie (met lijstId) niet gevonden voor '${lijstConfigKey}'. Controleer configLijst.js.`);
-        return []; 
+        return [];
     }
-    const lijstId = lijstConfig.lijstId;    let apiUrlPath = `/_api/web/lists(guid'${lijstId}')/items`;
+    const lijstId = lijstConfig.lijstId; let apiUrlPath = `/_api/web/lists(guid'${lijstId}')/items`;
     let queryParams = [];
     if (selectQuery) queryParams.push(selectQuery);
     if (filterQuery) queryParams.push(filterQuery);
     if (expandQuery) queryParams.push(expandQuery);
     if (orderbyQuery) queryParams.push(orderbyQuery);
-    
+
     // Add default $top=5000 if not already specified in selectQuery or other params
     const hasTopParam = queryParams.some(param => param.includes('$top='));
     if (!hasTopParam) {
         queryParams.push('$top=5000');
     }
-    
+
     const baseApiUrl = window.spWebAbsoluteUrl.replace(/\/$/, "");
-    const apiUrl = `${baseApiUrl}${apiUrlPath}${queryParams.length > 0 ? '?' + queryParams.join('&') : ''}`;try {
+    const apiUrl = `${baseApiUrl}${apiUrlPath}${queryParams.length > 0 ? '?' + queryParams.join('&') : ''}`; try {
         console.log(`[getLijstItemsAlgemeen] Fetching from ${apiUrl}`);
         const response = await fetch(apiUrl, { method: 'GET', headers: { 'Accept': 'application/json;odata=verbose' } });
-        
+
         if (!response.ok) {
             const errorText = await response.text();
             console.error(`[getLijstItemsAlgemeen] SharePoint API error (${response.status}):`, errorText);
@@ -192,7 +192,7 @@ async function getLijstItemsAlgemeen(lijstConfigKey, selectQuery = "", filterQue
             const spErrorMessage = errorData?.error?.message?.value || `Serverfout: ${response.status}`;
             throw new Error(spErrorMessage);
         }
-        
+
         const data = await response.json();
         console.log(`[getLijstItemsAlgemeen] Successfully loaded ${data.d.results.length} items from ${lijstConfigKey}`);
         return data.d.results;
@@ -206,7 +206,7 @@ window.getLijstItemsAlgemeen = getLijstItemsAlgemeen;
 /**
  * Haalt een X-RequestDigest op.
  */
-async function getRequestDigestGlobally() { 
+async function getRequestDigestGlobally() {
     if (!window.spWebAbsoluteUrl) throw new Error("Web absolute URL niet beschikbaar voor Request Digest.");
     const apiUrl = `${window.spWebAbsoluteUrl.replace(/\/$/, "")}/_api/contextinfo`;
     const response = await fetch(apiUrl, { method: 'POST', headers: { 'Accept': 'application/json;odata=verbose' } });
@@ -223,7 +223,7 @@ window.getRequestDigestGlobally = getRequestDigestGlobally;
 /**
  * Maakt een nieuw item aan in een SharePoint lijst.
  */
-async function createSPListItem(lijstConfigKey, itemData) { 
+async function createSPListItem(lijstConfigKey, itemData) {
     if (!window.spWebAbsoluteUrl) throw new Error("Web absolute URL niet beschikbaar voor item creatie.");
     const requestDigest = await getRequestDigestGlobally();
     const lijstConfig = typeof window.getLijstConfig === 'function' ? window.getLijstConfig(lijstConfigKey) : null;
@@ -242,8 +242,8 @@ async function createSPListItem(lijstConfigKey, itemData) {
         },
         body: JSON.stringify(itemData)
     });
-    if (!response.ok && response.status !== 201) { 
-        const errorData = await response.json().catch(() => ({ "error": { "message": { "value": "Onbekende serverfout bij parsen error response."}} }));
+    if (!response.ok && response.status !== 201) {
+        const errorData = await response.json().catch(() => ({ "error": { "message": { "value": "Onbekende serverfout bij parsen error response." } } }));
         const spErrorMessage = errorData.error?.message?.value || `HTTP error ${response.status}`;
         console.error(`[Machtigingen] Fout bij aanmaken item in ${lijstConfig.lijstTitel} (${response.status}): ${spErrorMessage}`);
         throw new Error(spErrorMessage);
@@ -254,9 +254,75 @@ async function createSPListItem(lijstConfigKey, itemData) {
 window.createSPListItem = createSPListItem;
 
 /**
+ * Updates an existing item in a SharePoint list.
+ * @param {string} lijstNaam - The name of the list.
+ * @param {number} itemId - The ID of the item to update.
+ * @param {Object} itemData - The data to update the item with.
+ * @returns {Promise<Object>} - A promise that resolves with the updated item.
+ */
+async function updateSPListItem(lijstNaam, itemId, itemData) {
+    console.log(`[updateSPListItem] Updating item ${itemId} in list ${lijstNaam}:`, itemData);
+
+    if (!lijstNaam || !itemId) {
+        throw new Error("List name and item ID are required for updateSPListItem");
+    }
+
+    try {
+        // Get the list configuration
+        const config = getLijstConfig(lijstNaam);
+        if (!config) {
+            throw new Error(`Configuration for list '${lijstNaam}' not found.`);
+        }
+
+        // Get request digest for authentication
+        const requestDigest = await getRequestDigestGlobally();
+
+        const url = `${window.spWebAbsoluteUrl}/_api/web/lists/getbytitle('${config.lijstTitel}')/items(${itemId})`;
+
+        // Prepare the update data and add metadata
+        const updateData = {
+            __metadata: {
+                type: `SP.Data.${config.lijstItemType}`
+            },
+            ...itemData
+        };
+
+        console.log(`[updateSPListItem] Sending MERGE request to ${url}`);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json;odata=verbose',
+                'Content-Type': 'application/json;odata=verbose',
+                'X-RequestDigest': requestDigest,
+                'IF-MATCH': '*',
+                'X-HTTP-Method': 'MERGE'
+            },
+            body: JSON.stringify(updateData)
+        });
+
+        // SharePoint returns 204 No Content for successful MERGE operations
+        if (response.status === 204) {
+            console.log(`[updateSPListItem] Item ${itemId} updated successfully`);
+            return { ID: itemId, ...itemData };
+        } else {
+            const errorResponse = await response.json();
+            console.error(`[updateSPListItem] Error response:`, errorResponse);
+            throw new Error(`Failed to update item: ${errorResponse.error?.message?.value || response.statusText}`);
+        }
+    } catch (error) {
+        console.error(`[updateSPListItem] Error updating item:`, error);
+        throw error;
+    }
+}
+
+// Ensure this function is available in the global scope
+window.updateSPListItem = updateSPListItem;
+
+/**
  * Controleert of de gebruiker lid is van ten minste één van de vereiste groepen.
  */
-window.heeftGebruikerMachtiging = function(gedeelteNaam, gebruikersGroepen) { 
+window.heeftGebruikerMachtiging = function (gedeelteNaam, gebruikersGroepen) {
     if (!gedeelteNaam || typeof gedeelteNaam !== 'string') {
         console.warn(`[Machtigingen] Ongeldige gedeelteNaam voor heeftGebruikerMachtiging: ${gedeelteNaam}`);
         return false;
@@ -268,13 +334,13 @@ window.heeftGebruikerMachtiging = function(gedeelteNaam, gebruikersGroepen) {
     const vereisteGroepenVoorGedeelte = window.UI_SECTION_PERMISSIONS[gedeelteNaam];
     if (!vereisteGroepenVoorGedeelte || !Array.isArray(vereisteGroepenVoorGedeelte) || vereisteGroepenVoorGedeelte.length === 0) {
         console.log(`[Machtigingen] Geen machtigingsregel gedefinieerd of lege regel voor sectie: ${gedeelteNaam}. Toegang standaard geweigerd.`);
-        return false; 
+        return false;
     }
     if (!gebruikersGroepen || !Array.isArray(gebruikersGroepen)) {
         console.warn(`[Machtigingen] Ongeldige of lege gebruikersGroepen array voor heeftGebruikerMachtiging: ${JSON.stringify(gebruikersGroepen)}`);
         return false;
     }
-    return vereisteGroepenVoorGedeelte.some(vereisteGroep => 
+    return vereisteGroepenVoorGedeelte.some(vereisteGroep =>
         gebruikersGroepen.some(userGroup => userGroup.toLowerCase() === vereisteGroep.toLowerCase())
     );
 };
@@ -285,12 +351,12 @@ window.heeftGebruikerMachtiging = function(gedeelteNaam, gebruikersGroepen) {
 async function pasUIMachtigingenToe() {
     if (!window.huidigeGebruiker || !window.huidigeGebruiker.loginNaam || !window.huidigeGebruiker.sharePointGroepen) {
         console.warn("[Machtigingen] pasUIMachtigingenToe: Wachten op volledige initialisatie van huidigeGebruiker (incl. groepen)...");
-        return; 
+        return;
     }
     console.log("[Machtigingen] Toepassen UI machtigingen met groepen:", window.huidigeGebruiker.sharePointGroepen);
 
     try {
-        const beheerButton = document.getElementById('beheer-centrum-button'); 
+        const beheerButton = document.getElementById('beheer-centrum-button');
         const adminInstellingenButton = document.getElementById('admin-instellingen-button');
 
         if (beheerButton) {
@@ -300,7 +366,7 @@ async function pasUIMachtigingenToe() {
         if (adminInstellingenButton) {
             adminInstellingenButton.classList.toggle('hidden', !window.heeftGebruikerMachtiging("AdminInstellingen", window.huidigeGebruiker.sharePointGroepen));
         } else { console.warn("[Machtigingen] Element 'admin-instellingen-button' niet gevonden."); }
-        
+
         console.log("[Machtigingen] UI machtigingen succesvol toegepast.");
 
     } catch (error) {
@@ -311,36 +377,67 @@ async function pasUIMachtigingenToe() {
 /**
  * Verwijdert een item uit een SharePoint lijst
  */
-window.deleteSPListItem = async function(lijstConfigKey, itemId) {
-    const config = getLijstConfig(lijstConfigKey);
-    if (!config) {
-        throw new Error(`Configuratie voor lijst '${lijstConfigKey}' niet gevonden`);
+window.deleteSPListItem = async function (lijstConfigKey, itemId) {
+    console.log(`[deleteSPListItem] Starting delete of item ${itemId} from ${lijstConfigKey}`);
+    
+    if (!itemId) {
+        throw new Error("Item ID is required for deletion");
     }
     
-    const itemUrl = `${window.spWebAbsoluteUrl}/_api/web/lists/getbytitle('${config.lijstTitel}')/items(${itemId})`;
+    const config = getLijstConfig(lijstConfigKey);
+    if (!config) {
+        throw new Error(`Configuration for list '${lijstConfigKey}' not found`);
+    }
+    
+    console.log(`[deleteSPListItem] Using config:`, config);
+    
+    // Try both URL formats in case one doesn't work
+    const itemUrl1 = `${window.spWebAbsoluteUrl}_api/web/lists/getbytitle('${config.lijstTitel}')/items(${itemId})`;
+    const itemUrl2 = `${window.spWebAbsoluteUrl}_api/web/lists(guid'${config.lijstId}')/items(${itemId})`;
     
     try {
         const digest = await getRequestDigestGlobally();
+        console.log(`[deleteSPListItem] Got request digest, attempting delete`);
         
-        const response = await fetch(itemUrl, {
-            method: 'DELETE',
-            headers: {
-                'Accept': 'application/json;odata=verbose',
-                'X-RequestDigest': digest,
-                'IF-MATCH': '*'
-            },
-            credentials: 'same-origin'
-        });
-        
-        if (!response.ok && response.status !== 204) {
-            throw new Error(`Fout bij verwijderen: ${response.status} ${response.statusText}`);
+        // Try the first URL format
+        let response;
+        try {
+            console.log(`[deleteSPListItem] Trying URL: ${itemUrl1}`);
+            response = await fetch(itemUrl1, {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json;odata=verbose',
+                    'X-RequestDigest': digest,
+                    'IF-MATCH': '*'
+                },
+                credentials: 'same-origin'
+            });
+        } catch (error) {
+            console.log(`[deleteSPListItem] First URL failed, trying second: ${itemUrl2}`);
+            response = await fetch(itemUrl2, {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json;odata=verbose',
+                    'X-RequestDigest': digest,
+                    'IF-MATCH': '*'
+                },
+                credentials: 'same-origin'
+            });
         }
         
-        console.log(`[Machtigingen] Item ${itemId} succesvol verwijderd uit ${lijstConfigKey}`);
-        return true;
+        console.log(`[deleteSPListItem] Response status: ${response.status}`);
         
+        if (!response.ok && response.status !== 204) {
+            const errorText = await response.text();
+            console.error(`[deleteSPListItem] Error response:`, errorText);
+            throw new Error(`Delete failed: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+        
+        console.log(`[deleteSPListItem] Item ${itemId} successfully deleted from ${lijstConfigKey}`);
+        return true;
+
     } catch (error) {
-        console.error(`[Machtigingen] Fout bij verwijderen item uit ${lijstConfigKey}:`, error);
+        console.error(`[deleteSPListItem] Error deleting item from ${lijstConfigKey}:`, error);
         throw error;
     }
 };
@@ -350,11 +447,11 @@ window.deleteSPListItem = async function(lijstConfigKey, itemId) {
  */
 async function initializeMachtigingen() {
     console.log("[Machtigingen] DOM geladen. Starten met initialisatie SharePoint context...");
-    const contextInitialized = await initializeSharePointContextViaAPI(); 
-    
+    const contextInitialized = await initializeSharePointContextViaAPI();
+
     if (contextInitialized) {
         console.log("[Machtigingen] SharePoint context succesvol geïnitialiseerd. UI machtigingen worden nu toegepast.");
-        await pasUIMachtigingenToe(); 
+        await pasUIMachtigingenToe();
     } else {
         console.error("[Machtigingen] Initialisatie SharePoint context MISLUKT. UI machtigingen worden mogelijk niet correct toegepast.");
     }

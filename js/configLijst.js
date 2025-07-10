@@ -312,4 +312,74 @@ if (typeof window.getLijstConfig === 'undefined') {
     };
 }
 
+/**
+ * Validates SharePoint list configuration and provides debugging information
+ * @param {string} lijstKey - The list configuration key to validate
+ * @returns {boolean} - True if configuration is valid
+ */
+window.validateLijstConfig = function(lijstKey) {
+    console.log(`[validateLijstConfig] Validating configuration for: ${lijstKey}`);
+    
+    if (!window.sharepointLijstConfiguraties) {
+        console.error('[validateLijstConfig] window.sharepointLijstConfiguraties is not defined');
+        return false;
+    }
+    
+    const config = window.sharepointLijstConfiguraties[lijstKey];
+    if (!config) {
+        console.error(`[validateLijstConfig] No configuration found for key: ${lijstKey}`);
+        console.log('[validateLijstConfig] Available configurations:', Object.keys(window.sharepointLijstConfiguraties));
+        return false;
+    }
+    
+    // Validate required properties
+    const requiredProps = ['lijstId', 'lijstTitel'];
+    const missingProps = requiredProps.filter(prop => !config[prop]);
+    
+    if (missingProps.length > 0) {
+        console.error(`[validateLijstConfig] Missing required properties for ${lijstKey}:`, missingProps);
+        return false;
+    }
+    
+    // Validate GUID format
+    const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!guidPattern.test(config.lijstId)) {
+        console.error(`[validateLijstConfig] Invalid GUID format for ${lijstKey}:`, config.lijstId);
+        return false;
+    }
+    
+    console.log(`[validateLijstConfig] Configuration for ${lijstKey} is valid:`, {
+        lijstId: config.lijstId,
+        lijstTitel: config.lijstTitel,
+        fieldsCount: config.velden ? config.velden.length : 0
+    });
+    
+    return true;
+};
+
+/**
+ * Validates all SharePoint list configurations
+ */
+window.validateAllLijstConfigs = function() {
+    console.log('[validateAllLijstConfigs] Starting validation of all list configurations...');
+    
+    if (!window.sharepointLijstConfiguraties) {
+        console.error('[validateAllLijstConfigs] No configurations found!');
+        return false;
+    }
+    
+    const keys = Object.keys(window.sharepointLijstConfiguraties);
+    console.log(`[validateAllLijstConfigs] Found ${keys.length} configurations to validate:`, keys);
+    
+    let allValid = true;
+    for (const key of keys) {
+        if (!window.validateLijstConfig(key)) {
+            allValid = false;
+        }
+    }
+    
+    console.log(`[validateAllLijstConfigs] Validation complete. All valid: ${allValid}`);
+    return allValid;
+};
+
 console.log("js/configLijst.js geladen en getLijstConfig is globaal beschikbaar via window.getLijstConfig.");

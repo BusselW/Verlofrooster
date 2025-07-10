@@ -299,9 +299,27 @@ function createDateFilterQuery(dateRange) {
  */
 async function laadInitiëleData(forceerModalData = false, loadOnlyCurrentPeriod = true) {
     console.log(`[VerlofroosterLogic] Starten met laden van initiële data. Forceer modal data: ${forceerModalData}, Filter periode: ${loadOnlyCurrentPeriod}`);
+    
+    // Controleer eerst of de vereiste functies beschikbaar zijn
+    if (typeof window.getLijstItemsAlgemeen !== 'function') {
+        console.error("[VerlofroosterLogic] Functie getLijstItemsAlgemeen is niet beschikbaar. Controleer of machtigingen.js correct geladen is.");
+        if (domRefsLogic.notificationPlaceholder && !forceerModalData) {
+            toonNotificatie("Kritieke fout: Data functies niet beschikbaar. Herlaad de pagina.", "error", false);
+        }
+        return;
+    }
+    
+    if (!window.spWebAbsoluteUrl) {
+        console.error("[VerlofroosterLogic] SharePoint URL niet beschikbaar. Controleer de initialisatie van machtigingen.js.");
+        if (domRefsLogic.notificationPlaceholder && !forceerModalData) {
+            toonNotificatie("SharePoint verbinding niet beschikbaar. Controleer uw netwerk verbinding.", "error", false);
+        }
+        return;
+    }
+    
     if (domRefsLogic.notificationPlaceholder && !forceerModalData) {
         toonNotificatie("Bezig met laden van roostergegevens...", "info", 10000);
-    }    try {
+    }try {
         // Get date filters if we're loading only current period
         let dateFilters = null;
         if (loadOnlyCurrentPeriod) {
@@ -312,8 +330,18 @@ async function laadInitiëleData(forceerModalData = false, loadOnlyCurrentPeriod
 
         const dataPromises = [
             window.getLijstItemsAlgemeen(lijstNamen.Medewerkers, "$select=ID,Title,Naam,Username,Team,Actief,Verbergen,Functie,E_x002d_mail,Horen").then(items => {
+                console.log(`[VerlofroosterLogic] Loaded Medewerkers: ${items ? items.length : 0} items`);
                 alleMedewerkers = items || [];
                 window.alleMedewerkers = alleMedewerkers; // Zorg ervoor dat het globaal beschikbaar is
+                if (items && items.length > 0) {
+                    console.log("[VerlofroosterLogic] Sample Medewerker item:", items[0]);
+                } else {
+                    console.warn("[VerlofroosterLogic] Geen medewerkers geladen! Dit kan betekenen dat de SharePoint lijst leeg is of niet toegankelijk.");
+                }
+            }).catch(error => {
+                console.error("[VerlofroosterLogic] Fout bij laden Medewerkers:", error);
+                alleMedewerkers = [];
+                window.alleMedewerkers = [];
             }),
             // Load verlof items with date filter if applicable
             window.getLijstItemsAlgemeen(
@@ -340,6 +368,9 @@ async function laadInitiëleData(forceerModalData = false, loadOnlyCurrentPeriod
                     alleVerlofItems = items || [];
                     console.warn("[VerlofroosterLogic] Date normalization function not available");
                 }
+            }).catch(error => {
+                console.error("[VerlofroosterLogic] Fout bij laden Verlof items:", error);
+                alleVerlofItems = [];
             }),
             // Load compensatie items with date filter if applicable
             window.getLijstItemsAlgemeen(
@@ -353,12 +384,33 @@ async function laadInitiëleData(forceerModalData = false, loadOnlyCurrentPeriod
                 } else {
                     alleCompensatieUrenItems = items || [];
                 }
-            }),            window.getLijstItemsAlgemeen(lijstNamen.Teams, "$select=ID,Title,Naam,Kleur,Actief").then(items => {
+            }).catch(error => {
+                console.error("[VerlofroosterLogic] Fout bij laden CompensatieUren items:", error);
+                alleCompensatieUrenItems = [];
+            }),
+            window.getLijstItemsAlgemeen(lijstNamen.Teams, "$select=ID,Title,Naam,Kleur,Actief").then(items => {
+                console.log(`[VerlofroosterLogic] Loaded Teams: ${items ? items.length : 0} items`);
                 alleTeams = items || [];
                 window.alleTeams = alleTeams; // Ensure it's on the window object
+            }).catch(error => {
+                console.error("[VerlofroosterLogic] Fout bij laden Teams:", error);
+                alleTeams = [];
+                window.alleTeams = [];
             }),
-            window.getLijstItemsAlgemeen(lijstNamen.DagenIndicator).then(items => alleDagenIndicators = items || []),
-            window.getLijstItemsAlgemeen(lijstNamen.UrenPerWeek).then(items => alleUrenPerWeekItems = items || []),
+            window.getLijstItemsAlgemeen(lijstNamen.DagenIndicator).then(items => {
+                console.log(`[VerlofroosterLogic] Loaded DagenIndicators: ${items ? items.length : 0} items`);
+                alleDagenIndicators = items || [];
+            }).catch(error => {
+                console.error("[VerlofroosterLogic] Fout bij laden DagenIndicators:", error);
+                alleDagenIndicators = [];
+            }),
+            window.getLijstItemsAlgemeen(lijstNamen.UrenPerWeek).then(items => {
+                console.log(`[VerlofroosterLogic] Loaded UrenPerWeek: ${items ? items.length : 0} items`);
+                alleUrenPerWeekItems = items || [];
+            }).catch(error => {
+                console.error("[VerlofroosterLogic] Fout bij laden UrenPerWeek:", error);
+                alleUrenPerWeekItems = [];
+            }),
             // Load zittingvrij items with date filter if applicable
             window.getLijstItemsAlgemeen(
                 lijstNamen.IncidenteelZittingVrij,
@@ -366,15 +418,29 @@ async function laadInitiëleData(forceerModalData = false, loadOnlyCurrentPeriod
             ).then(items => {
                 console.log(`[VerlofroosterLogic] Loaded IncidenteelZittingVrij items (${loadOnlyCurrentPeriod ? 'filtered' : 'all'}):`, items ? items.length : 0);
                 alleIncidenteelZittingVrijItems = items || [];
+            }).catch(error => {
+                console.error("[VerlofroosterLogic] Fout bij laden IncidenteelZittingVrij:", error);
+                alleIncidenteelZittingVrijItems = [];
             }),
-            window.getLijstItemsAlgemeen(lijstNamen.Verlofredenen, "$select=ID,Title,Naam,Kleur,VerlofDag").then(items => alleVerlofredenen = items || [])
+            window.getLijstItemsAlgemeen(lijstNamen.Verlofredenen, "$select=ID,Title,Naam,Kleur,VerlofDag").then(items => {
+                console.log(`[VerlofroosterLogic] Loaded Verlofredenen: ${items ? items.length : 0} items`);
+                alleVerlofredenen = items || [];
+            }).catch(error => {
+                console.error("[VerlofroosterLogic] Fout bij laden Verlofredenen:", error);
+                alleVerlofredenen = [];
+            })
         ];
 
         if (forceerModalData || !isDataVoorRegistratieModalGereed || !isDataVoorVerlofModalGereed || !isDataVoorZiekBeterModalGereed) {
             dataPromises.push(
                 window.getLijstItemsAlgemeen(lijstNamen.KeuzelijstFuncties, "$select=ID,Title").then(items => {
+                    console.log(`[VerlofroosterLogic] Loaded KeuzelijstFuncties: ${items ? items.length : 0} items`);
                     alleKeuzelijstFuncties = items || [];
                     window.alleKeuzelijstFuncties = alleKeuzelijstFuncties; // Ensure it's on the window object
+                }).catch(error => {
+                    console.error("[VerlofroosterLogic] Fout bij laden KeuzelijstFuncties:", error);
+                    alleKeuzelijstFuncties = [];
+                    window.alleKeuzelijstFuncties = [];
                 })
             );
         }
@@ -383,19 +449,47 @@ async function laadInitiëleData(forceerModalData = false, loadOnlyCurrentPeriod
         dataPromises.push(
             window.getLijstItemsAlgemeen(lijstNamen.Instellingen, "$select=ID,Title,EigenTeamWeergeven,soortWeergave,WeekendenWeergeven", gebruikersInstellingenFilter)
                 .then(items => {
+                    console.log(`[VerlofroosterLogic] Loaded gebruikersInstellingen: ${items ? items.length : 0} items`);
                     if (items && items.length > 0) {
                         const inst = items[0];
                         gebruikersInstellingen.eigenTeamWeergeven = inst.EigenTeamWeergeven || false;
                         gebruikersInstellingen.soortWeergave = inst.soortWeergave || 'light';
                         gebruikersInstellingen.weekendenWeergeven = (inst.WeekendenWeergeven === null || inst.WeekendenWeergeven === undefined) ? true : inst.WeekendenWeergeven;
                         gebruikersInstellingenSPId = inst.ID;
+                        console.log("[VerlofroosterLogic] Gebruikersinstellingen geladen:", gebruikersInstellingen);
                     } else {
                         console.log("[VerlofroosterLogic] Geen specifieke gebruikersinstellingen gevonden, standaard waarden worden gebruikt.");
                     }
                 })
+                .catch(error => {
+                    console.error("[VerlofroosterLogic] Fout bij laden gebruikersinstellingen:", error);
+                    console.log("[VerlofroosterLogic] Gebruik standaard gebruikersinstellingen.");
+                })
         );
 
         await Promise.all(dataPromises);
+        
+        // Data loading summary
+        console.log("[VerlofroosterLogic] === DATA LOADING SUMMARY ===");
+        console.log(`[VerlofroosterLogic] Medewerkers: ${alleMedewerkers.length} items`);
+        console.log(`[VerlofroosterLogic] Verlof items: ${alleVerlofItems.length} items`);
+        console.log(`[VerlofroosterLogic] Compensatie items: ${alleCompensatieUrenItems.length} items`);
+        console.log(`[VerlofroosterLogic] Teams: ${alleTeams.length} items`);
+        console.log(`[VerlofroosterLogic] Dagen indicators: ${alleDagenIndicators.length} items`);
+        console.log(`[VerlofroosterLogic] Uren per week: ${alleUrenPerWeekItems.length} items`);
+        console.log(`[VerlofroosterLogic] Zittingvrij items: ${alleIncidenteelZittingVrijItems.length} items`);
+        console.log(`[VerlofroosterLogic] Verlofredenen: ${alleVerlofredenen.length} items`);
+        console.log(`[VerlofroosterLogic] Keuze functies: ${alleKeuzelijstFuncties.length} items`);
+        console.log("[VerlofroosterLogic] === END SUMMARY ===");
+        
+        // Check if we have the minimum required data
+        if (alleMedewerkers.length === 0) {
+            console.warn("[VerlofroosterLogic] Kritieke waarschuwing: Geen medewerkers geladen! Het rooster kan niet worden weergegeven.");
+            if (domRefsLogic.notificationPlaceholder && !forceerModalData) {
+                toonNotificatie("Geen medewerkers gevonden. Controleer SharePoint verbinding en machtigingen.", "warning", false);
+            }
+        }
+        
         console.log("[VerlofroosterLogic] Alle data succesvol geladen/bijgewerkt.");
 
         isDataVoorRegistratieModalGereed = (alleTeams.length > 0 && alleKeuzelijstFuncties.length > 0);
@@ -414,11 +508,27 @@ async function laadInitiëleData(forceerModalData = false, loadOnlyCurrentPeriod
 
     } catch (error) {
         console.error("[VerlofroosterLogic] Fout tijdens het laden van initiële data:", error);
+        console.error("[VerlofroosterLogic] SharePoint URL:", window.spWebAbsoluteUrl);
+        console.error("[VerlofroosterLogic] Beschikbare lijst configuraties:", window.sharepointLijstConfiguraties ? Object.keys(window.sharepointLijstConfiguraties) : 'Geen configuraties');
+        
         isDataVoorRegistratieModalGereed = false;
         isDataVoorVerlofModalGereed = false;
         isDataVoorZiekBeterModalGereed = false;
+        
         if (domRefsLogic.notificationPlaceholder && !forceerModalData) {
-            toonNotificatie("Een of meerdere databronnen konden niet geladen worden. Probeer de pagina te vernieuwen.", "error", false);
+            // Provide a more specific error message based on the type of error
+            let errorMessage = "Een of meerdere databronnen konden niet geladen worden.";
+            if (error.message && error.message.includes("404")) {
+                errorMessage = "SharePoint lijsten niet gevonden. Controleer de lijst configuratie.";
+            } else if (error.message && error.message.includes("403")) {
+                errorMessage = "Geen toegang tot SharePoint gegevens. Controleer uw machtigingen.";
+            } else if (error.message && error.message.includes("401")) {
+                errorMessage = "Niet geautoriseerd. Mogelijk bent u niet ingelogd.";
+            } else if (!window.spWebAbsoluteUrl) {
+                errorMessage = "SharePoint verbinding niet beschikbaar. Controleer de netwerk verbinding.";
+            }
+            
+            toonNotificatie(errorMessage + " Probeer de pagina te vernieuwen.", "error", false);
         }
     }
 
@@ -862,7 +972,39 @@ function tekenRooster() {
     });
 
     if (gefilterdeMedewerkers.length === 0) {
-        domRefsLogic.roosterDataRows.innerHTML = `<div class="col-span-full text-center p-4 text-gray-500 dark:text-gray-400">Geen medewerkers gevonden voor de huidige selectie.</div>`;
+        let message = "Geen medewerkers gevonden voor de huidige selectie.";
+        
+        // Provide more specific guidance based on the actual data state
+        if (alleMedewerkers.length === 0) {
+            message = "Geen medewerkers geladen van SharePoint. Controleer de verbinding en machtigingen.";
+        } else if (geselecteerdTeamId !== 'all') {
+            message = "Geen medewerkers gevonden voor het geselecteerde team. Probeer 'Alle teams' te selecteren.";
+        } else if (zoekTerm) {
+            message = `Geen medewerkers gevonden die voldoen aan de zoekopdracht '${zoekTerm}'. Probeer de zoekopdracht aan te passen.`;
+        }
+        
+        domRefsLogic.roosterDataRows.innerHTML = `<div class="col-span-full text-center p-8 text-gray-500 dark:text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4 opacity-50">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <p class="text-lg font-medium mb-2">${message}</p>
+            ${alleMedewerkers.length === 0 ? `
+                <p class="text-sm">Mogelijke oorzaken:</p>
+                <ul class="text-sm mt-2 list-disc list-inside text-left max-w-md mx-auto">
+                    <li>SharePoint verbinding problemen</li>
+                    <li>Onjuiste lijst configuratie</li>
+                    <li>Onvoldoende machtigingen</li>
+                    <li>Geen actieve medewerkers in de lijst</li>
+                </ul>
+                <button onclick="window.location.reload()" class="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">
+                    Pagina vernieuwen
+                </button>
+            ` : ''}
+        </div>`;
+        console.warn("[VerlofroosterLogic] Rooster rendering gestopt: geen medewerkers om weer te geven.");
         return;
     }
 

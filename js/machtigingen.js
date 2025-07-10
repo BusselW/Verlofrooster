@@ -25,7 +25,22 @@ let spWebAbsoluteUrlBeheer = '';
 let huidigeGebruikerBeheer = { loginNaam: null, Id: null, Title: null };
 
 
-const GEDEFINIEERDE_SITE_URL = "/sites/MulderT/CustomPW/Verlof/"; // Pas aan indien nodig
+// SharePoint site URL configuration - automatische detectie met fallback
+const GEDEFINIEERDE_SITE_URL = (() => {
+    // Probeer de URL uit de huidige locatie te detecteren
+    const currentPath = window.location.pathname;
+    
+    // Zoek naar SharePoint site patronen in de URL
+    const siteMatch = currentPath.match(/^(\/sites\/[^\/]+(?:\/[^\/]+)*)\//);
+    if (siteMatch) {
+        console.log("[Machtigingen] Automatisch gedetecteerde SharePoint site URL:", siteMatch[1] + "/");
+        return siteMatch[1] + "/";
+    }
+    
+    // Fallback naar de oorspronkelijke geconfigureerde URL
+    console.log("[Machtigingen] Gebruik fallback SharePoint site URL.");
+    return "/sites/MulderT/CustomPW/Verlof/";
+})();
 
 // Definieer de mapping van UI secties naar vereiste SharePoint groepen
 window.UI_SECTION_PERMISSIONS = {
@@ -161,13 +176,18 @@ window.normalizeSharePointDates = normalizeSharePointDates;
  * Haalt items op uit een SharePoint lijst via REST API.
  */
 async function getLijstItemsAlgemeen(lijstConfigKey, selectQuery = "", filterQuery = "", expandQuery = "", orderbyQuery = "") {
-    if (!window.spWebAbsoluteUrl) { return []; }
+    if (!window.spWebAbsoluteUrl) { 
+        console.error(`[getLijstItemsAlgemeen] SharePoint URL niet beschikbaar. Controleer de initialisatie van machtigingen.js.`);
+        return []; 
+    }
+    
     const lijstConfig = typeof window.getLijstConfig === 'function' ? window.getLijstConfig(lijstConfigKey) : null;
     if (!lijstConfig || !lijstConfig.lijstId) {
         console.error(`[getLijstItemsAlgemeen] Lijstconfiguratie (met lijstId) niet gevonden voor '${lijstConfigKey}'. Controleer configLijst.js.`);
+        console.error(`[getLijstItemsAlgemeen] Beschikbare lijst configuraties:`, window.sharepointLijstConfiguraties ? Object.keys(window.sharepointLijstConfiguraties) : 'Geen configuraties gevonden');
         return [];
     }
-    const lijstId = lijstConfig.lijstId; let apiUrlPath = `/_api/web/lists(guid'${lijstId}')/items`;
+    const lijstId = lijstConfig.lijstId;let apiUrlPath = `/_api/web/lists(guid'${lijstId}')/items`;
     let queryParams = [];
     if (selectQuery) queryParams.push(selectQuery);
     if (filterQuery) queryParams.push(filterQuery);
@@ -181,16 +201,42 @@ async function getLijstItemsAlgemeen(lijstConfigKey, selectQuery = "", filterQue
     }
 
     const baseApiUrl = window.spWebAbsoluteUrl.replace(/\/$/, "");
-    const apiUrl = `${baseApiUrl}${apiUrlPath}${queryParams.length > 0 ? '?' + queryParams.join('&') : ''}`; try {
+    const apiUrl = `${baseApiUrl}${apiUrlPath}${queryParams.length > 0 ? '?' + queryParams.join('&') : ''}`;
+
+    try {
         console.log(`[getLijstItemsAlgemeen] Fetching from ${apiUrl}`);
-        const response = await fetch(apiUrl, { method: 'GET', headers: { 'Accept': 'application/json;odata=verbose' } });
+        console.log(`[getLijstItemsAlgemeen] SharePoint base URL: ${baseApiUrl}`);
+        console.log(`[getLijstItemsAlgemeen] Lijst configuratie:`, lijstConfig);
+        
+        const response = await fetch(apiUrl, { 
+            method: 'GET', 
+            headers: { 'Accept': 'application/json;odata=verbose' },
+            credentials: 'same-origin'
+        });
 
         if (!response.ok) {
             const errorText = await response.text();
             console.error(`[getLijstItemsAlgemeen] SharePoint API error (${response.status}):`, errorText);
-            const errorData = JSON.parse(errorText);
-            const spErrorMessage = errorData?.error?.message?.value || `Serverfout: ${response.status}`;
-            throw new Error(spErrorMessage);
+            console.error(`[getLijstItemsAlgemeen] Request URL was: ${apiUrl}`);
+            
+            // Probeer de error te parseren voor betere foutmeldingen
+            try {
+                const errorData = JSON.parse(errorText);
+                const spErrorMessage = errorData?.error?.message?.value || `HTTP ${response.status}: ${response.statusText}`;
+                
+                // Specifieke foutmeldingen voor veel voorkomende problemen
+                if (response.status === 404) {
+                    console.error(`[getLijstItemsAlgemeen] SharePoint lijst niet gevonden. Controleer of lijst '${lijstConfigKey}' (ID: ${lijstId}) bestaat op de site.`);
+                } else if (response.status === 403) {
+                    console.error(`[getLijstItemsAlgemeen] Toegang geweigerd tot SharePoint lijst '${lijstConfigKey}'. Controleer machtigingen.`);
+                } else if (response.status === 401) {
+                    console.error(`[getLijstItemsAlgemeen] Niet geautoriseerd voor SharePoint. Mogelijk is de gebruiker niet ingelogd.`);
+                }
+                
+                throw new Error(spErrorMessage);
+            } catch (parseError) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
         }
 
         const data = await response.json();
@@ -198,6 +244,8 @@ async function getLijstItemsAlgemeen(lijstConfigKey, selectQuery = "", filterQue
         return data.d.results;
     } catch (error) {
         console.error(`[getLijstItemsAlgemeen] Error loading data from ${lijstConfigKey}:`, error);
+        console.error(`[getLijstItemsAlgemeen] SharePoint URL: ${window.spWebAbsoluteUrl}`);
+        console.error(`[getLijstItemsAlgemeen] Lijst ID: ${lijstId}`);
         return [];
     }
 }

@@ -41,6 +41,7 @@
         }
     </style>
     <script src="js/util_auth.js"></script>
+    <script src="js/mock_data.js"></script>
     <script src="js/machtigingen.js"></script>
 </head>
 
@@ -242,6 +243,28 @@
                 vanuit SharePoint. Wijzigingen kunnen even duren om zichtbaar te worden.</p>
         </main>
 
+        <!-- Debug panel for development (hidden by default) -->
+        <div id="debug-panel" class="hidden fixed bottom-4 left-4 bg-gray-900 text-green-400 p-4 rounded-lg shadow-xl max-w-md text-xs font-mono z-50">
+            <div class="flex justify-between items-center mb-2">
+                <h4 class="text-white font-bold">Debug Info</h4>
+                <button id="debug-panel-close" class="text-gray-400 hover:text-white">✕</button>
+            </div>
+            <div id="debug-content">
+                <div id="debug-sharepoint-url" class="mb-1"></div>
+                <div id="debug-data-status" class="mb-1"></div>
+                <div id="debug-config-status" class="mb-1"></div>
+                <div id="debug-auth-status" class="mb-1"></div>
+            </div>
+            <button id="debug-refresh" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs">
+                Refresh Data
+            </button>
+        </div>
+
+        <!-- Debug toggle button (only visible when Ctrl+Shift+D is pressed) -->
+        <button id="debug-toggle" class="hidden fixed bottom-4 left-4 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full shadow-lg z-40" title="Toggle debug panel">
+            🐛
+        </button>
+
         <div class="fixed bottom-4 right-4 md:bottom-6 md:right-6 print:hidden z-40">
             <div id="fab-menu" class="absolute bottom-16 right-0 mb-2 w-60 bg-white rounded-lg shadow-xl py-2 transform scale-95 opacity-0 pointer-events-none border border-gray-200">
                 <a href="javascript:void(0)" id="fab-verlof-aanvragen" class="fab-menu-item block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md">Verlof
@@ -367,6 +390,7 @@
     <script src="js/theme-toggle.js"></script>
     <script src="pages/js/meldingZittingsvrij_logic.js"></script>    <script src="js/verlofRooster_tour.js"></script>
     <script src="js/contextMenu_logic.js"></script>
+    <script src="js/debug_utilities.js"></script>
 
 </body>
 </html>

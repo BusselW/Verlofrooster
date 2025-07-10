@@ -317,6 +317,30 @@ async function laadInitiëleData(forceerModalData = false, loadOnlyCurrentPeriod
         return;
     }
     
+    // Validate SharePoint list configurations
+    if (typeof window.validateAllLijstConfigs === 'function') {
+        console.log("[VerlofroosterLogic] Validating SharePoint list configurations...");
+        if (!window.validateAllLijstConfigs()) {
+            console.warn("[VerlofroosterLogic] Waarschuwing: Een of meer lijst configuraties zijn ongeldig. Data laden kan problemen ondervinden.");
+        }
+    } else {
+        console.warn("[VerlofroosterLogic] Lijst configuratie validatie functie niet beschikbaar.");
+    }
+    
+    // Test SharePoint connectivity before attempting to load data
+    if (typeof window.testSharePointConnectivity === 'function') {
+        console.log("[VerlofroosterLogic] Testing SharePoint connectivity...");
+        const isConnected = await window.testSharePointConnectivity();
+        if (!isConnected) {
+            console.error("[VerlofroosterLogic] SharePoint connectivity test failed!");
+            if (domRefsLogic.notificationPlaceholder && !forceerModalData) {
+                toonNotificatie("Kan geen verbinding maken met SharePoint. Controleer uw netwerk en machtigingen.", "error", false);
+            }
+            return;
+        }
+        console.log("[VerlofroosterLogic] SharePoint connectivity test passed.");
+    }
+    
     if (domRefsLogic.notificationPlaceholder && !forceerModalData) {
         toonNotificatie("Bezig met laden van roostergegevens...", "info", 10000);
     }try {

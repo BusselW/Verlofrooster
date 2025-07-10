@@ -173,6 +173,40 @@ function normalizeSharePointDates(items, dateFields = ['StartDatum', 'EindDatum'
 window.normalizeSharePointDates = normalizeSharePointDates;
 
 /**
+ * Test SharePoint connectivity by making a simple API call
+ * @returns {Promise<boolean>} - True if SharePoint is accessible
+ */
+async function testSharePointConnectivity() {
+    if (!window.spWebAbsoluteUrl) {
+        console.error("[testSharePointConnectivity] SharePoint URL niet beschikbaar.");
+        return false;
+    }
+    
+    try {
+        const testUrl = `${window.spWebAbsoluteUrl.replace(/\/$/, "")}/_api/web?$select=Title`;
+        console.log(`[testSharePointConnectivity] Testing connectivity to: ${testUrl}`);
+        
+        const response = await fetch(testUrl, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json;odata=verbose' },
+            credentials: 'same-origin'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log(`[testSharePointConnectivity] ✓ SharePoint site connected successfully: ${data.d.Title}`);
+            return true;
+        } else {
+            console.error(`[testSharePointConnectivity] ✗ SharePoint connectivity test failed: ${response.status} ${response.statusText}`);
+            return false;
+        }
+    } catch (error) {
+        console.error("[testSharePointConnectivity] ✗ SharePoint connectivity test failed:", error);
+        return false;
+    }
+}
+
+/**
  * Haalt items op uit een SharePoint lijst via REST API.
  */
 async function getLijstItemsAlgemeen(lijstConfigKey, selectQuery = "", filterQuery = "", expandQuery = "", orderbyQuery = "") {
@@ -250,6 +284,7 @@ async function getLijstItemsAlgemeen(lijstConfigKey, selectQuery = "", filterQue
     }
 }
 window.getLijstItemsAlgemeen = getLijstItemsAlgemeen;
+window.testSharePointConnectivity = testSharePointConnectivity;
 
 /**
  * Haalt een X-RequestDigest op.
@@ -495,6 +530,18 @@ window.deleteSPListItem = async function (lijstConfigKey, itemId) {
  */
 async function initializeMachtigingen() {
     console.log("[Machtigingen] DOM geladen. Starten met initialisatie SharePoint context...");
+    
+    // Check if mock mode should be auto-enabled
+    if (typeof window.mockData === 'object' && typeof window.mockData.autoEnable === 'function') {
+        const mockEnabled = await window.mockData.autoEnable();
+        if (mockEnabled) {
+            console.log("[Machtigingen] Mock mode auto-enabled. Resolving machtigingen promise.");
+            if (resolveMachtigingenPromise) resolveMachtigingenPromise();
+            await pasUIMachtigingenToe();
+            return;
+        }
+    }
+    
     const contextInitialized = await initializeSharePointContextViaAPI();
 
     if (contextInitialized) {

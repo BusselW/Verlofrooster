@@ -1,0 +1,820 @@
+/* VERLI Components CSS - Standardized UI Components Styling */
+/* This file provides consistent styling for all VERLI UI components */
+
+/* CSS Custom Properties (Variables) */
+:root {
+    --verli-primary: #007bff;
+    --verli-primary-hover: #0056b3;
+    --verli-secondary: #6c757d;
+    --verli-success: #28a745;
+    --verli-success-hover: #218838;
+    --verli-warning: #ffc107;
+    --verli-warning-hover: #e0a800;
+    --verli-danger: #dc3545;
+    --verli-danger-hover: #c82333;
+    --verli-info: #17a2b8;
+    --verli-light: #f8f9fa;
+    --verli-dark: #343a40;
+    --verli-white: #ffffff;
+    --verli-border: #dee2e6;
+    --verli-border-light: #e9ecef;
+    --verli-text: #212529;
+    --verli-text-muted: #6c757d;
+    --verli-background: #ffffff;
+    --verli-background-light: #f8f9fa;
+    --verli-shadow: rgba(0, 0, 0, 0.1);
+    --verli-shadow-strong: rgba(0, 0, 0, 0.25);
+    
+    --verli-spacing-xs: 4px;
+    --verli-spacing-sm: 8px;
+    --verli-spacing-md: 16px;
+    --verli-spacing-lg: 24px;
+    --verli-spacing-xl: 32px;
+    --verli-spacing-xxl: 48px;
+    
+    --verli-radius-sm: 4px;
+    --verli-radius-md: 6px;
+    --verli-radius-lg: 8px;
+    --verli-radius-xl: 12px;
+    --verli-radius-pill: 50px;
+    
+    --verli-font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+    --verli-font-size-xs: 12px;
+    --verli-font-size-sm: 14px;
+    --verli-font-size-md: 16px;
+    --verli-font-size-lg: 18px;
+    --verli-font-size-xl: 20px;
+    --verli-font-size-xxl: 24px;
+    
+    --verli-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --verli-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+    --verli-shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+    --verli-shadow-xl: 0 16px 32px rgba(0, 0, 0, 0.1);
+    
+    --verli-transition-fast: 0.15s ease;
+    --verli-transition-normal: 0.3s ease;
+    --verli-transition-slow: 0.5s ease;
+}
+
+/* Base Component Styles */
+.verli-component {
+    font-family: var(--verli-font-family);
+    box-sizing: border-box;
+}
+
+.verli-component *,
+.verli-component *::before,
+.verli-component *::after {
+    box-sizing: border-box;
+}
+
+/* Required Field Indicator */
+.verli-required {
+    color: var(--verli-danger);
+    font-weight: 500;
+}
+
+/* Input Components */
+.verli-input-container {
+    margin-bottom: var(--verli-spacing-md);
+}
+
+.verli-input-label {
+    display: block;
+    margin-bottom: var(--verli-spacing-xs);
+    font-weight: 500;
+    color: var(--verli-text);
+    font-size: var(--verli-font-size-sm);
+}
+
+.verli-input-wrapper {
+    position: relative;
+}
+
+.verli-input {
+    width: 100%;
+    padding: var(--verli-spacing-sm) var(--verli-spacing-md);
+    border: 1px solid var(--verli-border);
+    border-radius: var(--verli-radius-md);
+    background-color: var(--verli-background);
+    color: var(--verli-text);
+    font-size: var(--verli-font-size-sm);
+    font-family: var(--verli-font-family);
+    transition: all var(--verli-transition-fast);
+    outline: none;
+}
+
+.verli-input:focus {
+    border-color: var(--verli-primary);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.verli-input:disabled {
+    background-color: var(--verli-background-light);
+    color: var(--verli-text-muted);
+    cursor: not-allowed;
+}
+
+.verli-input::placeholder {
+    color: var(--verli-text-muted);
+}
+
+/* Input Sizes */
+.verli-input-sm {
+    padding: var(--verli-spacing-xs) var(--verli-spacing-sm);
+    font-size: var(--verli-font-size-xs);
+}
+
+.verli-input-lg {
+    padding: var(--verli-spacing-md) var(--verli-spacing-lg);
+    font-size: var(--verli-font-size-md);
+}
+
+/* Input Error State */
+.verli-input-error-state {
+    border-color: var(--verli-danger);
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+.verli-input-error-state:focus {
+    border-color: var(--verli-danger);
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2);
+}
+
+.verli-input-help {
+    margin-top: var(--verli-spacing-xs);
+    font-size: var(--verli-font-size-xs);
+    color: var(--verli-text-muted);
+}
+
+.verli-input-error {
+    margin-top: var(--verli-spacing-xs);
+    font-size: var(--verli-font-size-xs);
+    color: var(--verli-danger);
+    font-weight: 500;
+}
+
+/* Textarea Components */
+.verli-textarea-container {
+    margin-bottom: var(--verli-spacing-md);
+}
+
+.verli-textarea-label {
+    display: block;
+    margin-bottom: var(--verli-spacing-xs);
+    font-weight: 500;
+    color: var(--verli-text);
+    font-size: var(--verli-font-size-sm);
+}
+
+.verli-textarea-wrapper {
+    position: relative;
+}
+
+.verli-textarea {
+    width: 100%;
+    padding: var(--verli-spacing-sm) var(--verli-spacing-md);
+    border: 1px solid var(--verli-border);
+    border-radius: var(--verli-radius-md);
+    background-color: var(--verli-background);
+    color: var(--verli-text);
+    font-size: var(--verli-font-size-sm);
+    font-family: var(--verli-font-family);
+    transition: all var(--verli-transition-fast);
+    outline: none;
+    min-height: 100px;
+}
+
+.verli-textarea:focus {
+    border-color: var(--verli-primary);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.verli-textarea:disabled {
+    background-color: var(--verli-background-light);
+    color: var(--verli-text-muted);
+    cursor: not-allowed;
+}
+
+.verli-textarea::placeholder {
+    color: var(--verli-text-muted);
+}
+
+.verli-textarea-error-state {
+    border-color: var(--verli-danger);
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+.verli-textarea-help {
+    margin-top: var(--verli-spacing-xs);
+    font-size: var(--verli-font-size-xs);
+    color: var(--verli-text-muted);
+}
+
+.verli-textarea-error {
+    margin-top: var(--verli-spacing-xs);
+    font-size: var(--verli-font-size-xs);
+    color: var(--verli-danger);
+    font-weight: 500;
+}
+
+/* Select Components */
+.verli-select-container {
+    margin-bottom: var(--verli-spacing-md);
+}
+
+.verli-select-label {
+    display: block;
+    margin-bottom: var(--verli-spacing-xs);
+    font-weight: 500;
+    color: var(--verli-text);
+    font-size: var(--verli-font-size-sm);
+}
+
+.verli-select-wrapper {
+    position: relative;
+}
+
+.verli-select {
+    width: 100%;
+    padding: var(--verli-spacing-sm) var(--verli-spacing-md);
+    border: 1px solid var(--verli-border);
+    border-radius: var(--verli-radius-md);
+    background-color: var(--verli-background);
+    color: var(--verli-text);
+    font-size: var(--verli-font-size-sm);
+    font-family: var(--verli-font-family);
+    transition: all var(--verli-transition-fast);
+    outline: none;
+    cursor: pointer;
+}
+
+.verli-select:focus {
+    border-color: var(--verli-primary);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.verli-select:disabled {
+    background-color: var(--verli-background-light);
+    color: var(--verli-text-muted);
+    cursor: not-allowed;
+}
+
+/* Select Sizes */
+.verli-select-sm {
+    padding: var(--verli-spacing-xs) var(--verli-spacing-sm);
+    font-size: var(--verli-font-size-xs);
+}
+
+.verli-select-lg {
+    padding: var(--verli-spacing-md) var(--verli-spacing-lg);
+    font-size: var(--verli-font-size-md);
+}
+
+.verli-select-error-state {
+    border-color: var(--verli-danger);
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+.verli-select-help {
+    margin-top: var(--verli-spacing-xs);
+    font-size: var(--verli-font-size-xs);
+    color: var(--verli-text-muted);
+}
+
+.verli-select-error {
+    margin-top: var(--verli-spacing-xs);
+    font-size: var(--verli-font-size-xs);
+    color: var(--verli-danger);
+    font-weight: 500;
+}
+
+/* Checkbox Components */
+.verli-checkbox-container {
+    margin-bottom: var(--verli-spacing-md);
+}
+
+.verli-checkbox-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--verli-spacing-sm);
+}
+
+.verli-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: var(--verli-spacing-sm);
+    cursor: pointer;
+    font-size: var(--verli-font-size-sm);
+    color: var(--verli-text);
+    line-height: 1.5;
+}
+
+.verli-checkbox {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.verli-checkbox-visual {
+    position: relative;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--verli-border);
+    border-radius: var(--verli-radius-sm);
+    background-color: var(--verli-background);
+    transition: all var(--verli-transition-fast);
+    flex-shrink: 0;
+}
+
+.verli-checkbox:checked + .verli-checkbox-visual {
+    background-color: var(--verli-primary);
+    border-color: var(--verli-primary);
+}
+
+.verli-checkbox:checked + .verli-checkbox-visual::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 4px;
+    height: 8px;
+    border: solid var(--verli-white);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.verli-checkbox:focus + .verli-checkbox-visual {
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.verli-checkbox:disabled + .verli-checkbox-visual {
+    background-color: var(--verli-background-light);
+    border-color: var(--verli-border-light);
+    cursor: not-allowed;
+}
+
+.verli-checkbox-text {
+    user-select: none;
+}
+
+.verli-checkbox-help {
+    margin-top: var(--verli-spacing-xs);
+    font-size: var(--verli-font-size-xs);
+    color: var(--verli-text-muted);
+    margin-left: 26px; /* Align with checkbox */
+}
+
+/* Checkbox Sizes */
+.verli-checkbox-sm + .verli-checkbox-visual {
+    width: 14px;
+    height: 14px;
+}
+
+.verli-checkbox-sm:checked + .verli-checkbox-visual::after {
+    left: 3px;
+    top: 1px;
+    width: 3px;
+    height: 6px;
+}
+
+.verli-checkbox-lg + .verli-checkbox-visual {
+    width: 22px;
+    height: 22px;
+}
+
+.verli-checkbox-lg:checked + .verli-checkbox-visual::after {
+    left: 7px;
+    top: 3px;
+    width: 5px;
+    height: 10px;
+}
+
+/* Button Components */
+.verli-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--verli-spacing-sm) var(--verli-spacing-md);
+    border: 1px solid transparent;
+    border-radius: var(--verli-radius-md);
+    background-color: var(--verli-primary);
+    color: var(--verli-white);
+    font-size: var(--verli-font-size-sm);
+    font-family: var(--verli-font-family);
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--verli-transition-fast);
+    outline: none;
+    user-select: none;
+    min-height: 36px;
+}
+
+.verli-button:hover:not(:disabled) {
+    background-color: var(--verli-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--verli-shadow-md);
+}
+
+.verli-button:focus {
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+.verli-button:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: var(--verli-shadow-sm);
+}
+
+.verli-button:disabled {
+    background-color: var(--verli-border-light);
+    color: var(--verli-text-muted);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Button Variants */
+.verli-button-secondary {
+    background-color: var(--verli-secondary);
+    color: var(--verli-white);
+}
+
+.verli-button-secondary:hover:not(:disabled) {
+    background-color: #5a6268;
+}
+
+.verli-button-success {
+    background-color: var(--verli-success);
+    color: var(--verli-white);
+}
+
+.verli-button-success:hover:not(:disabled) {
+    background-color: var(--verli-success-hover);
+}
+
+.verli-button-warning {
+    background-color: var(--verli-warning);
+    color: var(--verli-dark);
+}
+
+.verli-button-warning:hover:not(:disabled) {
+    background-color: var(--verli-warning-hover);
+}
+
+.verli-button-danger {
+    background-color: var(--verli-danger);
+    color: var(--verli-white);
+}
+
+.verli-button-danger:hover:not(:disabled) {
+    background-color: var(--verli-danger-hover);
+}
+
+.verli-button-info {
+    background-color: var(--verli-info);
+    color: var(--verli-white);
+}
+
+.verli-button-info:hover:not(:disabled) {
+    background-color: #138496;
+}
+
+.verli-button-light {
+    background-color: var(--verli-light);
+    color: var(--verli-dark);
+    border-color: var(--verli-border);
+}
+
+.verli-button-light:hover:not(:disabled) {
+    background-color: var(--verli-border-light);
+}
+
+.verli-button-dark {
+    background-color: var(--verli-dark);
+    color: var(--verli-white);
+}
+
+.verli-button-dark:hover:not(:disabled) {
+    background-color: #23272b;
+}
+
+.verli-button-link {
+    background-color: transparent;
+    color: var(--verli-primary);
+    border-color: transparent;
+    text-decoration: underline;
+}
+
+.verli-button-link:hover:not(:disabled) {
+    background-color: transparent;
+    color: var(--verli-primary-hover);
+    transform: none;
+    box-shadow: none;
+}
+
+/* Button Sizes */
+.verli-button-sm {
+    padding: var(--verli-spacing-xs) var(--verli-spacing-sm);
+    font-size: var(--verli-font-size-xs);
+    min-height: 28px;
+}
+
+.verli-button-lg {
+    padding: var(--verli-spacing-md) var(--verli-spacing-lg);
+    font-size: var(--verli-font-size-md);
+    min-height: 44px;
+}
+
+/* Button Content */
+.verli-button-content {
+    display: flex;
+    align-items: center;
+    gap: var(--verli-spacing-xs);
+}
+
+.verli-button-icon {
+    flex-shrink: 0;
+}
+
+.verli-button-text {
+    flex-grow: 1;
+}
+
+/* Button Loading State */
+.verli-button-loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.verli-button-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: verli-spin 1s linear infinite;
+}
+
+@keyframes verli-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Utility Classes */
+.verli-mb-0 { margin-bottom: 0 !important; }
+.verli-mb-1 { margin-bottom: var(--verli-spacing-xs) !important; }
+.verli-mb-2 { margin-bottom: var(--verli-spacing-sm) !important; }
+.verli-mb-3 { margin-bottom: var(--verli-spacing-md) !important; }
+.verli-mb-4 { margin-bottom: var(--verli-spacing-lg) !important; }
+.verli-mb-5 { margin-bottom: var(--verli-spacing-xl) !important; }
+
+.verli-mt-0 { margin-top: 0 !important; }
+.verli-mt-1 { margin-top: var(--verli-spacing-xs) !important; }
+.verli-mt-2 { margin-top: var(--verli-spacing-sm) !important; }
+.verli-mt-3 { margin-top: var(--verli-spacing-md) !important; }
+.verli-mt-4 { margin-top: var(--verli-spacing-lg) !important; }
+.verli-mt-5 { margin-top: var(--verli-spacing-xl) !important; }
+
+.verli-text-left { text-align: left !important; }
+.verli-text-center { text-align: center !important; }
+.verli-text-right { text-align: right !important; }
+
+.verli-d-none { display: none !important; }
+.verli-d-block { display: block !important; }
+.verli-d-inline { display: inline !important; }
+.verli-d-inline-block { display: inline-block !important; }
+.verli-d-flex { display: flex !important; }
+
+.verli-flex-column { flex-direction: column !important; }
+.verli-flex-row { flex-direction: row !important; }
+.verli-justify-center { justify-content: center !important; }
+.verli-justify-between { justify-content: space-between !important; }
+.verli-align-center { align-items: center !important; }
+.verli-align-start { align-items: flex-start !important; }
+.verli-align-end { align-items: flex-end !important; }
+
+.verli-w-100 { width: 100% !important; }
+.verli-h-100 { height: 100% !important; }
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .verli-input,
+    .verli-textarea,
+    .verli-select {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    .verli-button {
+        min-height: 44px; /* Better touch target */
+    }
+    
+    .verli-button-sm {
+        min-height: 36px;
+    }
+    
+    .verli-button-lg {
+        min-height: 52px;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --verli-background: #1a1a1a;
+        --verli-background-light: #2d2d2d;
+        --verli-text: #ffffff;
+        --verli-text-muted: #b0b0b0;
+        --verli-border: #404040;
+        --verli-border-light: #333333;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .verli-input,
+    .verli-textarea,
+    .verli-select {
+        border-width: 2px;
+    }
+    
+    .verli-button {
+        border-width: 2px;
+    }
+    
+    .verli-checkbox-visual {
+        border-width: 3px;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .verli-input,
+    .verli-textarea,
+    .verli-select,
+    .verli-button,
+    .verli-checkbox-visual {
+        transition: none;
+    }
+    
+    .verli-button:hover:not(:disabled) {
+        transform: none;
+    }
+    
+    .verli-button:active:not(:disabled) {
+        transform: none;
+    }
+    
+    .verli-button-spinner {
+        animation: none;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .verli-button {
+        display: none !important;
+    }
+    
+    .verli-input,
+    .verli-textarea,
+    .verli-select {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+}
+
+/* ===== UNIVERSAL MODAL STYLING FOR ALL CENTERS ===== */
+/* This section ensures consistent modal backgrounds across all pages */
+
+/* Modal Overlay - Solid background for all centers */
+.modal-overlay,
+.modal-backdrop,
+.modal-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(0, 0, 0, 0.75) !important;
+    background-color: rgba(0, 0, 0, 0.75) !important;
+    background-image: none !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1040 !important;
+}
+
+/* Modal Content - Solid white background */
+.modal,
+.modal-content,
+.modal-dialog {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+    border-radius: 12px;
+    box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.5),
+        0 15px 30px -8px rgba(0, 0, 0, 0.3),
+        0 8px 16px -4px rgba(0, 0, 0, 0.2) !important;
+    position: relative;
+    z-index: 1050 !important;
+    border: 2px solid rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Modal Header - Maintain gradient but ensure it's not transparent */
+.modal-header {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 40%, #2563eb 100%) !important;
+    color: white !important;
+    border-radius: 12px 12px 0 0;
+    padding: 16px 20px;
+    border-bottom: none;
+}
+
+.modal-header h1,
+.modal-header h2,
+.modal-header h3,
+.modal-header .form-title {
+    color: white !important;
+    margin: 0;
+}
+
+/* Modal Body and Footer - Solid white backgrounds */
+.modal-body,
+.form-body,
+.modal-content-body {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+    padding: 20px;
+}
+
+.modal-footer,
+.form-actions,
+.modal-actions {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+    padding: 16px 20px;
+    border-top: 1px solid #e2e8f0;
+    border-radius: 0 0 12px 12px;
+}
+
+/* Form sections within modals */
+.modal .form-section,
+.modal .autocomplete-section,
+.modal .toggle-section {
+    background: #f8fafc !important;
+    background-color: #f8fafc !important;
+    background-image: none !important;
+}
+
+/* Form inputs within modals */
+.modal .verli-input,
+.modal .verli-textarea,
+.modal .verli-select,
+.modal input,
+.modal textarea,
+.modal select {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+}
+
+/* Override any enhanced form styling that might use gradients */
+.modal .enhanced-form,
+.modal .modal-form-content {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+}
+
+/* Ensure close button is visible on dark header */
+.modal-close,
+.modal .btn-close {
+    color: white !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 8px;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover,
+.modal .btn-close:hover {
+    background: rgba(255, 255, 255, 0.25) !important;
+    color: white !important;
+}
+
+/* Responsive modal adjustments */
+@media (max-width: 768px) {
+    .modal {
+        margin: 16px !important;
+        max-width: calc(100vw - 32px) !important;
+    }
+    
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: 12px 16px !important;
+    }
+}

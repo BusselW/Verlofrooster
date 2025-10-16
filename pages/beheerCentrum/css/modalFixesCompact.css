@@ -1,0 +1,233 @@
+/**
+ * modalFixesCompact.css - Comprehensive fixes for modal nesting and excessive spacing issues
+ * 
+ * This file addresses two main problems:
+ * 1. Modal nesting causing double scrollbars
+ * 2. Excessive spacing between form sections and content boxes
+ * 
+ * Load this file AFTER modalFormatting.css to override problematic styles
+ */
+
+/* ===== MODAL NESTING FIXES ===== */
+
+/* Fix 1: Prevent nested modal containers from both being scrollable */
+.modal-form-wrapper {
+    /* Remove conflicting modal wrapper styles that duplicate functionality */
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+}
+
+/* Fix 2: Ensure only the outer modal-body is scrollable */
+.modal .modal-body {
+    /* This should be the ONLY scrollable container */
+    overflow-y: auto !important;
+    max-height: calc(90vh - 140px) !important;
+}
+
+/* Fix 3: Make inner form content non-scrollable */
+.modal-form-wrapper .modal-form-content,
+.modal-form-wrapper .form-body,
+.enhanced-form {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+}
+
+/* Fix 4: Remove redundant scrolling from form sections */
+.modal .form-section,
+.modal .form-section-fields,
+.modal .toggle-section-fields {
+    overflow: visible !important;
+    max-height: none !important;
+}
+
+/* ===== SPACING FIXES ===== */
+
+/* Fix 5: Consolidate form section spacing - use consistent 16px (1rem) gaps */
+.modal .form-section {
+    margin-bottom: 1rem !important; /* Instead of 20px and 3rem */
+}
+
+.modal .form-section:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Fix 6: Reduce form field spacing - use 12px instead of 24px */
+.modal .form-field,
+.modal .form-group,
+.modal .form-row {
+    margin-bottom: 0.75rem !important; /* 12px instead of 24px */
+}
+
+.modal .form-field:last-child,
+.modal .form-group:last-child,
+.modal .form-row:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Fix 7: Reduce padding in form sections */
+.modal .form-section {
+    padding: 0.875rem !important; /* 14px instead of 16px */
+}
+
+.modal .form-section.toggle-section {
+    padding: 1rem !important; /* 16px instead of 20px */
+    margin: 0.75rem 0 !important; /* 12px instead of 16px */
+}
+
+/* Fix 8: Tighten toggle field spacing */
+.modal .toggle-section-fields {
+    gap: 0.75rem !important; /* 12px instead of 16px */
+}
+
+.modal .toggle-field {
+    min-height: 52px !important; /* Reduce from 60px */
+    padding: 0.75rem !important; /* 12px instead of 12px 16px */
+}
+
+/* Fix 9: Reduce spacing in autocomplete section */
+.modal .form-section.autocomplete-section {
+    padding: 1rem !important; /* 16px instead of 20px */
+    margin-bottom: 1rem !important; /* 16px instead of 20px */
+}
+
+/* Fix 10: Tighten modal body padding */
+.modal .modal-body,
+.modal .form-body {
+    padding: 1.25rem !important; /* 20px instead of 32px */
+}
+
+/* Fix 11: Reduce modal footer height and padding */
+.modal .modal-footer,
+.modal .form-actions {
+    padding: 1rem 1.25rem !important; /* 16px 20px instead of 24px 32px */
+    min-height: 60px !important; /* Reduce from 72px */
+}
+
+/* Fix 12: Tighten form section title spacing */
+.modal .form-section-title {
+    margin-bottom: 0.75rem !important; /* 12px instead of 24px */
+    padding-bottom: 0.5rem !important; /* 8px instead of 12px */
+}
+
+/* ===== ADDITIONAL CONSISTENCY FIXES ===== */
+
+/* Fix 13: Ensure form sections have consistent backgrounds without excess padding */
+.modal .form-section {
+    border-radius: 6px !important; /* Slightly smaller radius */
+    border: 1px solid #e2e8f0 !important;
+    background: #f8fafc !important;
+    box-shadow: none !important; /* Remove shadow to reduce visual weight */
+}
+
+/* Fix 14: Improve visual hierarchy with reduced section spacing */
+.modal .form-section + .form-section {
+    margin-top: 1rem !important; /* Ensure consistent spacing between sections */
+}
+
+/* Fix 15: Adjust input field spacing for better flow */
+.modal .form-label {
+    margin-bottom: 0.375rem !important; /* 6px instead of 8px */
+}
+
+.modal .form-help {
+    margin-top: 0.25rem !important; /* 4px instead of 6px */
+}
+
+.modal .form-error {
+    margin-top: 0.25rem !important; /* 4px instead of 6px */
+}
+
+/* ===== RESPONSIVE IMPROVEMENTS ===== */
+
+/* Fix 16: Ensure spacing remains compact on mobile */
+@media (max-width: 768px) {
+    .modal .modal-body,
+    .modal .form-body {
+        padding: 1rem !important; /* 16px on mobile */
+    }
+    
+    .modal .form-section {
+        padding: 0.75rem !important; /* 12px on mobile */
+        margin-bottom: 0.75rem !important; /* 12px on mobile */
+    }
+    
+    .modal .modal-footer,
+    .modal .form-actions {
+        padding: 0.75rem 1rem !important; /* 12px 16px on mobile */
+        min-height: 52px !important; /* Smaller on mobile */
+    }
+}
+
+/* ===== SCROLLBAR IMPROVEMENTS ===== */
+
+/* Fix 17: Ensure only one scrollbar with better styling */
+.modal .modal-body::-webkit-scrollbar {
+    width: 6px !important; /* Thinner scrollbar */
+}
+
+.modal .modal-body::-webkit-scrollbar-track {
+    background: transparent !important; /* Remove track background */
+}
+
+.modal .modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1 !important;
+    border-radius: 3px !important;
+    border: none !important;
+}
+
+.modal .modal-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8 !important;
+}
+
+/* Fix 18: Hide any secondary scrollbars */
+.modal-form-wrapper::-webkit-scrollbar,
+.enhanced-form::-webkit-scrollbar,
+.form-body::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+}
+
+/* ===== ACCESSIBILITY IMPROVEMENTS ===== */
+
+/* Fix 19: Ensure focus indicators work properly with reduced spacing */
+.modal .form-input:focus,
+.modal .form-select:focus,
+.modal .form-textarea:focus {
+    outline-offset: 1px !important; /* Reduce outline offset */
+}
+
+/* Fix 20: Improve keyboard navigation spacing */
+.modal .form-field:focus-within {
+    outline: 2px solid rgba(59, 130, 246, 0.3) !important;
+    outline-offset: 2px !important;
+    border-radius: 4px !important;
+}
+
+/* ===== FINAL OVERRIDES ===== */
+
+/* Ensure these fixes take precedence over any other CSS */
+.modal.modal-compact .form-section,
+.modal.modal-compact .form-field,
+.modal.modal-compact .toggle-field {
+    margin-bottom: 0.75rem !important;
+}
+
+.modal.modal-compact .modal-body {
+    padding: 1.25rem !important;
+}
+
+/* Add a utility class to apply compact styles */
+.modal-compact .form-section {
+    margin-bottom: 1rem !important;
+    padding: 0.875rem !important;
+}
+
+.modal-compact .form-field {
+    margin-bottom: 0.75rem !important;
+}
+
+.modal-compact .modal-body {
+    padding: 1.25rem !important;
+}

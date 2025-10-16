@@ -1,0 +1,131 @@
+/**
+ * MODAL EMERGENCY FIX - Maximum Specificity
+ * This file contains the most aggressive CSS rules possible to fix modal backgrounds
+ * Use this as a last resort when other CSS is being overridden
+ */
+
+/* Remove all backdrop filters that might cause transparency */
+* {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* Force modal overlay with extreme specificity */
+html body div[class*="modal"]:not([class*="content"]):not([class*="body"]):not([class*="header"]):not([class*="footer"]),
+html body .modal-overlay,
+html body .modal-backdrop {
+    background-color: #000000 !important;
+    background: #000000 !important;
+    opacity: 0.8 !important;
+    background-image: none !important;
+    background-attachment: initial !important;
+    background-origin: initial !important;
+    background-clip: initial !important;
+    background-size: initial !important;
+    background-repeat: initial !important;
+    background-position: initial !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* Force modal content with extreme specificity */
+html body .modal:not(.modal-overlay),
+html body .modal-content,
+html body .modal-dialog,
+html body div[class*="modal"][class*="content"],
+html body div[class*="modal"]:not([class*="overlay"]):not([class*="backdrop"]) {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    opacity: 1 !important;
+    background-image: none !important;
+    background-attachment: initial !important;
+    background-origin: initial !important;
+    background-clip: initial !important;
+    background-size: initial !important;
+    background-repeat: initial !important;
+    background-position: initial !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 2px solid #e5e7eb !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Force modal body sections */
+html body .modal .modal-body,
+html body .modal .form-body,
+html body .modal-content .modal-body,
+html body .modal-dialog .modal-body {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    background-image: none !important;
+}
+
+/* Force modal footer sections */
+html body .modal .modal-footer,
+html body .modal .form-footer,
+html body .modal .form-actions,
+html body .modal-content .modal-footer,
+html body .modal-dialog .modal-footer {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    background-image: none !important;
+    border-top: 1px solid #e5e7eb !important;
+}
+
+/* Force modal header sections */
+html body .modal .modal-header,
+html body .modal .form-header,
+html body .modal-content .modal-header,
+html body .modal-dialog .modal-header {
+    background: #1e40af !important;
+    background-color: #1e40af !important;
+    background-image: none !important;
+    color: #ffffff !important;
+}
+
+/* Force all child elements to not inherit transparency */
+.modal * {
+    opacity: inherit !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+/* Attribute-based overrides */
+[style*="background"]:not([class*="header"]) {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+}
+
+[style*="background"][class*="overlay"],
+[style*="background"][class*="backdrop"] {
+    background-color: rgba(0, 0, 0, 0.8) !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+}
+
+/* CSS Variables override */
+:root {
+    --modal-overlay-bg: rgba(0, 0, 0, 0.8) !important;
+    --modal-bg: #ffffff !important;
+    --modal-background: #ffffff !important;
+}
+
+/* React inline style simulation */
+div[data-reactroot] .modal-overlay,
+div[id*="root"] .modal-overlay,
+div[class*="app"] .modal-overlay {
+    background-color: rgba(0, 0, 0, 0.8) !important;
+    background: rgba(0, 0, 0, 0.8) !important;
+}
+
+div[data-reactroot] .modal,
+div[id*="root"] .modal,
+div[class*="app"] .modal {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+}

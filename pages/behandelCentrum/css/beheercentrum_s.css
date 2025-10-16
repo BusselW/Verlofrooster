@@ -1,0 +1,199 @@
+/* Color Palette & Themes */
+:root {
+    --bg-color: #f8f9fa;
+    --text-color: #212529;
+    --text-muted: #6c757d;
+    --content-bg: #ffffff;
+    --footer-text: #6c757d;
+
+    /* From verlofrooster_stijl.css for consistency */
+    --primary-blue: #1e3a8a;
+    --dark-blue: #0f172a;
+    --accent-orange: #c2410c;
+    --primary-red: #d32f2f;
+    --primary-green: #27ae60;
+}
+
+body.dark-theme {
+    --bg-color: #121212;
+    --text-color: #e0e0e0;
+    --text-muted: #a0a0a0;
+    --content-bg: #1e1e1e;
+    --footer-text: #a0a0a0;
+    
+    /* For banner, though it has its own colors */
+    --banner-bg: #1e1e1e;
+    --banner-border: #333333;
+}
+
+/* General Body and Theme */
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    margin: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* App Container */
+.app-container {
+    padding: 1.5rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Page Banner */
+.page-banner {
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 85%, var(--accent-orange) 100%);
+    color: white;
+    padding: 1.75rem 2.5rem; /* Increased padding */
+    border-radius: 12px;
+    box-shadow: 0 10px 35px rgba(30, 58, 138, 0.3), 0 4px 15px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.page-banner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%);
+    pointer-events: none;
+}
+
+.banner-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.banner-left {
+    flex-grow: 1;
+}
+
+.banner-right {
+    display: flex;
+    flex-direction: column; /* Stack button and user details vertically */
+    align-items: flex-end; /* Align items to the right */
+    gap: 0.75rem; /* Space between button and user info */
+}
+
+.banner-title {
+    font-size: 2rem; /* Slightly larger title */
+    font-weight: 700;
+    margin: 0;
+    color: white;
+    text-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.banner-subtitle {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+    margin-top: 0.25rem;
+    font-weight: 300;
+}
+
+.btn-back {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.1); /* Slightly more subtle */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    text-decoration: none;
+    font-size: 0.85rem; /* Adjusted size */
+    font-weight: 500;
+    padding: 0.4rem 0.9rem; /* Adjusted padding */
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(2px); /* Frosted glass effect */
+}
+
+.btn-back:hover {
+    background: rgba(255, 255, 255, 0.2); /* Brighter on hover */
+    transform: translateY(-2px); /* More noticeable lift */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-back svg {
+    width: 14px; /* Explicit size */
+    height: 14px;
+    filter: invert(100%) brightness(2);
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+}
+
+.user-info #huidige-gebruiker {
+    font-weight: 600;
+    color: white;
+    font-size: 0.95rem;
+}
+
+.connection-status #verbinding-status {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 0.25rem;
+    white-space: nowrap;
+    display: block;
+}
+
+.content-container {
+    background-color: var(--content-bg);
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Footer */
+.page-footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.footer-text {
+    margin: 0;
+    color: var(--text-muted);
+}
+
+#huidig-jaar {
+    font-weight: 500;
+}
+
+/* Behandelcentrum Root Container */
+#behandelcentrum-root {
+    min-height: 200px;
+}
+
+/* Behandelcentrum App Container */
+.behandelcentrum-app {
+    padding: 0;
+    margin: 0;
+}
+
+.behandelcentrum-app h2 {
+    color: var(--text-color);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 2rem 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--primary-blue);
+}
+
+.behandelcentrum-app h2:first-child {
+    margin-top: 0;
+}

@@ -1,0 +1,155 @@
+/* ==========================================================================
+   Algemene Stijlen & Typografie (Minimale Aanpassingen)
+   ========================================================================== */
+body,
+html {
+    height: 100%;
+    /* Allow overflow for sticky headers to work properly */
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f4f7fa;
+    color: #333;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* ==========================================================================
+   Algemene Stijlen & Typografie (Minimale Aanpassingen)
+   ========================================================================== */
+
+        /* Admin page specific styles */
+        .general-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 1.5rem;
+            margin-bottom: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .general-header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .general-header-text {
+            flex: 1;
+        }
+
+        .general-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem 0;
+        }
+
+        .general-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin: 0;
+            font-weight: 400;
+        }
+
+        .access-denied-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            padding: 2rem;
+        }
+
+        .access-denied-content {
+            text-align: center;
+            max-width: 400px;
+            padding: 3rem 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .access-denied-icon {
+            width: 80px;
+            height: 80px;
+            background: #fef3c7;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 2rem;
+        }
+
+        .access-denied-icon i {
+            font-size: 2rem;
+            color: #d97706;
+        }
+
+        .access-denied-content h2 {
+            color: #111827;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .access-denied-content p {
+            color: #6b7280;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .loading-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 50vh;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }

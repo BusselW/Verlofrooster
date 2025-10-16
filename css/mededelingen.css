@@ -1,0 +1,382 @@
+/* 
+ * Mededelingen (Announcements) Component Styles
+ * Positioned between header navigation and legend
+ */
+
+.mededelingen-container {
+    background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+    border: 1px solid #bbdefb;
+    border-radius: 8px;
+    margin: 10px 0;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.mededelingen-container.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 50px;
+    color: #666;
+}
+
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e0e0e0;
+    border-top: 2px solid #1976d2;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Header Section */
+.mededelingen-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.mededelingen-title {
+    margin: 0;
+    font-size: 1.2em;
+    color: #1976d2;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mededelingen-title i {
+    color: #ff6f00;
+}
+
+.btn-create-announcement {
+    background: #1976d2;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-create-announcement:hover {
+    background: #1565c0;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(25, 118, 210, 0.3);
+}
+
+/* Form Styles */
+.announcement-form-container {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.announcement-form .form-group {
+    margin-bottom: 15px;
+}
+
+.announcement-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.announcement-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #333;
+}
+
+.announcement-form input,
+.announcement-form textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.95em;
+    transition: border-color 0.2s ease;
+}
+
+.announcement-form input:focus,
+.announcement-form textarea:focus {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+}
+
+.announcement-form textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Team Checkboxes */
+.team-checkboxes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.team-checkbox {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.team-checkbox:hover {
+    background: #e8f4fd;
+}
+
+.team-checkbox input[type="checkbox"] {
+    width: auto !important;
+    margin: 0;
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.btn-cancel,
+.btn-submit {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn-cancel {
+    background: #f5f5f5;
+    color: #666;
+}
+
+.btn-cancel:hover {
+    background: #e0e0e0;
+}
+
+.btn-submit {
+    background: #4caf50;
+    color: white;
+}
+
+.btn-submit:hover {
+    background: #45a049;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(76, 175, 80, 0.3);
+}
+
+/* Announcements List */
+.announcements-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.announcement-item {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-left: 4px solid #ff6f00;
+    border-radius: 6px;
+    padding: 15px;
+    transition: all 0.2s ease;
+}
+
+.announcement-item:hover {
+    border-left-color: #f57c00;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.announcement-content h4 {
+    margin: 0 0 8px 0;
+    color: #333;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.announcement-description {
+    margin: 0 0 12px 0;
+    color: #555;
+    line-height: 1.4;
+}
+
+/* Style HTML content within announcements */
+.announcement-description p {
+    margin: 0 0 8px 0;
+}
+
+.announcement-description p:last-child {
+    margin-bottom: 0;
+}
+
+.announcement-description a {
+    color: #1976d2;
+    text-decoration: none;
+}
+
+.announcement-description a:hover {
+    text-decoration: underline;
+}
+
+.announcement-description strong,
+.announcement-description b {
+    font-weight: 600;
+}
+
+.announcement-description em,
+.announcement-description i {
+    font-style: italic;
+}
+
+.announcement-description ul,
+.announcement-description ol {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.announcement-description li {
+    margin-bottom: 4px;
+}
+
+.announcement-description div {
+    margin-bottom: 4px;
+}
+
+.announcement-description div:last-child {
+    margin-bottom: 0;
+}
+
+.announcement-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    font-size: 0.85em;
+    color: #666;
+}
+
+.announcement-date,
+.announcement-audience {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.announcement-date i {
+    color: #1976d2;
+}
+
+.announcement-audience i {
+    color: #4caf50;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .mededelingen-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .btn-create-announcement {
+        justify-content: center;
+    }
+
+    .announcement-form .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .team-checkboxes {
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .announcement-meta {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+
+/* Animation for new announcements */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.announcement-item {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* High visibility state for urgent announcements */
+.announcement-item.urgent {
+    border-left-color: #f44336;
+    background: linear-gradient(135deg, #ffebee 0%, white 100%);
+}
+
+.announcement-item.urgent:hover {
+    border-left-color: #d32f2f;
+}
+
+/* Compact mode for minimal space usage */
+.mededelingen-container.compact {
+    padding: 10px;
+    margin: 5px 0;
+}
+
+.mededelingen-container.compact .mededelingen-header {
+    margin-bottom: 10px;
+}
+
+.mededelingen-container.compact .announcement-item {
+    padding: 10px;
+}
+
+.mededelingen-container.compact .announcement-content h4 {
+    font-size: 1em;
+}
+
+.mededelingen-container.compact .announcement-description {
+    font-size: 0.9em;
+    margin-bottom: 8px;
+}

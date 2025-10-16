@@ -1,0 +1,1661 @@
+/**
+ * Profile Cards Styling
+ * This CSS provides styling for the employee profile cards that appear on hover
+ */
+
+/* Card container */
+#profile-card-container {
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+    animation: fadeIn 0.2s ease-in-out;
+    font-family: 'Inter', sans-serif;
+    max-width: 100%;
+}
+
+.profile-card-loading {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 16px;
+    width: 200px;
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.profile-card-loading:after {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    margin: 10px auto 0;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Main card */
+.profile-card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    width: 340px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Card header with avatar and basic info */
+.profile-card-header {
+    display: flex;
+    padding: 16px;
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e1e5eb;
+    align-items: center;
+}
+
+.profile-card-avatar {
+    flex: 0 0 64px;
+    margin-right: 16px;
+}
+
+.profile-card-avatar img {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.profile-card-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.profile-card-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 4px;
+}
+
+.profile-card-function {
+    font-size: 14px;
+    color: #546e7a;
+    margin-bottom: 4px;
+}
+
+.profile-card-email {
+    font-size: 12px;
+    color: #607d8b;
+    margin-bottom: 8px;
+    word-break: break-all;
+}
+
+.profile-card-email a {
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.profile-card-email a:hover {
+    color: #2980b9;
+    text-decoration: underline;
+}
+
+.profile-card-hearing {
+    display: flex;
+    align-items: center;
+    font-size: 12px;
+    color: #78909c;
+    background-color: #f1f5f9;
+    border-radius: 12px;
+    padding: 2px 8px;
+    display: inline-flex;
+    align-self: flex-start;
+}
+
+.profile-card-hearing-icon {
+    width: 14px;
+    height: 14px;
+    margin-left: 6px;
+}
+
+/* Hours section */
+.profile-card-hours {
+    padding: 12px 16px;
+    background-color: #fafbfc;
+    border-top: 1px solid #e1e5eb;
+}
+
+.profile-card-hours-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #455a64;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+}
+
+.profile-card-hours-title:before {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23607d8b'%3E%3Cpath d='M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    margin-right: 6px;
+}
+
+/* Modern compact hours grid */
+.profile-card-hours-grid {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    gap: 2px 8px;
+    font-size: 12px;
+    color: #546e7a;
+}
+
+.profile-card-hours-grid .day-header {
+    grid-column: span 4;
+    border-bottom: 1px solid #e1e5eb;
+    padding-bottom: 2px;
+    margin-bottom: 2px;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #78909c;
+    text-transform: uppercase;
+}
+
+.profile-card-hours-grid .day-row {
+    display: contents;
+}
+
+.profile-card-hours-grid .day-row:hover > div {
+    background-color: #f1f5f9;
+}
+
+.profile-card-hours-grid .day-name {
+    font-weight: 600;
+    padding: 4px 0;
+    color: #455a64;
+}
+
+.profile-card-hours-grid .day-time {
+    padding: 4px 0;
+}
+
+.profile-card-hours-grid .day-hours {
+    text-align: right;
+    padding: 4px 0;
+}
+
+.profile-card-hours-grid .day-type {
+    text-align: right;
+    padding: 4px 0;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+/* Day type chips */
+.day-type-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    padding: 1px 8px;
+    font-weight: 500;
+    font-size: 10px;
+    line-height: 16px;
+    text-transform: uppercase;
+}
+
+.day-type-vvd {
+    background-color: #ffebee;
+    color: #e53935;
+}
+
+.day-type-vvo, 
+.day-type-vvm {
+    background-color: #fff8e1;
+    color: #ff8f00;
+}
+
+.day-type-normaal {
+    background-color: #e8f5e9;
+    color: #43a047;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 480px) {
+    .profile-card {
+        width: 300px;
+    }
+    
+    .profile-card-avatar {
+        flex: 0 0 56px;
+    }
+    
+    .profile-card-avatar img {
+        width: 56px;
+        height: 56px;
+    }
+    
+    .profile-card-hours-grid {
+        font-size: 11px;
+    }
+    
+    .profile-card-hours-grid .day-type-chip {
+        font-size: 9px;
+        padding: 1px 6px;
+    }
+}
+
+/**
+ * Interactive Tutorial Styling
+ * Styling for the interactive tour through the application
+ */
+
+/* Highlight effect for tutorial elements */
+.tutorial-highlight-active {
+    position: relative;
+    z-index: 2000;
+    box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.5);
+    border-radius: 4px;
+    animation: tutorial-pulse 1.5s infinite;
+}
+
+/* Pulse animation for highlighted elements */
+@keyframes tutorial-pulse {
+    0% { box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.5); }
+    50% { box-shadow: 0 0 0 8px rgba(33, 150, 243, 0.3); }
+    100% { box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.5); }
+}
+
+/* Overlay for the tutorial background */
+.tutorial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1500;
+    pointer-events: none;
+}
+
+/* Tutorial tooltip container */
+.tutorial-tooltip {
+    position: absolute;
+    z-index: 2500;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 16px;
+    width: 300px;
+    max-width: 90vw;
+    font-family: 'Inter', sans-serif;
+    animation: fadeIn 0.3s ease-out;
+    pointer-events: auto;
+}
+
+/* Tutorial tooltip arrow for positioning */
+.tutorial-tooltip::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+}
+
+/* Position variants for the tooltip arrow */
+.tutorial-tooltip.position-top::before {
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 10px 10px 0 10px;
+    border-color: #ffffff transparent transparent transparent;
+}
+
+.tutorial-tooltip.position-bottom::before {
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 0 10px 10px 10px;
+    border-color: transparent transparent #ffffff transparent;
+}
+
+.tutorial-tooltip.position-left::before {
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 10px 0 10px 10px;
+    border-color: transparent transparent transparent #ffffff;
+}
+
+.tutorial-tooltip.position-right::before {
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 10px 10px 10px 0;
+    border-color: transparent #ffffff transparent transparent;
+}
+
+/* Tutorial tooltip header */
+.tutorial-tooltip-header {
+    font-weight: 600;
+    font-size: 16px;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.tutorial-tooltip-header::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233498db'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    margin-right: 8px;
+}
+
+/* Tutorial tooltip content */
+.tutorial-tooltip-content {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #546e7a;
+    margin-bottom: 16px;
+}
+
+/* Tutorial navigation buttons container */
+.tutorial-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+}
+
+/* Tutorial button base styles */
+.tutorial-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tutorial-btn:hover {
+    transform: translateY(-1px);
+}
+
+.tutorial-btn:active {
+    transform: translateY(1px);
+}
+
+/* Primary tutorial button */
+.tutorial-btn-primary {
+    background-color: #3498db;
+    color: white;
+}
+
+.tutorial-btn-primary:hover {
+    background-color: #2980b9;
+}
+
+/* Secondary tutorial button */
+.tutorial-btn-secondary {
+    background-color: #f1f5f9;
+    color: #546e7a;
+}
+
+.tutorial-btn-secondary:hover {
+    background-color: #e1e5eb;
+}
+
+/* Close button for the tutorial */
+.tutorial-btn-close {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #f1f5f9;
+    color: #78909c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 14px;
+    line-height: 1;
+    border: none;
+    padding: 0;
+}
+
+.tutorial-btn-close:hover {
+    background-color: #e1e5eb;
+    color: #546e7a;
+}
+
+/* Skip tutorial button */
+.tutorial-btn-skip {
+    background-color: transparent;
+    color: #78909c;
+    padding: 8px;
+    font-size: 12px;
+    text-decoration: underline;
+}
+
+.tutorial-btn-skip:hover {
+    color: #546e7a;
+    background-color: transparent;
+}
+
+/* Tutorial progress indicator */
+.tutorial-progress {
+    display: flex;
+    justify-content: center;
+    margin-top: 12px;
+    gap: 6px;
+}
+
+.tutorial-progress-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #e1e5eb;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.tutorial-progress-dot.active {
+    background-color: #3498db;
+    transform: scale(1.2);
+}
+
+/* Tutorial icon animations */
+.tutorial-icon-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+}
+
+.tutorial-icon {
+    width: 18px;
+    height: 18px;
+}
+
+/* Tutorial for mobile devices */
+@media (max-width: 768px) {
+    .tutorial-tooltip {
+        width: 280px;
+        padding: 12px;
+    }
+    
+    .tutorial-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    
+    .tutorial-tooltip-header {
+        font-size: 15px;
+    }
+    
+    .tutorial-tooltip-content {
+        font-size: 13px;
+        margin-bottom: 12px;
+    }
+}
+
+/**
+ * Team Leader Display Styling
+ * This CSS provides styling for the team leader display in the user interface
+ */
+
+.user-teamleader {
+    font-size: 0.7rem;
+    color: #b0b0b0;
+    display: block;
+    line-height: 1;
+    position: absolute;
+    bottom: 3px;
+    left: 40px;
+    font-style: italic;
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/**
+ * Help Dropdown Navigation Styling
+ * Styling for the Help dropdown that replaced the Tour button
+ */
+
+/* Help dropdown container */
+.help-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* Help dropdown toggle button */
+.btn-help {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-help:hover {
+    background-color: #2980b9;
+    transform: translateY(-1px);
+}
+
+.btn-help:active {
+    transform: translateY(1px);
+}
+
+/* Help dropdown menu */
+.help-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 8px 0;
+    min-width: 280px;
+    z-index: 1000;
+    animation: fadeInDown 0.2s ease-out;
+    border: 1px solid #e1e5eb;
+    margin-top: 4px;
+}
+
+/* Help dropdown animation */
+@keyframes fadeInDown {
+    from { 
+        opacity: 0; 
+        transform: translateY(-10px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+/* Help dropdown items */
+.help-dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    gap: 12px;
+}
+
+.help-dropdown-item:hover:not(.disabled) {
+    background-color: #f8fafc;
+}
+
+.help-dropdown-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.help-dropdown-item.disabled:hover {
+    background-color: transparent;
+}
+
+/* Help dropdown item icon */
+.help-dropdown-item i {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3498db;
+    font-size: 16px;
+}
+
+.help-dropdown-item.disabled i {
+    color: #bdc3c7;
+}
+
+/* Help dropdown item content */
+.help-item-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.help-item-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #2c3e50;
+    line-height: 1.2;
+}
+
+.help-item-description {
+    font-size: 12px;
+    color: #7f8c8d;
+    line-height: 1.3;
+}
+
+.help-dropdown-item.disabled .help-item-title {
+    color: #95a5a6;
+}
+
+.help-dropdown-item.disabled .help-item-description {
+    color: #bdc3c7;
+}
+
+/* Help dropdown separator */
+.help-dropdown-separator {
+    height: 1px;
+    background-color: #e1e5eb;
+    margin: 4px 0;
+}
+
+/* Responsive adjustments for help dropdown */
+@media (max-width: 768px) {
+    .help-dropdown-menu {
+        min-width: 260px;
+        right: -8px;
+    }
+    
+    .help-dropdown-item {
+        padding: 10px 14px;
+        gap: 10px;
+    }
+    
+    .help-item-title {
+        font-size: 13px;
+    }
+    
+    .help-item-description {
+        font-size: 11px;
+    }
+}
+
+/* Focus states for accessibility */
+.btn-help:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+.help-dropdown-item:focus {
+    outline: none;
+    background-color: #f8fafc;
+    box-shadow: inset 0 0 0 2px #3498db;
+}
+
+/* Help dropdown item special styling for interactive tour */
+.help-dropdown-item:first-child {
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 4px;
+    padding-bottom: 16px;
+}
+
+.help-dropdown-item:first-child .help-item-title {
+    color: #27ae60;
+    font-weight: 700;
+}
+
+.help-dropdown-item:first-child i {
+    color: #27ae60;
+}
+
+.help-dropdown-item:first-child:hover:not(.disabled) {
+    background-color: #f0fdf4;
+}
+
+/* Tutorial progress text styling */
+.tutorial-progress-text {
+    font-size: 11px;
+    color: #78909c;
+    margin-bottom: 6px;
+    display: block;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* Enhanced demo highlight styles */
+.tutorial-demo-highlight {
+    position: relative;
+    background-color: rgba(52, 152, 219, 0.1) !important;
+    border: 2px dashed #3498db !important;
+    animation: tutorial-demo-pulse 2s infinite;
+}
+
+.tutorial-demo-click {
+    animation: tutorial-demo-click-effect 0.3s ease-out;
+}
+
+@keyframes tutorial-demo-pulse {
+    0% { 
+        background-color: rgba(52, 152, 219, 0.1);
+        border-color: #3498db;
+    }
+    50% { 
+        background-color: rgba(52, 152, 219, 0.2);
+        border-color: #2980b9;
+    }
+    100% { 
+        background-color: rgba(52, 152, 219, 0.1);
+        border-color: #3498db;
+    }
+}
+
+@keyframes tutorial-demo-click-effect {
+    0% { 
+        transform: scale(1);
+        background-color: rgba(52, 152, 219, 0.1);
+    }
+    50% { 
+        transform: scale(1.05);
+        background-color: rgba(52, 152, 219, 0.3);
+    }
+    100% { 
+        transform: scale(1);
+        background-color: rgba(52, 152, 219, 0.1);
+    }
+}
+
+/* Enhanced tutorial tooltip styles */
+.tutorial-tooltip {
+    font-family: 'Inter', sans-serif;
+    line-height: 1.4;
+}
+
+.tutorial-tooltip-content strong {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.tutorial-tooltip-content em {
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+/* Tutorial button hover effects */
+.tutorial-btn:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+.tutorial-btn-skip:hover {
+    text-decoration: none;
+    color: #2c3e50;
+}
+
+/* ==============================
+   ORANGE SQUARE TUTORIAL SYSTEM
+   ============================== */
+
+/* Orange square animations */
+@keyframes orange-pulse {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+    50% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+}
+
+@keyframes orange-glow {
+    0% { box-shadow: 0 0 5px rgba(255, 140, 0, 0.5); }
+    100% { box-shadow: 0 0 20px rgba(255, 140, 0, 0.8); }
+}
+
+/* Orange square tooltip */
+.tutorial-tooltip-orange {
+    position: fixed;
+    max-width: 320px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    border: 2px solid #ff8c00;
+    font-family: 'Inter', sans-serif;
+    z-index: 9998;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+}
+
+.tutorial-tooltip-orange .tooltip-header {
+    background: linear-gradient(135deg, #ff8c00, #ff6b00);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 10px 10px 0 0;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+
+.tutorial-tooltip-orange .tooltip-icon {
+    font-size: 16px;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.tutorial-tooltip-orange .tooltip-title {
+    flex: 1;
+    font-weight: 600;
+}
+
+.tutorial-tooltip-orange .tooltip-content {
+    padding: 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #333;
+}
+
+.tutorial-tooltip-orange .tooltip-navigation {
+    padding: 0 16px 16px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.tutorial-tooltip-orange .tooltip-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Inter', sans-serif;
+}
+
+.tutorial-tooltip-orange .tooltip-btn-primary {
+    background: linear-gradient(135deg, #ff8c00, #ff6b00);
+    color: white;
+}
+
+.tutorial-tooltip-orange .tooltip-btn-primary:hover {
+    background: linear-gradient(135deg, #ff6b00, #ff5500);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
+}
+
+.tutorial-tooltip-orange .tooltip-btn-secondary {
+    background: #f8f9fa;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+}
+
+.tutorial-tooltip-orange .tooltip-btn-secondary:hover {
+    background: #e9ecef;
+    color: #495057;
+    transform: translateY(-1px);
+}
+
+.tutorial-tooltip-orange .tooltip-btn-skip {
+    background: transparent;
+    color: #6c757d;
+    border: 1px solid #dee2e6;
+    font-size: 12px;
+    padding: 6px 12px;
+}
+
+.tutorial-tooltip-orange .tooltip-btn-skip:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.tutorial-tooltip-orange .tooltip-progress {
+    padding: 12px 16px;
+    border-top: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: #666;
+}
+
+.tutorial-tooltip-orange .progress-bar {
+    flex: 1;
+    height: 4px;
+    background: #f0f0f0;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.tutorial-tooltip-orange .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff8c00, #ff6b00);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.tutorial-tooltip-orange .progress-text {
+    font-weight: 500;
+    color: #ff8c00;
+}
+
+.tutorial-tooltip-orange .tooltip-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.tutorial-tooltip-orange .tooltip-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .tutorial-tooltip-orange {
+        max-width: 280px;
+        margin: 0 20px;
+    }
+    
+    .tutorial-tooltip-orange .tooltip-header {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+    
+    .tutorial-tooltip-orange .tooltip-content {
+        padding: 12px;
+        font-size: 13px;
+    }
+    
+    .tutorial-tooltip-orange .tooltip-navigation {
+        padding: 0 12px 12px;
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    .tutorial-tooltip-orange .tooltip-btn {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+    
+    .tutorial-orange-square {
+        width: 32px !important;
+        height: 32px !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .tutorial-tooltip-orange {
+        border: 3px solid #ff8c00;
+    }
+    
+    .tutorial-tooltip-orange .tooltip-header {
+        background: #ff8c00;
+    }
+    
+    .tutorial-tooltip-orange .tooltip-btn-primary {
+        background: #ff8c00;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .tutorial-orange-square {
+        transition: none !important;
+    }
+    
+    .tutorial-tooltip-orange {
+        transition: none !important;
+    }
+    
+    @keyframes orange-pulse {
+        0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+    }
+    
+    @keyframes orange-glow {
+        0%, 100% { box-shadow: 0 0 10px rgba(255, 140, 0, 0.6); }
+    }
+}
+
+/* ==============================
+   HANDLEIDING DEMO COMPONENTS
+   ============================== */
+
+/* Demo component container */
+.demo-component {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 15px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100px;
+}
+
+/* FAB Demo Styling */
+.fab-demo {
+    position: relative;
+    width: 200px;
+    height: 150px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+}
+
+.fab-container-demo {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.fab-main-demo {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: not-allowed;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.8;
+}
+
+.fab-menu-demo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    opacity: 0.9;
+}
+
+.fab-item-demo {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 12px;
+    color: #495057;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* Context Menu Demo Styling */
+.contextmenu-demo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 200px;
+    height: 150px;
+}
+
+.contextmenu-container {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    min-width: 180px;
+    opacity: 0.9;
+}
+
+.contextmenu-header {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #495057;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.contextmenu-item {
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #495057;
+    border-bottom: 1px solid #f8f9fa;
+    cursor: default;
+    pointer-events: none;
+    transition: background-color 0.2s ease;
+}
+
+.contextmenu-item:last-child {
+    border-bottom: none;
+}
+
+.contextmenu-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* Mobile responsiveness for demo components */
+@media (max-width: 768px) {
+    .demo-component {
+        padding: 15px;
+        margin: 10px 0;
+    }
+    
+    .fab-demo {
+        width: 150px;
+        height: 120px;
+    }
+    
+    .fab-main-demo {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+    
+    .fab-item-demo {
+        font-size: 11px;
+        padding: 6px 12px;
+    }
+    
+    .contextmenu-demo {
+        width: 150px;
+        height: 120px;
+    }
+    
+    .contextmenu-container {
+        min-width: 140px;
+    }
+    
+    .contextmenu-header,
+    .contextmenu-item {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+}
+
+/* Help dropdown arrow animation */
+.btn-help i:last-child {
+    transition: transform 0.2s ease;
+}
+
+.help-dropdown.open .btn-help i:last-child {
+    transform: rotate(180deg);
+}
+
+/**
+ * Handleiding Modal Styling
+ * Comprehensive styling for the manual/documentation modal
+ */
+
+/* Modal backdrop */
+.handleiding-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+    opacity: 0;
+    animation: backdropFadeIn 0.3s ease forwards;
+}
+
+@keyframes backdropFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes backdropFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* Main modal container */
+.handleiding-modal {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    max-width: 1200px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(0.95) translateY(20px);
+    animation: modalSlideIn 0.3s ease forwards;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+@keyframes modalSlideIn {
+    to { 
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Modal header */
+.handleiding-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 28px;
+    border-bottom: 1px solid #e1e5eb;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.handleiding-modal-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.handleiding-modal-title i {
+    font-size: 28px;
+}
+
+.handleiding-close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s ease;
+}
+
+.handleiding-close-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+/* Modal body with tabs and content */
+.handleiding-modal-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Modal body with tabs and content */
+.handleiding-modal-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Tab navigation */
+.handleiding-tabs {
+    display: flex;
+    background: #f8fafc;
+    border-bottom: 1px solid #e1e5eb;
+    overflow-x: auto;
+    flex-shrink: 0;
+}
+
+.handleiding-tab {
+    background: none;
+    border: none;
+    padding: 16px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    color: #4a5568;
+    transition: all 0.2s ease;
+    border-bottom: 3px solid transparent;
+    white-space: nowrap;
+    min-width: 0;
+    flex-shrink: 0;
+}
+
+.handleiding-tab:hover {
+    background: #edf2f7;
+    color: #2d3748;
+}
+
+.handleiding-tab.active {
+    background: white;
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+.handleiding-tab-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.handleiding-tab-title {
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Content area */
+.handleiding-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+}
+
+.handleiding-section {
+    padding: 32px 40px;
+    line-height: 1.6;
+    color: #2d3748;
+}
+
+.handleiding-section h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0 0 24px 0;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e1e5eb;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.handleiding-section h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 32px 0 16px 0;
+}
+
+.handleiding-section h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #4a5568;
+    margin: 24px 0 12px 0;
+}
+
+.handleiding-section p {
+    margin: 0 0 16px 0;
+    font-size: 15px;
+}
+
+.handleiding-section ul {
+    margin: 0 0 16px 0;
+    padding-left: 24px;
+}
+
+.handleiding-section li {
+    margin-bottom: 8px;
+    font-size: 15px;
+}
+
+.handleiding-section strong {
+    color: #1a202c;
+    font-weight: 600;
+}
+
+/* Special styling for tips and warnings */
+.handleiding-tip {
+    background: #f0fff4;
+    border: 1px solid #9ae6b4;
+    border-left: 4px solid #38a169;
+    border-radius: 6px;
+    padding: 16px;
+    margin: 20px 0;
+}
+
+.handleiding-warning {
+    background: #fffbf0;
+    border: 1px solid #fbd38d;
+    border-left: 4px solid #ed8936;
+    border-radius: 6px;
+    padding: 16px;
+    margin: 20px 0;
+}
+
+.handleiding-info {
+    background: #ebf8ff;
+    border: 1px solid #90cdf4;
+    border-left: 4px solid #4299e1;
+    border-radius: 6px;
+    padding: 16px;
+    margin: 20px 0;
+}
+
+/* Code blocks and inline code */
+.handleiding-section code {
+    background: #edf2f7;
+    color: #1a202c;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 13px;
+}
+
+.handleiding-section pre {
+    background: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    margin: 16px 0;
+}
+
+.handleiding-section pre code {
+    background: none;
+    padding: 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .handleiding-modal-backdrop {
+        padding: 10px;
+    }
+    
+    .handleiding-modal {
+        max-height: 95vh;
+        border-radius: 8px;
+    }
+    
+    .handleiding-modal-header {
+        padding: 20px;
+    }
+    
+    .handleiding-modal-title {
+        font-size: 20px;
+    }
+    
+    .handleiding-tabs {
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+    
+    .handleiding-tab {
+        padding: 12px 16px;
+        min-width: 120px;
+    }
+    
+    .handleiding-tab-title {
+        font-size: 13px;
+    }
+    
+    .handleiding-section {
+        padding: 24px 20px;
+    }
+    
+    .handleiding-section h2 {
+        font-size: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .handleiding-modal-header {
+        padding: 16px;
+    }
+    
+    .handleiding-modal-title {
+        font-size: 18px;
+    }
+    
+    .handleiding-tab {
+        padding: 10px 12px;
+        min-width: 100px;
+    }
+    
+    .handleiding-tab-title {
+        font-size: 12px;
+    }
+    
+    .handleiding-section {
+        padding: 20px 16px;
+    }
+    
+    .handleiding-section h2 {
+        font-size: 22px;
+    }
+    
+    .handleiding-section h3 {
+        font-size: 18px;
+    }
+}
+
+/* Smooth scrolling for content */
+.handleiding-content {
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar for webkit browsers */
+.handleiding-sidebar::-webkit-scrollbar,
+.handleiding-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.handleiding-sidebar::-webkit-scrollbar-track,
+.handleiding-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.handleiding-sidebar::-webkit-scrollbar-thumb,
+.handleiding-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.handleiding-sidebar::-webkit-scrollbar-thumb:hover,
+.handleiding-content::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* Focus states for accessibility */
+.handleiding-close-btn:focus,
+.handleiding-nav-link:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+    .handleiding-modal-backdrop {
+        position: static;
+        background: none;
+        padding: 0;
+    }
+    
+    .handleiding-modal {
+        box-shadow: none;
+        max-height: none;
+        border-radius: 0;
+    }
+    
+    .handleiding-modal-header {
+        background: none;
+        color: black;
+        border-bottom: 2px solid #000;
+    }
+    
+    .handleiding-close-btn {
+        display: none;
+    }
+    
+    .handleiding-sidebar {
+        display: none;
+    }
+    
+    .handleiding-content {
+        overflow: visible;
+    }
+    
+    .handleiding-section {
+        padding: 20px 0;
+    }
+}
+
+/* Ensure medewerker rows display properly */
+tr.medewerker-rij {
+    display: table-row;
+    height: auto;
+    vertical-align: top;
+}
+
+tr.medewerker-rij td {
+    vertical-align: top;
+    padding: 8px 4px;
+}

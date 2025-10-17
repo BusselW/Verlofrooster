@@ -8,6 +8,7 @@
 import { fetchSharePointList, createSharePointListItem } from '../services/sharepointService.js';
 
 const { createElement: h, useState, useEffect } = window.React;
+const { createPortal } = window.ReactDOM;
 
 /**
  * Create Announcement Button Component
@@ -57,7 +58,7 @@ export const CreateAnnouncementButton = ({ onCreateClick, canManage }) => {
 };
 
 /**
- * Create Announcement Form Component
+ * Create Announcement Form Component - Renders in Portal
  */
 const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
     const [formData, setFormData] = useState({
@@ -112,7 +113,8 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
         if (error) setError(null);
     };
 
-    return h('div', {
+    // ✅ Render modal content
+    const modalContent = h('div', {
         style: {
             position: 'fixed',
             top: 0,
@@ -123,7 +125,7 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 10000,
+            zIndex: 999999,  // ✅ Very high z-index
             padding: '20px'
         },
         onClick: (e) => {
@@ -139,7 +141,8 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                 maxHeight: '90vh',
                 overflow: 'auto',
                 boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
-            }
+            },
+            onClick: (e) => e.stopPropagation()  // ✅ Prevent close when clicking inside
         },
             // Header
             h('div', {
@@ -342,7 +345,7 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                     )
                 ),
 
-                // Target audience - ✅ FIXED
+                // Target audience
                 h('div', { style: { marginBottom: '24px' } },
                     h('label', {
                         style: {
@@ -368,9 +371,7 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                         }
                     },
                         h('option', { value: 'Iedereen' }, 'Iedereen'),
-                        // ✅ FIX: Extract team name from object
                         Array.isArray(teams) ? teams.map(team => {
-                            // Handle both string and object formats
                             const teamName = typeof team === 'string' ? team : (team.naam || team.Naam || team.name || 'Onbekend Team');
                             const teamId = typeof team === 'string' ? team : (team.id || teamName);
                             
@@ -433,6 +434,9 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
             )
         )
     );
+
+    // ✅ Render in portal to document.body (outside any parent containers)
+    return createPortal(modalContent, document.body);
 };
 
 const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }) => {

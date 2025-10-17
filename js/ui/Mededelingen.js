@@ -56,9 +56,381 @@ export const CreateAnnouncementButton = ({ onCreateClick, canManage }) => {
     );
 };
 
+/**
+ * Create Announcement Form Component
+ */
+const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
+    const [formData, setFormData] = useState({
+        Title: '',
+        Body: '',
+        DatumTijdStart: '',
+        DatumTijdEinde: '',
+        UitzendenAan: 'Iedereen'
+    });
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(null);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        if (!formData.Title?.trim()) {
+            setError('Titel is verplicht');
+            return;
+        }
+        
+        if (!formData.Body?.trim()) {
+            setError('Bericht is verplicht');
+            return;
+        }
+
+        try {
+            setSaving(true);
+            setError(null);
+
+            const announcementData = {
+                Title: formData.Title.trim(),
+                Body: formData.Body.trim(),
+                DatumTijdStart: formData.DatumTijdStart || null,
+                DatumTijdEinde: formData.DatumTijdEinde || null,
+                UitzendenAan: formData.UitzendenAan
+            };
+
+            await createSharePointListItem('Mededelingen', announcementData);
+            
+            if (onSave) await onSave();
+            onClose();
+        } catch (err) {
+            console.error('Error creating announcement:', err);
+            setError('Fout bij opslaan: ' + (err.message || 'Onbekende fout'));
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const updateField = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        if (error) setError(null);
+    };
+
+    return h('div', {
+        style: {
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10000,
+            padding: '20px'
+        },
+        onClick: (e) => {
+            if (e.target === e.currentTarget) onClose();
+        }
+    },
+        h('div', {
+            style: {
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                maxWidth: '700px',
+                width: '100%',
+                maxHeight: '90vh',
+                overflow: 'auto',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+            }
+        },
+            // Header
+            h('div', {
+                style: {
+                    padding: '24px',
+                    borderBottom: '1px solid #e5e7eb',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                }
+            },
+                h('h2', {
+                    style: {
+                        margin: 0,
+                        fontSize: '24px',
+                        fontWeight: '600',
+                        color: '#111827',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px'
+                    }
+                },
+                    h('i', { 
+                        className: 'fas fa-bullhorn',
+                        style: { color: '#3b82f6' }
+                    }),
+                    'Nieuwe Mededeling'
+                ),
+                h('button', {
+                    onClick: onClose,
+                    style: {
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '24px',
+                        color: '#6b7280',
+                        cursor: 'pointer',
+                        padding: '4px',
+                        lineHeight: 1
+                    },
+                    title: 'Sluiten'
+                }, '×')
+            ),
+            
+            // Form
+            h('form', {
+                onSubmit: handleSubmit,
+                style: { padding: '24px' }
+            },
+                // Error message
+                error && h('div', {
+                    style: {
+                        backgroundColor: '#fee2e2',
+                        color: '#991b1b',
+                        padding: '12px 16px',
+                        borderRadius: '8px',
+                        marginBottom: '20px',
+                        fontSize: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }
+                },
+                    h('i', { className: 'fas fa-exclamation-circle' }),
+                    error
+                ),
+
+                // Title
+                h('div', { style: { marginBottom: '20px' } },
+                    h('label', {
+                        style: {
+                            display: 'block',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            color: '#374151',
+                            marginBottom: '8px'
+                        }
+                    },
+                        'Titel ',
+                        h('span', { style: { color: '#dc2626' } }, '*')
+                    ),
+                    h('input', {
+                        type: 'text',
+                        value: formData.Title,
+                        onChange: (e) => updateField('Title', e.target.value),
+                        placeholder: 'Bijv: Belangrijke Mededeling',
+                        style: {
+                            width: '100%',
+                            padding: '10px 12px',
+                            fontSize: '14px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '8px',
+                            outline: 'none',
+                            transition: 'border-color 0.2s'
+                        },
+                        onFocus: (e) => e.target.style.borderColor = '#3b82f6',
+                        onBlur: (e) => e.target.style.borderColor = '#d1d5db'
+                    })
+                ),
+
+                // Body
+                h('div', { style: { marginBottom: '20px' } },
+                    h('label', {
+                        style: {
+                            display: 'block',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            color: '#374151',
+                            marginBottom: '8px'
+                        }
+                    },
+                        'Bericht ',
+                        h('span', { style: { color: '#dc2626' } }, '*')
+                    ),
+                    h('textarea', {
+                        value: formData.Body,
+                        onChange: (e) => updateField('Body', e.target.value),
+                        placeholder: 'Typ hier je bericht... (HTML ondersteund)',
+                        rows: 6,
+                        style: {
+                            width: '100%',
+                            padding: '10px 12px',
+                            fontSize: '14px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '8px',
+                            outline: 'none',
+                            fontFamily: 'inherit',
+                            resize: 'vertical',
+                            transition: 'border-color 0.2s'
+                        },
+                        onFocus: (e) => e.target.style.borderColor = '#3b82f6',
+                        onBlur: (e) => e.target.style.borderColor = '#d1d5db'
+                    }),
+                    h('p', {
+                        style: {
+                            fontSize: '12px',
+                            color: '#6b7280',
+                            marginTop: '6px'
+                        }
+                    }, 'Je kunt HTML gebruiken voor opmaak (bijv. <b>vet</b>, <i>cursief</i>)')
+                ),
+
+                // Date range
+                h('div', {
+                    style: {
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: '16px',
+                        marginBottom: '20px'
+                    }
+                },
+                    // Start date
+                    h('div', null,
+                        h('label', {
+                            style: {
+                                display: 'block',
+                                fontSize: '14px',
+                                fontWeight: '500',
+                                color: '#374151',
+                                marginBottom: '8px'
+                            }
+                        }, 'Zichtbaar vanaf'),
+                        h('input', {
+                            type: 'datetime-local',
+                            value: formData.DatumTijdStart,
+                            onChange: (e) => updateField('DatumTijdStart', e.target.value),
+                            style: {
+                                width: '100%',
+                                padding: '10px 12px',
+                                fontSize: '14px',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '8px',
+                                outline: 'none'
+                            }
+                        })
+                    ),
+                    // End date
+                    h('div', null,
+                        h('label', {
+                            style: {
+                                display: 'block',
+                                fontSize: '14px',
+                                fontWeight: '500',
+                                color: '#374151',
+                                marginBottom: '8px'
+                            }
+                        }, 'Zichtbaar tot'),
+                        h('input', {
+                            type: 'datetime-local',
+                            value: formData.DatumTijdEinde,
+                            onChange: (e) => updateField('DatumTijdEinde', e.target.value),
+                            style: {
+                                width: '100%',
+                                padding: '10px 12px',
+                                fontSize: '14px',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '8px',
+                                outline: 'none'
+                            }
+                        })
+                    )
+                ),
+
+                // Target audience
+                h('div', { style: { marginBottom: '24px' } },
+                    h('label', {
+                        style: {
+                            display: 'block',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            color: '#374151',
+                            marginBottom: '8px'
+                        }
+                    }, 'Doelgroep'),
+                    h('select', {
+                        value: formData.UitzendenAan,
+                        onChange: (e) => updateField('UitzendenAan', e.target.value),
+                        style: {
+                            width: '100%',
+                            padding: '10px 12px',
+                            fontSize: '14px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '8px',
+                            outline: 'none',
+                            backgroundColor: 'white',
+                            cursor: 'pointer'
+                        }
+                    },
+                        h('option', { value: 'Iedereen' }, 'Iedereen'),
+                        teams.map(team => 
+                            h('option', { key: team, value: team }, team)
+                        )
+                    )
+                ),
+
+                // Actions
+                h('div', {
+                    style: {
+                        display: 'flex',
+                        gap: '12px',
+                        justifyContent: 'flex-end',
+                        paddingTop: '16px',
+                        borderTop: '1px solid #e5e7eb'
+                    }
+                },
+                    h('button', {
+                        type: 'button',
+                        onClick: onClose,
+                        disabled: saving,
+                        style: {
+                            padding: '10px 20px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            color: '#374151',
+                            backgroundColor: '#f3f4f6',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: saving ? 'not-allowed' : 'pointer',
+                            opacity: saving ? 0.5 : 1
+                        }
+                    }, 'Annuleren'),
+                    h('button', {
+                        type: 'submit',
+                        disabled: saving,
+                        style: {
+                            padding: '10px 20px',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            color: 'white',
+                            backgroundColor: '#3b82f6',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: saving ? 'not-allowed' : 'pointer',
+                            opacity: saving ? 0.7 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }
+                    },
+                        saving && h('i', { className: 'fas fa-spinner fa-spin' }),
+                        saving ? 'Opslaan...' : 'Opslaan'
+                    )
+                )
+            )
+        )
+    );
+};
+
 const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }) => {
     const [mededelingen, setMededelingen] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showForm, setShowForm] = useState(false);
 
     useEffect(() => {
         loadMededelingen();
@@ -90,6 +462,20 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
         }
     };
 
+    const handleCreateClick = () => {
+        setShowForm(true);
+        if (onCreateFormToggle) onCreateFormToggle(true);
+    };
+
+    const handleCloseForm = () => {
+        setShowForm(false);
+        if (onCreateFormToggle) onCreateFormToggle(false);
+    };
+
+    const handleSave = async () => {
+        await loadMededelingen(); // Reload announcements after save
+    };
+
     if (loading) {
         return h('div', { 
             className: 'mededelingen-container',
@@ -116,7 +502,16 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
         );
     }
 
-    // ✅ FIX 1: Return null (hidden) if no announcements
+    // ✅ Show form when showCreateForm prop is true OR internal showForm is true
+    if (showCreateForm || showForm) {
+        return h(CreateAnnouncementForm, {
+            onClose: handleCloseForm,
+            onSave: handleSave,
+            teams: teams || []
+        });
+    }
+
+    // Return null (hidden) if no announcements
     if (!mededelingen || mededelingen.length === 0) {
         return null;
     }
@@ -129,7 +524,7 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
             padding: '0 16px'
         }
     },
-        // Optional: Section header
+        // Section header
         h('div', {
             style: {
                 display: 'flex',
@@ -178,7 +573,6 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
             }
         },
             mededelingen.map(m => {
-                // ✅ Format datum correct
                 const createdDate = m.Created ? new Date(m.Created) : null;
                 const formattedDate = createdDate ? createdDate.toLocaleDateString('nl-NL', {
                     day: '2-digit',
@@ -188,7 +582,6 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                     minute: '2-digit'
                 }) : 'Onbekende datum';
 
-                // ✅ Format start/eind datum
                 const startDate = m.DatumTijdStart ? new Date(m.DatumTijdStart) : null;
                 const endDate = m.DatumTijdEinde ? new Date(m.DatumTijdEinde) : null;
                 
@@ -225,7 +618,6 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                         e.currentTarget.style.transform = 'translateY(0)';
                     }
                 },
-                    // Header
                     h('div', { 
                         className: 'mededeling-header',
                         style: {
@@ -245,8 +637,6 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                                 flex: 1
                             } 
                         }, m.Title || 'Mededeling'),
-                        
-                        // Datum badge
                         h('span', {
                             style: {
                                 fontSize: '11px',
@@ -257,10 +647,8 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                                 whiteSpace: 'nowrap',
                                 fontWeight: '500'
                             }
-                        }, formattedDate.split(' ').slice(0, 3).join(' ')) // Shortened date
+                        }, formattedDate.split(' ').slice(0, 3).join(' '))
                     ),
-                    
-                    // ✅ Body met HTML rendering
                     h('div', { 
                         className: 'mededeling-body',
                         style: {
@@ -273,8 +661,6 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                             __html: m.Body || '' 
                         }
                     }),
-                    
-                    // Footer met metadata
                     m.username || showFromDate || showUntilDate || m.UitzendenAan ? h('div', {
                         className: 'mededeling-footer',
                         style: {
@@ -287,7 +673,6 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                             flexWrap: 'wrap'
                         }
                     },
-                        // Auteur
                         m.username && h('span', {
                             style: { 
                                 display: 'flex', 
@@ -301,8 +686,6 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                             h('i', { className: 'fas fa-user', style: { fontSize: '9px' } }),
                             m.username.split('\\').pop() || m.username
                         ),
-                        
-                        // Zichtbaar vanaf
                         showFromDate && h('span', {
                             style: { 
                                 display: 'flex', 
@@ -317,8 +700,6 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                             h('i', { className: 'fas fa-calendar-check', style: { fontSize: '9px' } }),
                             showFromDate
                         ),
-                        
-                        // Zichtbaar tot
                         showUntilDate && h('span', {
                             style: { 
                                 display: 'flex', 
@@ -333,8 +714,6 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                             h('i', { className: 'fas fa-calendar-times', style: { fontSize: '9px' } }),
                             showUntilDate
                         ),
-                        
-                        // Doelgroep
                         m.UitzendenAan && h('span', {
                             style: { 
                                 display: 'flex', 

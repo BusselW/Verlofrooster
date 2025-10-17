@@ -342,7 +342,7 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                     )
                 ),
 
-                // Target audience
+                // Target audience - ✅ FIXED
                 h('div', { style: { marginBottom: '24px' } },
                     h('label', {
                         style: {
@@ -368,9 +368,17 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                         }
                     },
                         h('option', { value: 'Iedereen' }, 'Iedereen'),
-                        teams.map(team => 
-                            h('option', { key: team, value: team }, team)
-                        )
+                        // ✅ FIX: Extract team name from object
+                        Array.isArray(teams) ? teams.map(team => {
+                            // Handle both string and object formats
+                            const teamName = typeof team === 'string' ? team : (team.naam || team.Naam || team.name || 'Onbekend Team');
+                            const teamId = typeof team === 'string' ? team : (team.id || teamName);
+                            
+                            return h('option', { 
+                                key: teamId, 
+                                value: teamName 
+                            }, teamName);
+                        }) : null
                     )
                 ),
 

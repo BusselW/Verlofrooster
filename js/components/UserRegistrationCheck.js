@@ -11,10 +11,10 @@ const { createElement: h } = window.React;
  * UserRegistrationCheck Component
  * Controleert of de huidige gebruiker is geregistreerd in de Medewerkers lijst
  * @param {Object} props
- * @param {Function} props.onValidated - Callback wanneer validatie succesvol is
+ * @param {Function} props.onUserValidated - Callback wanneer validatie succesvol is
  * @param {React.Component} props.children - Child components om te renderen na validatie
  */
-const UserRegistrationCheck = ({ onValidated, children }) => {
+const UserRegistrationCheck = ({ onUserValidated, children }) => {
     const [isValidating, setIsValidating] = React.useState(true);
     const [isRegistered, setIsRegistered] = React.useState(false);
     const [userInfo, setUserInfo] = React.useState(null);
@@ -52,8 +52,9 @@ const UserRegistrationCheck = ({ onValidated, children }) => {
                 if (exists) {
                     console.log('✅ User is registered in Medewerkers list');
                     setIsRegistered(true);
-                    if (onValidated) {
-                        onValidated({ user, isRegistered: true, hasPrivilegedAccess });
+                    if (onUserValidated) {
+                        // Call with the expected signature: (isValid, currentUser, userPermissions)
+                        onUserValidated(true, user, hasPrivilegedAccess);
                     }
                 } else {
                     console.warn('⚠️ User is not registered in Medewerkers list');
@@ -69,7 +70,7 @@ const UserRegistrationCheck = ({ onValidated, children }) => {
         };
         
         validateUser();
-    }, [onValidated]);
+    }, [onUserValidated]);
     
     // Loading state
     if (isValidating) {

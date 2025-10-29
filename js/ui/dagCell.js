@@ -192,14 +192,6 @@ const DagCell = ({ dag, medewerker, onContextMenu, getVerlofVoorDag, getZittings
         // Get afkorting from zittingsvrij data or default to 'ZV'
         const afkorting = zittingsvrij.Afkorting || 'ZV';
         
-        // Set different colors based on afkorting
-        let backgroundColor = '#8e44ad'; // Default purple for ZV
-        if (afkorting === 'ZVO') {
-            backgroundColor = '#e67e22'; // Orange for morning
-        } else if (afkorting === 'ZVM') {
-            backgroundColor = '#d35400'; // Darker orange for afternoon
-        }
-        
         // Extract times if available
         let startTime = '';
         let endTime = '';
@@ -214,7 +206,7 @@ const DagCell = ({ dag, medewerker, onContextMenu, getVerlofVoorDag, getZittings
         
         return h('div', {
             className: 'dag-indicator-blok zittingsvrij-blok',
-            style: { backgroundColor },
+            // Remove inline style - let CSS handle colors via data-afkorting attribute
             'data-afkorting': afkorting,
             'data-medewerker': medewerker.Naam,
             'data-startdatum': zittingsvrij.StartDatum,

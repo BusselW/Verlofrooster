@@ -15,6 +15,18 @@ const toInputDateString = (date) => {
     return `${year}-${month}-${day}`;
 };
 
+/**
+ * Bereken tijden en afkorting op basis van dagdeel selectie
+ */
+const getTimesForDagdeel = (dagdeel) => {
+    const timeMap = {
+        'Hele dag': { start: '08:00', end: '16:00', afkorting: 'ZV' },
+        'Ochtend': { start: '08:00', end: '11:59', afkorting: 'ZVO' },
+        'Middag': { start: '12:01', end: '16:00', afkorting: 'ZVM' }
+    };
+    return timeMap[dagdeel] || timeMap['Hele dag'];
+};
+
 const splitDateTime = (dateTimeString, defaultTime = '09:00') => {
     if (!dateTimeString) return { date: '', time: '' };
     if (dateTimeString.includes('T')) {
@@ -40,6 +52,7 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
     const [startTime, setStartTime] = useState('');
     const [endDate, setEndDate] = useState('');
     const [endTime, setEndTime] = useState('');
+    const [dagdeel, setDagdeel] = useState('Hele dag');
     const [title, setTitle] = useState(initialData.Title || '');
     const [opmerking, setOpmerking] = useState(initialData.Opmerking || null);
     const [terugkerend, setTerugkerend] = useState(initialData.Terugkerend || false);
@@ -78,8 +91,12 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
                     setStartDate(today);
                     setEndDate(today);
                 }
-                setStartTime('09:00');
-                setEndTime('17:00');
+                
+                // Set default dagdeel and auto-calculate times
+                setDagdeel('Hele dag');
+                const defaultTimes = getTimesForDagdeel('Hele dag');
+                setStartTime(defaultTimes.start);
+                setEndTime(defaultTimes.end);
 
                 // 2. Medewerker instellen
                 let employeeSet = false;
@@ -145,6 +162,9 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
                 const { date: initialEndDate, time: initialEndTime } = splitDateTime(initialData.ZittingsVrijeDagTijdEind, '17:00');
                 setEndDate(initialEndDate);
                 setEndTime(initialEndTime);
+                
+                // Set dagdeel from initialData if available
+                setDagdeel(initialData.Dagdeel || 'Hele dag');
 
                 setTitle(initialData.Title || '');
                 setOpmerking(initialData.Opmerking || null);
@@ -164,6 +184,16 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
         if (medewerker) {
             setMedewerkerUsername(medewerker.Username);
         }
+    };
+    
+    const handleDagdeelChange = (e) => {
+        const selectedDagdeel = e.target.value;
+        setDagdeel(selectedDagdeel);
+        
+        // Auto-calculate times based on dagdeel
+        const times = getTimesForDagdeel(selectedDagdeel);
+        setStartTime(times.start);
+        setEndTime(times.end);
     };
 
     const handleSubmit = (e) => {
@@ -209,6 +239,9 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
 
         // Use the title from the form, or generate default if empty
         const finalTitle = title && title.trim() ? title : `Zittingsvrij - ${fullName} - ${currentDate}`;
+        
+        // Get afkorting based on selected dagdeel
+        const times = getTimesForDagdeel(dagdeel);
 
         const formData = {
             Title: finalTitle,
@@ -216,6 +249,8 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
             Gebruikersnaam: medewerkerUsername,
             ZittingsVrijeDagTijd: createSharePointDateTime(startDate, startTime),
             ZittingsVrijeDagTijdEind: createSharePointDateTime(endDate, endTime),
+            Dagdeel: dagdeel,
+            Afkorting: times.afkorting,
             Opmerking: opmerking,
             Terugkerend: false, // Always false since recurring is hidden
             TerugkerendTot: null,
@@ -282,19 +317,37 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
                         h('input', { type: 'date', id: 'zv-start-datum', className: 'form-input', value: startDate, onChange: (e) => setStartDate(e.target.value), required: true })
                     ),
                     h('div', { className: 'form-groep' },
-                        h('label', { htmlFor: 'zv-start-tijd' }, 'Starttijd'),
-                        h('input', { type: 'time', id: 'zv-start-tijd', className: 'form-input', value: startTime, onChange: (e) => setStartTime(e.target.value), required: true })
+                        h('label', { htmlFor: 'zv-eind-datum' }, 'Einddatum'),
+                        h('input', { type: 'date', id: 'zv-eind-datum', className: 'form-input', value: endDate, onChange: (e) => setEndDate(e.target.value), required: true, min: startDate })
                     )
                 ),
                 
                 h('div', { className: 'form-row' },
                     h('div', { className: 'form-groep' },
-                        h('label', { htmlFor: 'zv-eind-datum' }, 'Einddatum'),
-                        h('input', { type: 'date', id: 'zv-eind-datum', className: 'form-input', value: endDate, onChange: (e) => setEndDate(e.target.value), required: true, min: startDate })
+                        h('label', { htmlFor: 'zv-dagdeel' }, 'Dagdeel'),
+                        h('select', {
+                            id: 'zv-dagdeel',
+                            className: 'form-select',
+                            value: dagdeel,
+                            onChange: handleDagdeelChange,
+                            required: true
+                        },
+                            h('option', { value: 'Hele dag' }, 'Hele dag (08:00 - 16:00) - ZV'),
+                            h('option', { value: 'Ochtend' }, 'Ochtend (08:00 - 11:59) - ZVO'),
+                            h('option', { value: 'Middag' }, 'Middag (12:01 - 16:00) - ZVM')
+                        )
                     ),
                     h('div', { className: 'form-groep' },
-                        h('label', { htmlFor: 'zv-eind-tijd' }, 'Eindtijd'),
-                        h('input', { type: 'time', id: 'zv-eind-tijd', className: 'form-input', value: endTime, onChange: (e) => setEndTime(e.target.value), required: true })
+                        h('label', { htmlFor: 'zv-tijden-preview' }, 'Berekende tijden'),
+                        h('input', { 
+                            type: 'text', 
+                            id: 'zv-tijden-preview', 
+                            className: 'form-input readonly-field', 
+                            value: `${startTime} - ${endTime} (${getTimesForDagdeel(dagdeel).afkorting})`, 
+                            readOnly: true, 
+                            disabled: true,
+                            title: 'Tijden worden automatisch berekend op basis van het geselecteerde dagdeel'
+                        })
                     )
                 ),
 

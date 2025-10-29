@@ -1,0 +1,24 @@
+/**
+ * Zittingsvrij dagdeel styling
+ * Adds support for ZVO (Ochtend) and ZVM (Middag) blocks with distinct colors
+ */
+
+/* Zittingsvrij Ochtend (ZVO) - Orange */
+.zittingsvrij-blok[data-afkorting="ZVO"] {
+    background-color: #e67e22 !important; /* Orange for morning */
+}
+
+.zittingsvrij-blok[data-afkorting="ZVO"]:hover {
+    background-color: #d35400 !important;
+    box-shadow: 0 0 8px rgba(230, 126, 34, 0.4);
+}
+
+/* Zittingsvrij Middag (ZVM) - Darker Orange */
+.zittingsvrij-blok[data-afkorting="ZVM"] {
+    background-color: #d35400 !important; /* Darker orange for afternoon */
+}
+
+.zittingsvrij-blok[data-afkorting="ZVM"]:hover {
+    background-color: #a04000 !important;
+    box-shadow: 0 0 8px rgba(211, 84, 0, 0.4);
+}

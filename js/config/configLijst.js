@@ -375,6 +375,7 @@ Otherwise, extract values from DagenIndicators.Title
         },
         { titel: "Terugkerend", interneNaam: "Terugkerend", type: "Boolean" },
         { titel: "Afkorting", interneNaam: "Afkorting", type: "Text" },
+        { titel: "Dagdeel", interneNaam: "Dagdeel", type: "Choice" },
         {
           titel: "TerugkerendTot",
           interneNaam: "TerugkerendTot",

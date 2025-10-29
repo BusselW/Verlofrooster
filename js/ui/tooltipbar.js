@@ -520,8 +520,19 @@ const TooltipManager = {
         // Check if user can see comments
         const canSeeComments = await this.canSeeComments();
         
+        // Determine emoji and title based on afkorting
+        let emoji = '🏛️';
+        let title = 'Zittingsvrij';
+        if (zittingsvrijItem.Afkorting === 'ZVO') {
+            emoji = '🌅';
+            title = 'Zittingsvrij Ochtend';
+        } else if (zittingsvrijItem.Afkorting === 'ZVM') {
+            emoji = '🌇';
+            title = 'Zittingsvrij Middag';
+        }
+        
         return `
-            <div class="custom-tooltip-title">🏛️ Zittingsvrij</div>
+            <div class="custom-tooltip-title">${emoji} ${title}</div>
             <div class="custom-tooltip-content">
                 <div class="custom-tooltip-info">
                     <span class="custom-tooltip-label">👤 Medewerker:</span>
@@ -535,6 +546,18 @@ const TooltipManager = {
                     <span class="custom-tooltip-label">📅 Tot:</span>
                     <span class="custom-tooltip-value">${eindDatum.toLocaleDateString('nl-NL')}</span>
                 </div>
+                ${zittingsvrijItem.StartTijd && zittingsvrijItem.EindTijd ? `
+                <div class="custom-tooltip-info">
+                    <span class="custom-tooltip-label">🕒 Tijd:</span>
+                    <span class="custom-tooltip-value">${zittingsvrijItem.StartTijd} - ${zittingsvrijItem.EindTijd}</span>
+                </div>
+                ` : ''}
+                ${zittingsvrijItem.Dagdeel ? `
+                <div class="custom-tooltip-info">
+                    <span class="custom-tooltip-label">📍 Dagdeel:</span>
+                    <span class="custom-tooltip-value">${zittingsvrijItem.Dagdeel}</span>
+                </div>
+                ` : ''}
                 <div class="custom-tooltip-info">
                     <span class="custom-tooltip-label">📊 Status:</span>
                     <span class="custom-tooltip-value">${status}</span>
@@ -779,6 +802,10 @@ const TooltipManager = {
             MedewerkerNaam: element.dataset.medewerker || 'Onbekend',
             StartDatum: element.dataset.startdatum || new Date().toISOString(),
             EindDatum: element.dataset.einddatum || null,
+            StartTijd: element.dataset.starttijd || element.dataset.startTime || null,
+            EindTijd: element.dataset.eindtijd || element.dataset.endTime || null,
+            Dagdeel: element.dataset.dagdeel || null,
+            Afkorting: element.dataset.afkorting || 'ZV',
             Status: element.dataset.status || 'Actief',
             Toelichting: element.dataset.toelichting || ''
         };

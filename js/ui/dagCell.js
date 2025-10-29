@@ -189,26 +189,54 @@ const DagCell = ({ dag, medewerker, onContextMenu, getVerlofVoorDag, getZittings
     };
 
     const renderZittingsvrijBlok = (zittingsvrij) => {
-        // Use a standard color for zittingsvrij indicators with proper styling
+        // Get afkorting from zittingsvrij data or default to 'ZV'
+        const afkorting = zittingsvrij.Afkorting || 'ZV';
+        
+        // Set different colors based on afkorting
+        let backgroundColor = '#8e44ad'; // Default purple for ZV
+        if (afkorting === 'ZVO') {
+            backgroundColor = '#e67e22'; // Orange for morning
+        } else if (afkorting === 'ZVM') {
+            backgroundColor = '#d35400'; // Darker orange for afternoon
+        }
+        
+        // Extract times if available
+        let startTime = '';
+        let endTime = '';
+        if (zittingsvrij.ZittingsVrijeDagTijd) {
+            const startDate = new Date(zittingsvrij.ZittingsVrijeDagTijd);
+            startTime = startDate.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+        }
+        if (zittingsvrij.ZittingsVrijeDagTijdEind) {
+            const endDate = new Date(zittingsvrij.ZittingsVrijeDagTijdEind);
+            endTime = endDate.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+        }
+        
         return h('div', {
             className: 'dag-indicator-blok zittingsvrij-blok',
-            style: { backgroundColor: '#8e44ad' }, // Consistent purple color for zittingsvrij
-            'data-afkorting': 'ZV',
+            style: { backgroundColor },
+            'data-afkorting': afkorting,
             'data-medewerker': medewerker.Naam,
             'data-startdatum': zittingsvrij.StartDatum,
             'data-einddatum': zittingsvrij.EindDatum,
+            'data-starttijd': startTime,
+            'data-eindtijd': endTime,
+            'data-dagdeel': zittingsvrij.Dagdeel || '',
             'data-toelichting': zittingsvrij.Toelichting || '',
             ref: (element) => {
                 if (element && !element.dataset.tooltipAttached) {
                     TooltipManager.attach(element, () => {
                         return TooltipManager.createZittingsvrijTooltip({
                             ...zittingsvrij,
-                            MedewerkerNaam: medewerker.Naam
+                            MedewerkerNaam: medewerker.Naam,
+                            StartTijd: startTime,
+                            EindTijd: endTime,
+                            Afkorting: afkorting
                         });
                     });
                 }
             }
-        }, 'ZV');
+        }, afkorting);
     };
 
     const renderUrenPerWeekBlok = (dag) => {

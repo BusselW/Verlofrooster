@@ -4,7 +4,7 @@ import { canManageOthersEvents } from '../ContextMenu.js';
 import { validateFormSubmission, showCRUDRestrictionMessage } from '../../services/crudPermissionService.js';
 import { createSharePointDateTime } from '../../utils/dateTimeUtils.js';
 
-const { createElement: h, useState, useEffect } = React;
+const { createElement: h, useState, useEffect, useRef } = React;
 
 const toInputDateString = (date) => {
     if (!date) return '';
@@ -59,8 +59,12 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
     const [terugkerendTot, setTerugkerendTot] = useState('');
     const [terugkeerPatroon, setTerugkeerPatroon] = useState('Wekelijks');
     const [canManageOthers, setCanManageOthers] = useState(false);
+    const isInitialized = useRef(false);
 
     useEffect(() => {
+        // Only initialize once
+        if (isInitialized.current) return;
+        
         const initializeForm = async () => {
             console.log('ZittingsvrijForm initializing with:', { initialData, selection, medewerkers: medewerkers.length });
             
@@ -172,6 +176,8 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
                 setTerugkerendTot(initialData.TerugkerendTot ? toInputDateString(new Date(initialData.TerugkerendTot)) : today);
                 setTerugkeerPatroon(initialData.TerugkeerPatroon || 'Wekelijks');
             }
+            
+            isInitialized.current = true;
         };
 
         initializeForm();

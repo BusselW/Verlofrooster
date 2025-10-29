@@ -3,7 +3,7 @@
  * @description Component voor het controleren of een gebruiker is geregistreerd in de Medewerkers lijst
  */
 
-import { getCurrentUserInfo, getCurrentUserGroups, checkListItemExists } from '../services/sharepointService.js';
+import { getCurrentUserInfo, getSharePointListItems } from '../services/sharepointService.js';
 
 const { createElement: h } = window.React;
 
@@ -36,34 +36,21 @@ const UserRegistrationCheck = ({ onValidated, children }) => {
                 setUserInfo(user);
                 console.log('👤 Current user:', user.Title);
                 
-                // Get user groups
-                const groups = await getCurrentUserGroups();
-                console.log('👥 User groups:', groups.map(g => g.Title).join(', '));
-                
-                // Check if user has admin/management permissions
-                const privilegedGroups = [
-                    '1. Sharepoint beheer',
-                    '1.1. Mulder MT',
-                    '2.6 Roosteraars'
-                ];
-                
-                const hasPrivilegedAccess = groups.some(group => 
-                    privilegedGroups.some(privileged => 
-                        group.Title && group.Title.includes(privileged)
-                    )
-                );
-                
-                setHasPermission(hasPrivilegedAccess);
-                
                 // Extract username from LoginName (format: i:0#.w|domain\username)
-                const loginName = user.LoginName.split('|')[1];
-                console.log('🔑 Login name:', loginName);
+                const loginName = user.LoginName.split('|')[1] || user.LoginName;
+                console.log('� Login name:', loginName);
                 
                 // Check if user exists in Medewerkers list
-                const exists = await checkListItemExists('Medewerkers', 'Username', loginName);
+                const medewerkers = await getSharePointListItems('Medewerkers');
+                const exists = medewerkers.some(m => m.Username === loginName);
                 
-                if (exists || hasPrivilegedAccess) {
-                    console.log('✅ User is registered or has privileged access');
+                // Note: Permission checking can be added later if needed via permissionService
+                // For now, we just check if user is registered in Medewerkers
+                const hasPrivilegedAccess = false; // Placeholder
+                setHasPermission(hasPrivilegedAccess);
+                
+                if (exists) {
+                    console.log('✅ User is registered in Medewerkers list');
                     setIsRegistered(true);
                     if (onValidated) {
                         onValidated({ user, isRegistered: true, hasPrivilegedAccess });

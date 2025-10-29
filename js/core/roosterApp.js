@@ -648,11 +648,15 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             // Close modal first
             setIsVerlofModalOpen(false);
             
+            // Clear cache to force fresh data load
+            console.log('🗑️ Clearing cache to fetch fresh data...');
+            clearAllCache();
+            
             // Graceful data refresh without full page reload
             console.log('🔄 Refreshing data silently to update verlof...');
             setBackgroundRefreshing(true);
             try {
-                await silentRefreshData();
+                await silentRefreshData(true); // Force reload
             } catch (refreshError) {
                 console.error('Error during silent refresh:', refreshError);
                 // Continue anyway - data will be refreshed on next manual refresh
@@ -679,14 +683,21 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             console.log('Ziekmelding ingediend:', result);
             setIsZiekModalOpen(false);
             
-            // Graceful data refresh without full page reload
+            // Clear cache and refresh
+            clearAllCache();
             console.log('🔄 Refreshing data silently to update ziekte...');
             setBackgroundRefreshing(true);
-            await silentRefreshData();
-            setBackgroundRefreshing(false);
+            try {
+                await silentRefreshData(true);
+            } catch (refreshError) {
+                console.error('Error during silent refresh:', refreshError);
+            } finally {
+                setBackgroundRefreshing(false);
+            }
         } catch (error) {
             console.error('Fout bij het indienen van ziekmelding:', error);
             alert('Fout bij het indienen van ziekmelding: ' + error.message);
+            setBackgroundRefreshing(false);
         }
     }, [silentRefreshData]);
 
@@ -697,14 +708,21 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             console.log('✅ Compensatie-uren ingediend successfully:', result);
             setIsCompensatieModalOpen(false);
             
-            // Graceful data refresh without full page reload
+            // Clear cache and refresh
+            clearAllCache();
             console.log('🔄 Refreshing data silently to update compensatie...');
             setBackgroundRefreshing(true);
-            await silentRefreshData();
-            setBackgroundRefreshing(false);
+            try {
+                await silentRefreshData(true);
+            } catch (refreshError) {
+                console.error('Error during silent refresh:', refreshError);
+            } finally {
+                setBackgroundRefreshing(false);
+            }
         } catch (error) {
             console.error('❌ Fout bij het indienen van compensatie-uren:', error);
             alert('Fout bij het indienen van compensatie-uren: ' + error.message);
+            setBackgroundRefreshing(false);
         }
     }, [silentRefreshData]);
 
@@ -719,14 +737,21 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             console.log('✅ Zittingsvrij ingediend successfully:', result);
             setIsZittingsvrijModalOpen(false);
             
-            // Graceful data refresh without full page reload
+            // Clear cache and refresh
+            clearAllCache();
             console.log('🔄 Refreshing data silently to update zittingsvrij...');
             setBackgroundRefreshing(true);
-            await silentRefreshData();
-            setBackgroundRefreshing(false);
+            try {
+                await silentRefreshData(true);
+            } catch (refreshError) {
+                console.error('Error during silent refresh:', refreshError);
+            } finally {
+                setBackgroundRefreshing(false);
+            }
         } catch (error) {
             console.error('❌ Fout bij het indienen van zittingsvrij:', error);
             alert('Fout bij het indienen van zittingsvrij: ' + error.message);
+            setBackgroundRefreshing(false);
         }
     }, [silentRefreshData]);
 

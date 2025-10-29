@@ -46,7 +46,7 @@
         // Import Components
         // =====================
         import { ErrorBoundary } from './js/core/ErrorBoundary.js';
-        import { UserRegistrationCheck } from './js/components/UserRegistrationCheck.js';
+        import UserRegistrationCheck from './js/components/UserRegistrationCheck.js';
         import RoosterApp from './js/core/roosterApp.js';
         
         // =====================

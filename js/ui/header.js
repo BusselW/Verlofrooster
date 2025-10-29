@@ -107,6 +107,16 @@ const Header = ({ userPermissions, currentUser }) => {
                 },
                     h('i', { className: 'fas fa-clipboard-check' }),
                     h('span', null, 'Behandelen')
+                ),
+
+                // Meldingen button (available for all users)
+                h('button', {
+                    className: 'nav-btn nav-btn-meldingen',
+                    onClick: () => navigateTo('pages/meldingenCentrum/meldingenCentrum.aspx'),
+                    title: 'Meldingencentrum - Meld fouten en problemen'
+                },
+                    h('i', { className: 'fas fa-exclamation-circle' }),
+                    h('span', null, 'Meldingen')
                 )
             ),
 

@@ -100,7 +100,7 @@ const renderCompensatieMomenten = (compensatieMomenten, options = {}) => {
  * @param {boolean} props.isFirstClick - Of deze cel de eerste klik is.
  * @param {string} props.feestdagNaam - Naam van de feestdag (indien van toepassing).
  */
-const DagCell = ({ dag, medewerker, onContextMenu, getVerlofVoorDag, getZittingsvrijVoorDag, getCompensatieUrenVoorDag, shiftTypes, onCellClick, isSelected, isFirstClick, feestdagNaam }) => {
+const DagCell = ({ dag, medewerker, onContextMenu, getVerlofVoorDag, getZittingsvrijVoorDag, getCompensatieUrenVoorDag, shiftTypes, onCellClick, isSelected, isFirstClick, feestdagNaam, dagenIndicators = {} }) => {
     const cellRef = useRef(null);
     const verlofItem = getVerlofVoorDag(medewerker.Username, dag);
     const zittingsvrijItem = getZittingsvrijVoorDag(medewerker.Username, dag);
@@ -192,6 +192,12 @@ const DagCell = ({ dag, medewerker, onContextMenu, getVerlofVoorDag, getZittings
         // Get afkorting from zittingsvrij data or default to 'ZV'
         const afkorting = zittingsvrij.Afkorting || 'ZV';
         
+        // Get color from dagenIndicators if available
+        let backgroundColor = '#8e44ad'; // Default purple for ZV
+        if (dagenIndicators && dagenIndicators[afkorting]) {
+            backgroundColor = dagenIndicators[afkorting].kleur || dagenIndicators[afkorting].Kleur || backgroundColor;
+        }
+        
         // Extract times if available
         let startTime = '';
         let endTime = '';
@@ -206,7 +212,7 @@ const DagCell = ({ dag, medewerker, onContextMenu, getVerlofVoorDag, getZittings
         
         return h('div', {
             className: 'dag-indicator-blok zittingsvrij-blok',
-            // Remove inline style - let CSS handle colors via data-afkorting attribute
+            style: { backgroundColor }, // Use color from dagenIndicators
             'data-afkorting': afkorting,
             'data-medewerker': medewerker.Naam,
             'data-startdatum': zittingsvrij.StartDatum,

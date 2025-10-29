@@ -152,7 +152,16 @@ const RoosterGrid = ({
 
                                                 const shiftType = isVerlof ? shiftTypes[item.RedenId] : null;
                                                 const afkorting = isVerlof && shiftType ? shiftType.afkorting : (item.Afkorting || 'ZV');
-                                                const kleur = isVerlof && shiftType ? shiftType.kleur : (item.Kleur || '#8e44ad');
+                                                
+                                                // Get color: for verlof from shiftTypes, for zittingsvrij from dagenIndicators
+                                                let kleur = '#8e44ad'; // Default purple
+                                                if (isVerlof && shiftType) {
+                                                    kleur = shiftType.kleur;
+                                                } else if (isZittingsvrij && dagenIndicators[afkorting]) {
+                                                    kleur = dagenIndicators[afkorting].kleur || dagenIndicators[afkorting].Kleur || kleur;
+                                                } else {
+                                                    kleur = item.Kleur || kleur;
+                                                }
                                                 const titel = isVerlof && shiftType ? (item.Omschrijving || shiftType.label) : (item.Opmerking || item.Title);
                                                 const status = isVerlof ? (item.Status || 'Goedgekeurd').toLowerCase() : 'goedgekeurd';
 

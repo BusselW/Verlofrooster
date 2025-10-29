@@ -644,13 +644,21 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
 
             const result = await createSharePointListItem('Verlof', formData);
             console.log('Verlofaanvraag ingediend:', result);
+            
+            // Close modal first
             setIsVerlofModalOpen(false);
             
             // Graceful data refresh without full page reload
             console.log('🔄 Refreshing data silently to update verlof...');
             setBackgroundRefreshing(true);
-            await silentRefreshData();
-            setBackgroundRefreshing(false);
+            try {
+                await silentRefreshData();
+            } catch (refreshError) {
+                console.error('Error during silent refresh:', refreshError);
+                // Continue anyway - data will be refreshed on next manual refresh
+            } finally {
+                setBackgroundRefreshing(false);
+            }
         } catch (error) {
             console.error('Fout bij het indienen van verlofaanvraag:', error);
             console.error('Error details:', {
@@ -659,6 +667,8 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
                 formData: formData
             });
             alert('Fout bij het indienen van verlofaanvraag: ' + error.message);
+            // Make sure we reset state even on error
+            setBackgroundRefreshing(false);
         }
     }, [silentRefreshData]);
 

@@ -1,5 +1,5 @@
 import { getCurrentUserInfo } from '../../services/sharepointService.js';
-import { canManageOthersEvents } from '../ContextMenu.js';
+import { canManageOthersEvents } from '../contextmenu.js';
 import { validateFormSubmission, showCRUDRestrictionMessage } from '../../services/crudPermissionService.js';
 import { createSharePointDateTime } from '../../utils/dateTimeUtils.js';
 

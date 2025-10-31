@@ -17,7 +17,7 @@ import {
 } from '../../../js/services/sharepointService.js';
 
 import { getCurrentUserGroups } from '../../../js/services/permissionService.js';
-import { canManageOthersEvents } from '../../../js/ui/ContextMenu.js';
+import { canManageOthersEvents } from '../../../js/ui/contextmenu.js';
 
 // React destructuring
 const { createElement: h, useState, useEffect, useMemo, useCallback, Fragment } = React;

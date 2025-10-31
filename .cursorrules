@@ -1,0 +1,137 @@
+# Verlofrooster Project - AI Assistant Rules
+
+## Critical Architecture Rules - ALWAYS FOLLOW
+
+### 1. verlofRooster.aspx - KEEP IT MINIMAL (Max 50 lines)
+The `verlofRooster.aspx` file should ONLY contain:
+- SharePoint page directives (<%@ Page ... %>)
+- HTML document structure (<html>, <head>, <body>)
+- CSS links (external and local stylesheets)
+- External dependencies (React CDN, Font Awesome CDN)
+- Fallback scripts for CDN failures
+- configLijst.js script tag
+- Single application entry point: `<script type="module" src="js/app.js"></script>`
+
+**NEVER add to verlofRooster.aspx:**
+- ❌ Component imports
+- ❌ Service imports
+- ❌ Application logic
+- ❌ React component definitions
+- ❌ Bootstrap/initialization code
+- ❌ State management
+- ❌ Event handlers
+- ❌ Any inline JavaScript beyond the fallback script
+
+### 2. js/app.js - Application Bootstrap Hub
+ALL application logic, imports, and initialization belongs in `js/app.js`:
+- ✅ All component imports (ErrorBoundary, UserRegistrationCheck, RoosterApp, etc.)
+- ✅ All service imports (sharepointService, permissionService, linkInfo, loadingLogic)
+- ✅ All UI component imports (contextmenu, tooltipbar, etc.)
+- ✅ Global React setup (window.React, window.ReactDOM)
+- ✅ Component definitions (App, MainAppWrapper)
+- ✅ React rendering (createRoot, render)
+- ✅ Global function exports (window.startTutorial, window.openHandleiding, etc.)
+- ✅ Application initialization (initializeApp function and execution)
+
+### 3. Strict Separation of Concerns
+- **verlofRooster.aspx** = Infrastructure layer (HTML structure, external resources ONLY)
+- **js/app.js** = Application bootstrap (imports, setup, initialization)
+- **js/core/** = Core application logic (roosterApp.js, ErrorBoundary.js)
+- **js/components/** = Reusable components
+- **js/services/** = Data and API services
+- **js/ui/** = UI-specific components
+- **js/utils/** = Utility functions
+
+### 4. When Adding New Features
+
+**Adding a new component:**
+→ Import it in `js/app.js` (or in the file that uses it)
+→ NEVER in verlofRooster.aspx
+
+**Adding a new service:**
+→ Import it in `js/app.js` or the component that needs it
+→ NEVER in verlofRooster.aspx
+
+**Adding a new external library:**
+→ Add CDN `<script>` or `<link>` tag in verlofRooster.aspx `<head>`
+→ Use the library in `js/app.js` or other JS files
+
+**Adding global functions:**
+→ Define in appropriate JS file
+→ Export to window object in `js/app.js` (e.g., window.myFunction = myFunction)
+
+**Changing bootstrap logic:**
+→ Modify `js/app.js` initializeApp() function
+→ NEVER modify verlofRooster.aspx inline script
+
+### 5. React Patterns - NO JSX
+This project uses React WITHOUT a build process:
+- Use `React.createElement` aliased as `h`
+- Pattern: `h('div', { props }, children)`
+- All components use function components with hooks
+- No class components
+
+### 6. Code Review Checklist
+Before suggesting or making changes, verify:
+- [ ] Is verlofRooster.aspx still minimal (under 50 lines)?
+- [ ] Does verlofRooster.aspx contain ZERO imports or component definitions?
+- [ ] Are all imports in js/app.js or appropriate feature modules?
+- [ ] Is application logic completely separate from HTML infrastructure?
+- [ ] Are we using `h()` instead of JSX?
+
+### 7. SharePoint Context
+- Site runs on SharePoint 2013/2016
+- Uses SharePoint REST API (/_api/web/...)
+- Authentication is session-based (SharePoint handles it)
+- Lists are configured in js/config/configLijst.js
+- No server-side code modifications allowed
+
+### 8. Performance & Caching
+- Use loadingLogic.js for all data fetching with cache
+- Always call `clearAllCache()` after mutations (create/update/delete)
+- Always call `silentRefreshData(true)` after cache clear
+- Wrap async operations in try-catch-finally
+
+### 9. Error Handling
+- All async operations must have try-catch
+- User-facing errors should use alert() or notification system
+- Always log errors to console for debugging
+- Use ErrorBoundary for React component errors
+
+### 10. Common Anti-Patterns to AVOID
+❌ Adding inline scripts to verlofRooster.aspx
+❌ Importing components in ASPX
+❌ Duplicating bootstrap logic
+❌ Not clearing cache after mutations
+❌ Not using try-catch on async operations
+❌ Hardcoding URLs (use linkInfo.js)
+❌ Creating JSX (this is a no-build project)
+❌ Using class components (use function components)
+
+## When User Asks to Change verlofRooster.aspx
+1. First, check if the change belongs in js/app.js instead
+2. Only proceed if it's truly infrastructure (CSS link, CDN, HTML structure)
+3. Remind the user about separation of concerns
+4. Keep the file minimal and clean
+
+## Project-Specific Notes
+- Recent refactor: Moved all bootstrap logic from ASPX to app.js
+- MeldingenCentrum navigation button added to header.js
+- ZV enhancement complete: dagdeel dropdown with auto-time calculation
+- All pages follow similar pattern: minimal ASPX → dedicated app.js
+
+## File Naming Conventions
+- Components: PascalCase (e.g., UserRegistrationCheck.js)
+- Services: camelCase (e.g., sharepointService.js)
+- Utilities: camelCase (e.g., userUtils.js)
+- Pages: camelCase with N suffix (e.g., beheerCentrumN.aspx)
+
+## Testing Changes
+- After any change to app.js, test in browser
+- Check browser console for import errors
+- Verify React DevTools shows proper component tree
+- Test all affected user flows
+
+---
+
+**REMEMBER**: verlofRooster.aspx is ONLY infrastructure. All application code goes in js/app.js or feature-specific modules. This is not negotiable for code quality and maintainability.

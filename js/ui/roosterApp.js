@@ -24,7 +24,7 @@ import { fetchSharePointList, getUserInfo, createSharePointListItem, updateShare
 import { getCurrentUserGroups, isUserInAnyGroup } from '../services/permissionService.js';
 import * as linkInfo from '../services/linkInfo.js';
 import LoadingLogic, { loadFilteredData, shouldReloadData, updateCacheKey, clearAllCache, logLoadingStatus } from '../services/loadingLogic.js';
-import ContextMenu, { canManageOthersEvents, canUserModifyItem } from '../ui/ContextMenu.js';
+import ContextMenu, { canManageOthersEvents, canUserModifyItem } from '../ui/contextmenu.js';
 import { validateFormSubmission, showCRUDRestrictionMessage } from '../services/crudPermissionService.js';
 import ProfielKaarten from '../ui/profielkaarten.js';
 import FAB from '../ui/FloatingActionButton.js';

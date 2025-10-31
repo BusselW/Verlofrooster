@@ -4,7 +4,7 @@
  * This service ensures that employees can add, edit, and delete items but not VVD/VVM/VVO types
  */
 
-import { canManageOthersEvents } from '../ui/ContextMenu.js';
+import { canManageOthersEvents } from '../ui/contextmenu.js';
 import { getCurrentUserInfo } from './sharepointService.js';
 
 /**

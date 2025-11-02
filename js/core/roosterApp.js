@@ -184,6 +184,9 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
         pictureUrl: '',
         loading: !currentUser
     });
+    
+    // Ref to track if we have initial data loaded (prevents infinite loop in error handling)
+    const hasInitialDataRef = React.useRef(false);
 
     // Debug modal state changes
     useEffect(() => {
@@ -332,6 +335,9 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             setUrenPerWeekItems(transformedData.urenPerWeekItems);
             setDagenIndicators(transformedData.dagenIndicators);
 
+            // Mark that we have successfully loaded data
+            hasInitialDataRef.current = true;
+
             console.log('✅ Data loading complete!');
 
         } catch (err) {
@@ -343,7 +349,7 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
                 setError(`Fout bij laden: ${err.message}`);
             } else {
                 // For silent refreshes, only show error if we have no existing data
-                if (medewerkers.length === 0) {
+                if (!hasInitialDataRef.current) {
                     console.error('🚨 Initial data load failed, showing error to user');
                     setError('Fout bij het laden van data: ' + err.message);
                 } else {
@@ -358,7 +364,7 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
                 setBackgroundRefreshing(false);
             }
         }
-    }, [weergaveType, huidigJaar, huidigMaand, huidigWeek, currentUser, medewerkers.length]);
+    }, [weergaveType, huidigJaar, huidigMaand, huidigWeek, currentUser]);
 
     // ==========================================
     // WRAPPER FUNCTIONS - Use unified loadData

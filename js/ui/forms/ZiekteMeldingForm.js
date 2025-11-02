@@ -184,33 +184,22 @@ const ZiekteMeldingForm = ({ onSubmit, onClose, shiftTypes = {}, initialData = {
         h('form', { onSubmit: handleSubmit, className: 'form-container' },
             h('div', { className: 'form-fields' },
                 h('input', { type: 'hidden', name: 'Status', value: status }),
+                h('input', { type: 'hidden', name: 'MedewerkerUsername', value: medewerkerUsername }),
 
-                h('div', { className: 'form-row' },
-                    h('div', { className: 'form-groep' },
+                // Only show medewerker selector if user can manage others
+                canManageOthers && h('div', { className: 'form-row' },
+                    h('div', { className: 'form-groep full-width' },
                         h('label', { htmlFor: 'ziekte-medewerker' }, 'Medewerker'),
-                        canManageOthers 
-                            ? h('select', { 
-                                className: 'form-select', 
-                                id: 'ziekte-medewerker', 
-                                value: medewerkerId, 
-                                onChange: handleMedewerkerChange, 
-                                required: true 
-                              },
-                                h('option', { value: '', disabled: true }, 'Selecteer medewerker'),
-                                medewerkers.map(m => h('option', { key: m.Id, value: m.Id }, m.Title))
-                              )
-                            : h('input', { 
-                                className: 'form-input readonly-field', 
-                                type: 'text', 
-                                id: 'ziekte-medewerker', 
-                                value: (medewerkers.find(m => m.Id === parseInt(medewerkerId, 10)) || {}).Title || 'Laden...', 
-                                readOnly: true,
-                                title: 'U kunt alleen ziekte melden voor uzelf'
-                              })
-                    ),
-                    h('div', { className: 'form-groep' },
-                        h('label', { htmlFor: 'ziekte-medewerker-id' }, 'Medewerker ID'),
-                        h('input', { className: 'form-input', type: 'text', id: 'ziekte-medewerker-id', value: medewerkerUsername, readOnly: true, disabled: true })
+                        h('select', { 
+                            className: 'form-select', 
+                            id: 'ziekte-medewerker', 
+                            value: medewerkerId, 
+                            onChange: handleMedewerkerChange, 
+                            required: true 
+                          },
+                            h('option', { value: '', disabled: true }, 'Selecteer medewerker'),
+                            medewerkers.map(m => h('option', { key: m.Id, value: m.Id }, m.Title))
+                        )
                     )
                 ),
 
@@ -236,16 +225,9 @@ const ZiekteMeldingForm = ({ onSubmit, onClose, shiftTypes = {}, initialData = {
                     )
                 ),
 
-                h('div', { className: 'form-row' },
-                    h('div', { className: 'form-groep' },
-                        h('label', { htmlFor: 'ziekte-reden' }, 'Reden'),
-                        h('input', { className: 'form-input', id: 'ziekte-reden', type: 'text', value: 'Ziekte', disabled: true })
-                    ),
-                    h('div', { className: 'form-groep' },
-                        h('label', { htmlFor: 'ziekte-reden-id' }, 'Reden ID'),
-                        h('input', { className: 'form-input', id: 'ziekte-reden-id', type: 'text', value: redenId, disabled: true })
-                    )
-                ),
+                // Hide reason fields - they're always the same for ziekte
+                h('input', { type: 'hidden', name: 'RedenId', value: redenId }),
+                h('input', { type: 'hidden', name: 'Reden', value: 'Ziekte' }),
 
                 h('div', { className: 'form-row' },
                     h('div', { className: 'form-groep' },

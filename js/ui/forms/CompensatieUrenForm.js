@@ -205,33 +205,22 @@ const CompensatieUrenForm = ({ onSubmit, onClose, initialData = {}, medewerkers 
 
     return h('form', { onSubmit: handleSubmit, className: 'form-container' },
         h('input', { type: 'hidden', name: 'status', value: status }),
+        h('input', { type: 'hidden', name: 'MedewerkerUsername', value: medewerkerUsername }),
 
-        h('div', { className: 'form-row' },
-            h('div', { className: 'form-groep' },
+        // Only show medewerker selector if user can manage others
+        canManageOthers && h('div', { className: 'form-row' },
+            h('div', { className: 'form-groep full-width' },
                 h('label', { htmlFor: 'comp-medewerker' }, 'Medewerker'),
-                canManageOthers 
-                    ? h('select', { 
-                        className: 'form-select', 
-                        id: 'comp-medewerker', 
-                        value: medewerkerId, 
-                        onChange: handleMedewerkerChange, 
-                        required: true 
-                      },
-                        h('option', { value: '', disabled: true }, 'Selecteer medewerker'),
-                        medewerkers.map(m => h('option', { key: m.Id, value: m.Id }, m.Title))
-                      )
-                    : h('input', { 
-                        className: 'form-input readonly-field', 
-                        type: 'text', 
-                        id: 'comp-medewerker', 
-                        value: medewerkers.find(m => m.Id === parseInt(medewerkerId, 10))?.Title || 'Laden...', 
-                        readOnly: true,
-                        title: 'U kunt alleen compensatie-uren doorgeven voor uzelf'
-                      })
-            ),
-            h('div', { className: 'form-groep' },
-                h('label', { htmlFor: 'comp-medewerker-id' }, 'Medewerker ID'),
-                h('input', { className: 'form-input', type: 'text', id: 'comp-medewerker-id', value: medewerkerUsername, readOnly: true, disabled: true })
+                h('select', { 
+                    className: 'form-select', 
+                    id: 'comp-medewerker', 
+                    value: medewerkerId, 
+                    onChange: handleMedewerkerChange, 
+                    required: true 
+                  },
+                    h('option', { value: '', disabled: true }, 'Selecteer medewerker'),
+                    medewerkers.map(m => h('option', { key: m.Id, value: m.Id }, m.Title))
+                )
             )
         ),
 
@@ -255,8 +244,12 @@ const CompensatieUrenForm = ({ onSubmit, onClose, initialData = {}, medewerkers 
                 h('input', { className: 'form-input', type: 'time', id: 'comp-eind-tijd', value: endTime, onChange: (e) => setEndTime(e.target.value), required: true })
             ),
             h('div', { className: 'form-groep' },
-                h('label', { htmlFor: 'comp-uren-totaal' }, 'Totaal Uren (Max 10)'),
-                h('input', { className: 'form-input', type: 'number', id: 'comp-uren-totaal', value: urenTotaal.toFixed(2), readOnly: true, disabled: true })
+                h('label', { htmlFor: 'comp-uren-totaal' }, 
+                    h('span', null, 'Totaal: ', 
+                        h('strong', { style: { color: urenTotaal > 0 ? '#10b981' : '#6b7280' } }, `${urenTotaal.toFixed(1)} uur`)
+                    )
+                ),
+                h('input', { type: 'hidden', id: 'comp-uren-totaal', value: urenTotaal })
             )
         ),
 

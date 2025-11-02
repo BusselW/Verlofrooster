@@ -288,32 +288,22 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
     return h('div', { className: 'modal-form-wrapper' },
         h('form', { onSubmit: handleSubmit, className: 'form-container' },
             h('div', { className: 'form-fields' },
-                h('div', { className: 'form-row' },
-                    h('div', { className: 'form-groep' },
+                h('input', { type: 'hidden', name: 'MedewerkerUsername', value: medewerkerUsername }),
+
+                // Only show medewerker selector if user can manage others
+                canManageOthers && h('div', { className: 'form-row' },
+                    h('div', { className: 'form-groep full-width' },
                         h('label', { htmlFor: 'zv-medewerker' }, 'Medewerker'),
-                        canManageOthers 
-                            ? h('select', {
-                                id: 'zv-medewerker',
-                                className: 'form-select',
-                                value: medewerkerId,
-                                onChange: handleMedewerkerChange,
-                                required: true
-                              },
-                                h('option', { value: '', disabled: true }, 'Selecteer medewerker'),
-                                medewerkers.map(m => h('option', { key: m.Id, value: m.Id }, m.Title))
-                              )
-                            : h('input', { 
-                                className: 'form-input readonly-field', 
-                                type: 'text', 
-                                id: 'zv-medewerker', 
-                                value: medewerkers.find(m => m.Id === parseInt(medewerkerId, 10))?.Title || 'Laden...', 
-                                readOnly: true,
-                                title: 'U kunt alleen zittingsvrij maken voor uzelf'
-                              })
-                    ),
-                    h('div', { className: 'form-groep' },
-                        h('label', { htmlFor: 'zv-medewerker-id' }, 'Medewerker ID'),
-                        h('input', { className: 'form-input', type: 'text', id: 'zv-medewerker-id', value: medewerkerUsername, readOnly: true, disabled: true })
+                        h('select', {
+                            id: 'zv-medewerker',
+                            className: 'form-select',
+                            value: medewerkerId,
+                            onChange: handleMedewerkerChange,
+                            required: true
+                          },
+                            h('option', { value: '', disabled: true }, 'Selecteer medewerker'),
+                            medewerkers.map(m => h('option', { key: m.Id, value: m.Id }, m.Title))
+                        )
                     )
                 ),
 

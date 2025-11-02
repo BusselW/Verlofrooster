@@ -469,7 +469,7 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             // Make sure we reset state even on error
             setBackgroundRefreshing(false);
         }
-    }, [silentRefreshData]);
+    }, []); // No dependencies needed - silentRefreshData is stable
 
     const handleZiekteSubmit = useCallback(async (formData) => {
         try {
@@ -494,7 +494,7 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             alert('Fout bij het indienen van ziekmelding: ' + error.message);
             setBackgroundRefreshing(false);
         }
-    }, [silentRefreshData]);
+    }, []); // No dependencies needed - silentRefreshData is stable
 
     const handleCompensatieSubmit = useCallback(async (formData) => {
         try {
@@ -519,7 +519,7 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             alert('Fout bij het indienen van compensatie-uren: ' + error.message);
             setBackgroundRefreshing(false);
         }
-    }, [silentRefreshData]);
+    }, []); // No dependencies needed - silentRefreshData is stable
 
     const handleZittingsvrijSubmit = useCallback(async (formData) => {
         try {
@@ -548,7 +548,7 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             alert('Fout bij het indienen van zittingsvrij: ' + error.message);
             setBackgroundRefreshing(false);
         }
-    }, [silentRefreshData]);
+    }, []); // No dependencies needed - silentRefreshData is stable
 
     // Context menu handler
     const showContextMenu = useCallback(async (e, medewerker, dag, item) => {

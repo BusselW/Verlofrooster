@@ -28,12 +28,22 @@
     border: 2px solid #e0e0e0;
     border-top: 2px solid #1976d2;
     border-radius: 50%;
-    animation: spin 1s linear infinite;
+    animation: spin 1.5s linear infinite;
 }
 
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .loading-spinner {
+        animation: spin-reduced 2s linear infinite;
+    }
+    @keyframes spin-reduced {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 1; }
+    }
 }
 
 /* Header Section */
@@ -68,7 +78,7 @@
     border-radius: 5px;
     cursor: pointer;
     font-size: 0.9em;
-    transition: all 0.2s ease;
+    transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.2s ease;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -345,7 +355,13 @@
 }
 
 .announcement-item {
-    animation: slideIn 0.3s ease-out;
+    animation: slideIn 0.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .announcement-item {
+        animation: none;
+    }
 }
 
 /* High visibility state for urgent announcements */

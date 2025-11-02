@@ -300,33 +300,22 @@ const VerlofAanvraagForm = ({ onSubmit, onClose, initialData = {}, medewerkers =
         h('form', { onSubmit: handleSubmit, className: 'form-container', id: 'verlof-form' },
             h('div', { className: 'form-fields' },
                 h('input', { type: 'hidden', name: 'Status', value: status }),
+                h('input', { type: 'hidden', name: 'MedewerkerUsername', value: medewerkerUsername }),
 
-                h('div', { className: 'form-row' },
-                    h('div', { className: 'form-groep' },
+                // Only show medewerker selector if user can manage others
+                canManageOthers && h('div', { className: 'form-row' },
+                    h('div', { className: 'form-groep full-width' },
                         h('label', { htmlFor: 'verlof-medewerker' }, 'Medewerker'),
-                        canManageOthers 
-                            ? h('select', { 
-                                className: 'form-select', 
-                                id: 'verlof-medewerker', 
-                                value: medewerkerId, 
-                                onChange: handleMedewerkerChange, 
-                                required: true 
-                              },
-                                h('option', { value: '', disabled: true }, 'Selecteer medewerker'),
-                                medewerkers.map(m => h('option', { key: m.Id, value: m.Id }, m.Title))
-                              )
-                            : h('input', { 
-                                className: 'form-input readonly-field', 
-                                type: 'text', 
-                                id: 'verlof-medewerker', 
-                                value: (medewerkers.find(m => m.Id === parseInt(medewerkerId, 10)) || {}).Title || 'Laden...', 
-                                readOnly: true,
-                                title: 'U kunt alleen verlof aanvragen voor uzelf'
-                              })
-                    ),
-                    h('div', { className: 'form-groep' },
-                        h('label', { htmlFor: 'verlof-medewerker-id' }, 'Medewerker ID'),
-                        h('input', { className: 'form-input', type: 'text', id: 'verlof-medewerker-id', value: medewerkerUsername, readOnly: true, disabled: true })
+                        h('select', { 
+                            className: 'form-select', 
+                            id: 'verlof-medewerker', 
+                            value: medewerkerId, 
+                            onChange: handleMedewerkerChange, 
+                            required: true 
+                          },
+                            h('option', { value: '', disabled: true }, 'Selecteer medewerker'),
+                            medewerkers.map(m => h('option', { key: m.Id, value: m.Id }, m.Title))
+                        )
                     )
                 ),
 
@@ -352,16 +341,9 @@ const VerlofAanvraagForm = ({ onSubmit, onClose, initialData = {}, medewerkers =
                     )
                 ),
 
-                h('div', { className: 'form-row' },
-                    h('div', { className: 'form-groep' },
-                        h('label', { htmlFor: 'verlof-reden' }, 'Reden'),
-                        h('input', { className: 'form-input', id: 'verlof-reden', type: 'text', value: 'Verlof/vakantie', disabled: true })
-                    ),
-                    h('div', { className: 'form-groep' },
-                        h('label', { htmlFor: 'verlof-reden-id' }, 'Reden ID'),
-                        h('input', { className: 'form-input', id: 'verlof-reden-id', type: 'text', value: redenId, disabled: true })
-                    )
-                ),
+                // Hide reason fields - they're always the same for verlof
+                h('input', { type: 'hidden', name: 'RedenId', value: redenId }),
+                h('input', { type: 'hidden', name: 'Reden', value: 'Verlof/vakantie' }),
 
                 h('div', { className: 'form-row' },
                     h('div', { className: 'form-groep' },

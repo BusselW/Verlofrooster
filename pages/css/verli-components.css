@@ -553,7 +553,7 @@
     border: 2px solid currentColor;
     border-top: 2px solid transparent;
     border-radius: 50%;
-    animation: verli-spin 1s linear infinite;
+    animation: verli-spin 1.5s linear infinite;
 }
 
 @keyframes verli-spin {
@@ -666,7 +666,12 @@
     }
     
     .verli-button-spinner {
-        animation: none;
+        animation: verli-spin-reduced 2s linear infinite;
+    }
+    
+    @keyframes verli-spin-reduced {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 1; }
     }
 }
 

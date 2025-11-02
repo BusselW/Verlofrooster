@@ -187,6 +187,8 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
     
     // Ref to track if we have initial data loaded (prevents infinite loop in error handling)
     const hasInitialDataRef = React.useRef(false);
+    // Ref to track if initial load has been triggered (prevents infinite loop in useEffect)
+    const hasTriggeredInitialLoadRef = React.useRef(false);
 
     // Debug modal state changes
     useEffect(() => {
@@ -389,12 +391,13 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
 
     // Initial data load when user is validated
     useEffect(() => {
-        // Only start loading data after user is validated
-        if (isUserValidated) {
+        // Only start loading data after user is validated, and only once
+        if (isUserValidated && !hasTriggeredInitialLoadRef.current) {
+            hasTriggeredInitialLoadRef.current = true;
             // Use regular refreshData for initial load to show errors if needed
             refreshData();
         }
-    }, [refreshData, isUserValidated]);
+    }, [isUserValidated]); // Only depend on isUserValidated, not refreshData
 
     // Effect to reload data when period changes (maand/week navigation)
     useEffect(() => {

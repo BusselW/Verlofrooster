@@ -24,27 +24,25 @@ import { fetchSharePointList, getUserInfo, createSharePointListItem, updateShare
 import { getCurrentUserGroups, isUserInAnyGroup } from '../services/permissionService.js';
 import * as linkInfo from '../services/linkInfo.js';
 import LoadingLogic, { loadFilteredData, shouldReloadData, updateCacheKey, clearAllCache, logLoadingStatus } from '../services/loadingLogic.js';
+import * as DataLoader from '../services/dataLoader.js';
 import ContextMenu, { canManageOthersEvents, canUserModifyItem } from '../ui/contextmenu.js';
 import { validateFormSubmission, showCRUDRestrictionMessage } from '../services/crudPermissionService.js';
 import ProfielKaarten from '../ui/profielkaarten.js';
 import FAB from '../ui/FloatingActionButton.js';
 import Modal from '../ui/Modal.js';
-import DagCell, { renderCompensatieMomenten } from '../ui/dagCell.js';
 import VerlofAanvraagForm from '../ui/forms/VerlofAanvraagForm.js';
 import CompensatieUrenForm from '../ui/forms/CompensatieUrenForm.js';
 import ZiekteMeldingForm from '../ui/forms/ZiekteMeldingForm.js';
 import ZittingsvrijForm from '../ui/forms/ZittingsvrijForm.js';
-import MedewerkerRow from '../ui/userinfo.js';
 import Legenda from '../ui/Legenda.js';
 import RoosterHeader from '../ui/RoosterHeader.js';
 import RoosterGrid from '../ui/RoosterGrid.js';
 import TooltipManager from '../ui/tooltipbar.js';
 import Mededelingen, { CreateAnnouncementButton } from '../ui/Mededelingen.js';
-import NavigationButtons from '../ui/NavigationButtons.js';
 import { roosterTutorial } from '../tutorial/roosterTutorialOrange.js';
 import { openHandleiding } from '../tutorial/roosterHandleiding.js';
 
-const { useState, useEffect, useMemo, useCallback, createElement: h, Fragment } = React;
+const { useState, useEffect, useMemo, useCallback, createElement: h } = React;
 
 // =====================
 // Hoofd RoosterApp Component
@@ -291,309 +289,97 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
         setFeestdagen(alleFeestdagen);
     }, [huidigJaar]);
 
-    // Real data loading function - copied from backup
-    const refreshData = useCallback(async (forceReload = false) => {
+    // ==========================================
+    // UNIFIED DATA LOADING - Replaces duplicate code
+    // ==========================================
+    
+    /**
+     * Unified data loading function that replaces refreshData and silentRefreshData
+     * Uses the new modular services (dataLoader, dataFetcher, dataTransformers)
+     * @param {Object} options - Loading options
+     * @param {boolean} options.showSpinner - Whether to show loading spinner (true) or use background refresh (false)
+     * @param {boolean} options.forceReload - Force reload even if cache exists
+     */
+    const loadData = useCallback(async ({ showSpinner = true, forceReload = false } = {}) => {
         try {
-            console.log('🔄 Starting refreshData...');
-            setLoading(true);
+            console.log(`🔄 Starting ${showSpinner ? 'data load' : 'silent refresh'}...`);
+            
+            // Set appropriate loading state
+            if (showSpinner) {
+                setLoading(true);
+            } else {
+                setBackgroundRefreshing(true);
+            }
             setError(null);
 
-            // Wait for configuration to be available with timeout
-            let configWaitAttempts = 0;
-            const maxConfigWaitAttempts = 50; // 5 seconds max wait
-            while (!window.appConfiguratie && configWaitAttempts < maxConfigWaitAttempts) {
-                console.log(`⏳ Waiting for appConfiguratie... attempt ${configWaitAttempts + 1}/${maxConfigWaitAttempts}`);
-                await new Promise(r => setTimeout(r, 100));
-                configWaitAttempts++;
-            }
+            // Load all data using the new unified service
+            const transformedData = await DataLoader.loadAllData({
+                fetchFunction: fetchSharePointList,
+                weergaveType,
+                jaar: huidigJaar,
+                periode: weergaveType === 'week' ? huidigWeek : huidigMaand,
+                forceReload,
+                currentUser
+            });
 
-            if (!window.appConfiguratie) {
-                throw new Error('Configuration not loaded after timeout');
-            }
+            // Update all state with transformed data
+            setTeams(transformedData.teams);
+            setShiftTypes(transformedData.shiftTypes);
+            setMedewerkers(transformedData.medewerkers);
+            setVerlofItems(transformedData.verlofItems);
+            setZittingsvrijItems(transformedData.zittingsvrijItems);
+            setCompensatieUrenItems(transformedData.compensatieItems);
+            setUrenPerWeekItems(transformedData.urenPerWeekItems);
+            setDagenIndicators(transformedData.dagenIndicators);
 
-            // Check if fetchSharePointList is available
-            if (typeof fetchSharePointList !== 'function') {
-                throw new Error('SharePoint service not available');
-            }
-
-            // Fetch current user info
-            console.log('👤 Current user from props:', currentUser);
-
-            // Check if we need to reload data for the current period
-            const needsReload = forceReload || shouldReloadData(weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand);
-            
-            if (needsReload) {
-                console.log('� Loading data for new period...');
-                // Update cache key for current period
-                updateCacheKey(weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand);
-            } else {
-                console.log('✅ Using cached data for current period');
-            }
-
-            console.log('📊 Fetching SharePoint lists...');
-            
-            // Always load static data (these are small lists and don't change often)
-            const [medewerkersData, teamsData, verlofredenenData, urenPerWeekData, dagenIndicatorsData] = await Promise.all([
-                fetchSharePointList('Medewerkers'),
-                fetchSharePointList('Teams'),
-                fetchSharePointList('Verlofredenen'),
-                fetchSharePointList('UrenPerWeek'),
-                fetchSharePointList('DagenIndicators')
-            ]);
-
-            // Load period-specific data with smart filtering
-            let verlofData, zittingsvrijData, compensatieUrenData;
-            
-            if (needsReload) {
-                console.log('🔍 Loading period-specific data with filtering...');
-                [verlofData, zittingsvrijData, compensatieUrenData] = await Promise.all([
-                    loadFilteredData(fetchSharePointList, 'Verlof', 'verlof', weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand),
-                    loadFilteredData(fetchSharePointList, 'IncidenteelZittingVrij', 'zittingsvrij', weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand),
-                    loadFilteredData(fetchSharePointList, 'CompensatieUren', 'compensatie', weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand)
-                ]);
-                
-                // Log loading statistics
-                logLoadingStatus();
-            } else {
-                // Use cached data
-                verlofData = LoadingLogic.getCachedData('verlof') || [];
-                zittingsvrijData = LoadingLogic.getCachedData('zittingsvrij') || [];
-                compensatieUrenData = LoadingLogic.getCachedData('compensatie') || [];
-                
-                console.log(`📁 Using cached data: ${verlofData.length} verlof, ${zittingsvrijData.length} zittingsvrij, ${compensatieUrenData.length} compensatie items`);
-            }
-
-            console.log('✅ Data fetched successfully, processing...');
-            const teamsMapped = (teamsData || []).map(item => ({ 
-                id: item.Title || item.ID?.toString(), 
-                naam: item.Naam || item.Title, 
-                Naam: item.Naam || item.Title, // Add both versions for compatibility
-                kleur: item.Kleur || '#cccccc' 
-            }));
-            console.log(`👥 Loaded ${teamsMapped.length} teams:`, teamsMapped.map(t => `${t.naam} (${t.id})`));
-            setTeams(teamsMapped);
-            const teamNameToIdMap = teamsMapped.reduce((acc, t) => { acc[t.naam] = t.id; return acc; }, {});
-            const transformedShiftTypes = (verlofredenenData || []).reduce((acc, item) => {
-                if (item.Title) { acc[item.ID] = { id: item.ID, label: item.Title, kleur: item.Kleur || '#999999', afkorting: item.Afkorting || '??' }; }
-                return acc;
-            }, {});
-            setShiftTypes(transformedShiftTypes);
-            const medewerkersProcessed = (medewerkersData || [])
-                .filter(item => item.Naam && item.Actief !== false)
-                .map(item => ({ ...item, id: item.ID, naam: item.Naam, team: teamNameToIdMap[item.Team] || '', Username: item.Username || null }));
-            setMedewerkers(medewerkersProcessed);
-            setVerlofItems((verlofData || []).map(v => ({ ...v, StartDatum: createLocalDate(v.StartDatum), EindDatum: createLocalDate(v.EindDatum) })));
-            setZittingsvrijItems((zittingsvrijData || []).map(z => ({ ...z, StartDatum: createLocalDate(z.ZittingsVrijeDagTijd), EindDatum: createLocalDate(z.ZittingsVrijeDagTijdEind) })));
-            setCompensatieUrenItems((compensatieUrenData || []).map(c => ({
-                ...c,
-                StartCompensatieUren: createLocalDate(c.StartCompensatieUren),
-                EindeCompensatieUren: createLocalDate(c.EindeCompensatieUren),
-                ruildagStart: c.ruildagStart ? createLocalDate(c.ruildagStart) : null
-            })));
-            setUrenPerWeekItems((urenPerWeekData || []).map(u => {
-                // Normalize Ingangsdatum by properly parsing and resetting time components
-                let ingangsDate;
-               
-                try {
-                    // Handle Dutch date format (DD-MM-YYYY)
-                    if (typeof u.Ingangsdatum === 'string' && u.Ingangsdatum.match(/^\d{1,2}-\d{1,2}-\d{4}/)) {
-                        const parts = u.Ingangsdatum.split(' ')[0].split('-');
-                        const day = parseInt(parts[0], 10);
-                        const month = parseInt(parts[1], 10) - 1; // Months are 0-based in JS
-                        const year = parseInt(parts[2], 10);
-                       
-                        ingangsDate = new Date(year, month, day);
-                    } else {
-                        ingangsDate = new Date(u.Ingangsdatum);
-                    }
-                   
-                    // Check if date is valid
-                    if (isNaN(ingangsDate.getTime())) {
-                        console.error('Invalid date after parsing:', u.Ingangsdatum);
-                        ingangsDate = null;
-                    } else {
-                        // Reset time components for consistent comparison
-                        ingangsDate.setHours(0, 0, 0, 0);
-                    }
-                } catch (error) {
-                    console.error('Error parsing date:', error, u.Ingangsdatum);
-                    ingangsDate = null;
-                }
-               
-                // Parse CycleStartDate if present (for 2-week rotations)
-                let cycleStartDate = null;
-                if (u.CycleStartDate) {
-                    try {
-                        cycleStartDate = new Date(u.CycleStartDate);
-                        if (isNaN(cycleStartDate.getTime())) {
-                            cycleStartDate = null;
-                        } else {
-                            cycleStartDate.setHours(0, 0, 0, 0);
-                        }
-                    } catch (error) {
-                        console.error('Error parsing CycleStartDate:', error, u.CycleStartDate);
-                        cycleStartDate = null;
-                    }
-                }
-               
-                // Handle WeekType field - preserve original value but normalize case
-                let weekType = null;
-                if (u.WeekType !== undefined && u.WeekType !== null && u.WeekType !== '') {
-                    weekType = String(u.WeekType).trim().toUpperCase();
-                    // Validate it's either A or B
-                    if (weekType !== 'A' && weekType !== 'B') {
-                        console.error(`Invalid WeekType '${u.WeekType}' for record ID ${u.Id}, expected 'A' or 'B'`);
-                        weekType = null;
-                    }
-                }
-               
-                // Handle IsRotatingSchedule field (defaults to false for backwards compatibility)  
-                const isRotatingSchedule = u.IsRotatingSchedule === true || u.IsRotatingSchedule === 'true';
-               
-                // WeekType processing for rotating schedules
-               
-                return {
-                    ...u,
-                    Ingangsdatum: ingangsDate,
-                    CycleStartDate: cycleStartDate,
-                    WeekType: weekType,
-                    IsRotatingSchedule: isRotatingSchedule
-                };
-            }));
-           
-            // Processed UrenPerWeek data for employee scheduling
-           
-            const indicatorsMapped = (dagenIndicatorsData || []).reduce((acc, item) => {
-                if (item.Title) {
-                    acc[item.Title] = { ...item, kleur: item.Kleur || '#cccccc', Beschrijving: item.Beschrijving || '' };
-                }
-                return acc;
-            }, {});
-            setDagenIndicators(indicatorsMapped);
-
-            console.log('✅ Data processing complete!');
-
-            // Debug: Log medewerkers data for troubleshooting
-            // Medewerkers data loaded successfully
+            console.log('✅ Data loading complete!');
 
         } catch (err) {
-            console.error('❌ Error in refreshData:', err);
-            setError(`Fout bij laden: ${err.message}`);
+            console.error(`❌ Error in ${showSpinner ? 'loadData' : 'silent refresh'}:`, err);
+            
+            // Different error handling based on loading type
+            if (showSpinner) {
+                // For explicit refreshes, always show error
+                setError(`Fout bij laden: ${err.message}`);
+            } else {
+                // For silent refreshes, only show error if we have no existing data
+                if (medewerkers.length === 0) {
+                    console.error('🚨 Initial data load failed, showing error to user');
+                    setError('Fout bij het laden van data: ' + err.message);
+                } else {
+                    console.log('🔄 Silent refresh failed, user can continue with cached data');
+                }
+            }
         } finally {
-            console.log('🏁 refreshData complete, setting loading to false');
-            setLoading(false);
+            console.log(`🏁 ${showSpinner ? 'loadData' : 'silent refresh'} complete`);
+            if (showSpinner) {
+                setLoading(false);
+            } else {
+                setBackgroundRefreshing(false);
+            }
         }
-    }, [weergaveType, huidigJaar, huidigMaand, huidigWeek]);
+    }, [weergaveType, huidigJaar, huidigMaand, huidigWeek, currentUser, medewerkers.length]);
+
+    // ==========================================
+    // WRAPPER FUNCTIONS - Use unified loadData
+    // ==========================================
+    
+    /**
+     * refreshData - Loads data with spinner
+     * This is a wrapper around loadData for backward compatibility
+     */
+    const refreshData = useCallback(async (forceReload = false) => {
+        return await loadData({ showSpinner: true, forceReload });
+    }, [loadData]);
 
     // Silent background refresh function - no loading spinner
+    /**
+     * silentRefreshData - Loads data without spinner (background refresh)
+     * This is a wrapper around loadData for backward compatibility
+     */
     const silentRefreshData = useCallback(async (forceReload = true) => {
-        try {
-            console.log('🔄 Starting silent background refresh...');
-            setBackgroundRefreshing(true);
-            // Note: NOT setting setLoading(true) to avoid spinner
-
-            // Wait for configuration to be available with timeout
-            let configWaitAttempts = 0;
-            const maxConfigWaitAttempts = 50; // 5 seconds max wait
-            while (!window.appConfiguratie && configWaitAttempts < maxConfigWaitAttempts) {
-                await new Promise(r => setTimeout(r, 100));
-                configWaitAttempts++;
-            }
-
-            if (!window.appConfiguratie) {
-                throw new Error('Configuratie niet beschikbaar na wachten');
-            }
-
-            // Check if we need to reload data for the current period
-            const needsReload = forceReload || shouldReloadData(weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand);
-            
-            if (needsReload) {
-                console.log('🔄 Silent loading data for current period...');
-                updateCacheKey(weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand);
-            }
-
-            // Always load static data (these are small lists and don't change often)
-            const [medewerkersData, teamsData, verlofredenenData, urenPerWeekData, dagenIndicatorsData] = await Promise.all([
-                fetchSharePointList('Medewerkers'),
-                fetchSharePointList('Teams'),
-                fetchSharePointList('Verlofredenen'),
-                fetchSharePointList('UrenPerWeek'),
-                fetchSharePointList('DagenIndicators')
-            ]);
-
-            // Load period-specific data with smart filtering
-            let verlofData, zittingsvrijData, compensatieUrenData;
-            
-            if (needsReload) {
-                console.log('🔍 Silent loading period-specific data...');
-                [verlofData, zittingsvrijData, compensatieUrenData] = await Promise.all([
-                    loadFilteredData(fetchSharePointList, 'Verlof', 'verlof', weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand),
-                    loadFilteredData(fetchSharePointList, 'IncidenteelZittingVrij', 'zittingsvrij', weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand),
-                    loadFilteredData(fetchSharePointList, 'CompensatieUren', 'compensatie', weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand)
-                ]);
-            } else {
-                // Use cached data
-                verlofData = LoadingLogic.getCachedData('verlof') || [];
-                zittingsvrijData = LoadingLogic.getCachedData('zittingsvrij') || [];
-                compensatieUrenData = LoadingLogic.getCachedData('compensatie') || [];
-            }
-
-            console.log('✅ Silent data refresh complete, updating state...');
-            const teamsMapped = (teamsData || []).map(item => ({ 
-                id: item.Title || item.ID?.toString(), 
-                naam: item.Naam || item.Title, 
-                Naam: item.Naam || item.Title, // Add both versions for compatibility
-                kleur: item.Kleur || '#cccccc' 
-            }));
-            setTeams(teamsMapped);
-            const teamNameToIdMap = teamsMapped.reduce((acc, t) => { acc[t.naam] = t.id; return acc; }, {});
-            const transformedShiftTypes = (verlofredenenData || []).reduce((acc, item) => {
-                if (item.Title) { acc[item.ID] = { id: item.ID, label: item.Title, kleur: item.Kleur || '#999999', afkorting: item.Afkorting || '??' }; }
-                return acc;
-            }, {});
-            setShiftTypes(transformedShiftTypes);
-
-            const medewerkersTransformed = (medewerkersData || []).map(m => ({
-                id: m.ID,
-                naam: m.Naam || m.Title || 'Onbekend',
-                team: teamNameToIdMap[m.Team] || 'geen_team',
-                username: m.Username || '',
-                Username: m.Username || '',
-                Title: m.Naam || m.Title || 'Onbekend',
-                profilePhoto: getProfilePhotoUrl(m.Username),
-                horenStatus: m.HorenStatus
-            }));
-            setMedewerkers(medewerkersTransformed);
-            setVerlofItems((verlofData || []).map(v => ({ ...v, StartDatum: createLocalDate(v.StartDatum), EindDatum: createLocalDate(v.EindDatum) })));
-            setZittingsvrijItems((zittingsvrijData || []).map(z => ({ ...z, StartDatum: createLocalDate(z.ZittingsVrijeDagTijd), EindDatum: createLocalDate(z.ZittingsVrijeDagTijdEind) })));
-            setCompensatieUrenItems((compensatieUrenData || []).map(c => ({
-                ...c,
-                StartCompensatieUren: createLocalDate(c.StartCompensatieUren),
-                EindeCompensatieUren: createLocalDate(c.EindeCompensatieUren)
-            })));
-            setUrenPerWeekItems(urenPerWeekData || []);
-
-            const transformedDagenIndicators = (dagenIndicatorsData || []).reduce((acc, item) => {
-                if (item.Title) { acc[item.Title] = { Title: item.Title, kleur: item.Kleur || '#999999', Beschrijving: item.Beschrijving || '' }; }
-                return acc;
-            }, {});
-            setDagenIndicators(transformedDagenIndicators);
-
-            console.log('🎉 Silent refresh completed successfully');
-
-        } catch (err) {
-            console.error('❌ Error in silent refresh:', err);
-            // Only set error state if we have no existing data (first load scenario)
-            if (medewerkers.length === 0) {
-                console.error('🚨 Initial data load failed, showing error to user');
-                setError('Fout bij het laden van data: ' + err.message);
-            } else {
-                console.log('🔄 Silent refresh failed, user can continue with cached data');
-            }
-        } finally {
-            setBackgroundRefreshing(false);
-        }
-    }, [weergaveType, huidigJaar, huidigMaand, huidigWeek]);
+        return await loadData({ showSpinner: false, forceReload });
+    }, [loadData]);
 
     // Initial data load when user is validated
     useEffect(() => {

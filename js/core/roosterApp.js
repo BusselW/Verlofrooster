@@ -382,7 +382,7 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
                 setBackgroundRefreshing(false);
             }
         }
-    }, []); // Stable - no dependencies, uses closure values
+    }, [weergaveType, huidigJaar, huidigMaand, huidigWeek, currentUser]);
 
     // ==========================================
     // WRAPPER FUNCTIONS - Use unified loadData
@@ -392,8 +392,8 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
      * refreshData - Loads data with spinner
      * This is a wrapper around loadData for backward compatibility
      */
-    const refreshData = useCallback(async (forceReload = false) => {
-        return await loadData({ showSpinner: true, forceReload });
+    const refreshData = useCallback((forceReload = false) => {
+        return loadData({ showSpinner: true, forceReload });
     }, [loadData]);
 
     // Silent background refresh function - no loading spinner
@@ -401,8 +401,8 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
      * silentRefreshData - Loads data without spinner (background refresh)
      * This is a wrapper around loadData for backward compatibility
      */
-    const silentRefreshData = useCallback(async (forceReload = true) => {
-        return await loadData({ showSpinner: false, forceReload });
+    const silentRefreshData = useCallback((forceReload = true) => {
+        return loadData({ showSpinner: false, forceReload });
     }, [loadData]);
 
     // Initial data load when user is validated
@@ -438,7 +438,7 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
                 lastLoadedPeriodRef.current = currentPeriodKey;
             }
         }
-    }, [weergaveType, huidigJaar, huidigMaand, huidigWeek, isUserValidated]); // loadData is stable (no deps), safe to omit
+    }, [weergaveType, huidigJaar, huidigMaand, huidigWeek, isUserValidated, loadData]);
 
     // Form submission handlers
     const handleVerlofSubmit = useCallback(async (formData) => {

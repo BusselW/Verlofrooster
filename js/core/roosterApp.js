@@ -191,22 +191,8 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
     const hasTriggeredInitialLoadRef = React.useRef(false);
     // Ref to prevent concurrent data loads
     const isLoadingDataRef = React.useRef(false);
-    
-    // Refs for stable access to current values in loadData (prevents recreation on state change)
-    const weergaveTypeRef = React.useRef(weergaveType);
-    const huidigJaarRef = React.useRef(huidigJaar);
-    const huidigMaandRef = React.useRef(huidigMaand);
-    const huidigWeekRef = React.useRef(huidigWeek);
-    const currentUserRef = React.useRef(currentUser);
-    
-    // Keep refs in sync with state
-    useEffect(() => {
-        weergaveTypeRef.current = weergaveType;
-        huidigJaarRef.current = huidigJaar;
-        huidigMaandRef.current = huidigMaand;
-        huidigWeekRef.current = huidigWeek;
-        currentUserRef.current = currentUser;
-    }, [weergaveType, huidigJaar, huidigMaand, huidigWeek, currentUser]);
+    // Ref to track the last loaded period (prevents redundant reloads)
+    const lastLoadedPeriodRef = React.useRef(null);
 
     // Debug modal state changes
     useEffect(() => {
@@ -343,14 +329,13 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             setError(null);
 
             // Load all data using the new unified service
-            // Use refs to get current values without causing useCallback recreation
             const transformedData = await DataLoader.loadAllData({
                 fetchFunction: fetchSharePointList,
-                weergaveType: weergaveTypeRef.current,
-                jaar: huidigJaarRef.current,
-                periode: weergaveTypeRef.current === 'week' ? huidigWeekRef.current : huidigMaandRef.current,
+                weergaveType,
+                jaar: huidigJaar,
+                periode: weergaveType === 'week' ? huidigWeek : huidigMaand,
                 forceReload,
-                currentUser: currentUserRef.current
+                currentUser
             });
 
             // Update all state with transformed data
@@ -365,6 +350,10 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
 
             // Mark that we have successfully loaded data
             hasInitialDataRef.current = true;
+            
+            // Track the loaded period
+            const periodKey = `${weergaveType}-${huidigJaar}-${weergaveType === 'week' ? huidigWeek : huidigMaand}`;
+            lastLoadedPeriodRef.current = periodKey;
 
             console.log('✅ Data loading complete!');
 
@@ -393,7 +382,7 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
                 setBackgroundRefreshing(false);
             }
         }
-    }, []); // No dependencies - uses refs for stable function reference
+    }, []); // Stable - no dependencies, uses closure values
 
     // ==========================================
     // WRAPPER FUNCTIONS - Use unified loadData
@@ -429,14 +418,24 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
     // Effect to reload data when period changes (maand/week navigation)
     useEffect(() => {
         if (isUserValidated && hasInitialDataRef.current) {
+            const currentPeriodKey = `${weergaveType}-${huidigJaar}-${weergaveType === 'week' ? huidigWeek : huidigMaand}`;
+            
+            // Only reload if period actually changed
+            if (lastLoadedPeriodRef.current === currentPeriodKey) {
+                console.log('✅ Period unchanged, skipping reload');
+                return;
+            }
+            
             console.log(`📅 Period changed to ${weergaveType}: ${weergaveType === 'week' ? `week ${huidigWeek}` : maandNamenVolledig[huidigMaand]} ${huidigJaar}`);
             
             // Check if we need to reload data for the new period
             if (shouldReloadData(weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand)) {
                 console.log('🔄 Triggering silent data reload for new period...');
+                lastLoadedPeriodRef.current = currentPeriodKey;
                 loadData({ showSpinner: false, forceReload: false }); // Call loadData directly
             } else {
                 console.log('✅ Data already cached for this period');
+                lastLoadedPeriodRef.current = currentPeriodKey;
             }
         }
     }, [weergaveType, huidigJaar, huidigMaand, huidigWeek, isUserValidated]); // loadData is stable (no deps), safe to omit

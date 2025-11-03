@@ -1,66 +1,69 @@
-import { getCurrentUserInfo } from '../../services/sharepointService.js';
-import { canManageOthersEvents } from '../contextmenu.js';
 import { validateFormSubmission, showCRUDRestrictionMessage } from '../../services/crudPermissionService.js';
 import { createSharePointDateTime } from '../../utils/dateTimeUtils.js';
 
 const { createElement: h, useState, useEffect } = React;
 
-// Helper function to find medewerker by current user
-const findMedewerkerForCurrentUser = async (currentUser, medewerkers) => {
-    if (!currentUser || !medewerkers.length) return null;
-    
-    console.log('Finding medewerker for current user:', currentUser);
-    console.log('Available medewerkers:', medewerkers.map(m => ({ Id: m.Id, Username: m.Username, Title: m.Title })));
-    
-    // Extract username from LoginName (format: i:0#.w|domain\username)
-    let username = currentUser.LoginName;
-    console.log('Original LoginName:', username);
-    
+// Helper function to find medewerker by current user using cached data
+const findMedewerkerForCurrentUser = (currentUser, medewerkers, medewerkersByUsername, currentMedewerker) => {
+    if (currentMedewerker) {
+        return currentMedewerker;
+    }
+    if (!currentUser || !Array.isArray(medewerkers) || medewerkers.length === 0) {
+        return null;
+    }
+
+    let username = currentUser.LoginName || '';
     if (username.includes('|')) {
         username = username.split('|')[1];
-        console.log('After splitting on |:', username);
     }
-    
-    let domain = '';
+
+    const candidates = new Set();
+    candidates.add(username.toLowerCase());
+
     if (username.includes('\\')) {
-        [domain, username] = username.split('\\');
-        console.log('Domain:', domain, 'Username:', username);
-    }
-    
-    // Try multiple matching strategies
-    const strategies = [
-        // 1. Exact match with full domain\username
-        (m) => m.Username && m.Username.toLowerCase() === `${domain}\\${username}`.toLowerCase(),
-        // 2. Exact match with just username
-        (m) => m.Username && m.Username.toLowerCase() === username.toLowerCase(),
-        // 3. Contains username (case insensitive)
-        (m) => m.Username && m.Username.toLowerCase().includes(username.toLowerCase()),
-        // 4. Extract username from medewerker Username and match
-        (m) => {
-            if (!m.Username) return false;
-            let mUsername = m.Username;
-            if (mUsername.includes('\\')) {
-                mUsername = mUsername.split('\\')[1];
-            }
-            return mUsername && mUsername.toLowerCase() === username.toLowerCase();
-        },
-        // 5. Match by email if available
-        (m) => currentUser.Email && m.Email && m.Email.toLowerCase() === currentUser.Email.toLowerCase(),
-        // 6. Match by title/display name
-        (m) => currentUser.Title && m.Title && m.Title.toLowerCase() === currentUser.Title.toLowerCase()
-    ];
-    
-    for (let i = 0; i < strategies.length; i++) {
-        const strategy = strategies[i];
-        const found = medewerkers.find(strategy);
-        if (found) {
-            console.log(`Found medewerker using strategy ${i + 1}:`, found);
-            return found;
+        const [, shortName] = username.split('\\');
+        if (shortName) {
+            candidates.add(shortName.toLowerCase());
         }
     }
-    
-    console.warn('No medewerker found for current user using any strategy');
-    return null;
+
+    if (currentUser.Email) {
+        candidates.add(currentUser.Email.toLowerCase());
+    }
+    if (currentUser.Title) {
+        candidates.add(currentUser.Title.toLowerCase());
+    }
+
+    if (medewerkersByUsername && typeof medewerkersByUsername.get === 'function') {
+        for (const value of candidates) {
+            const match = medewerkersByUsername.get(value);
+            if (match) {
+                return match;
+            }
+        }
+    }
+
+    const fallback = medewerkers.find((m) => {
+        if (!m) return false;
+        if (m.Username && candidates.has(m.Username.toLowerCase())) {
+            return true;
+        }
+        if (m.Username && m.Username.includes('\\')) {
+            const [, shortName] = m.Username.split('\\');
+            if (shortName && candidates.has(shortName.toLowerCase())) {
+                return true;
+            }
+        }
+        if (currentUser.Email && m.Email && m.Email.toLowerCase() === currentUser.Email.toLowerCase()) {
+            return true;
+        }
+        if (currentUser.Title && m.Title && m.Title.toLowerCase() === currentUser.Title.toLowerCase()) {
+            return true;
+        }
+        return false;
+    });
+
+    return fallback || null;
 };
 
 const toInputDateString = (date) => {
@@ -97,7 +100,18 @@ const splitDateTime = (dateTimeString, defaultTime = '09:00') => {
  * @param {Array<object>} [props.medewerkers=[]] - Lijst van medewerkers.
  * @param {object} [props.selection=null] - Geselecteerde datum/tijd uit de kalender.
  */
-const VerlofAanvraagForm = ({ onSubmit, onClose, initialData = {}, medewerkers = [], selection = null }) => {
+const VerlofAanvraagForm = ({
+    onSubmit,
+    onClose,
+    initialData = {},
+    medewerkers = [],
+    selection = null,
+    currentUser = null,
+    canManageOthers: canManageOthersProp = false,
+    currentMedewerker = null,
+    medewerkersById = null,
+    medewerkersByUsername = null
+}) => {
     const [medewerkerId, setMedewerkerId] = useState('');
     const [medewerkerUsername, setMedewerkerUsername] = useState('');
     const [startDate, setStartDate] = useState('');
@@ -108,19 +122,17 @@ const VerlofAanvraagForm = ({ onSubmit, onClose, initialData = {}, medewerkers =
     const [omschrijving, setOmschrijving] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [status, setStatus] = useState('Nieuw');
-    const [canManageOthers, setCanManageOthers] = useState(false);
+    const [canManageOthers, setCanManageOthers] = useState(Boolean(canManageOthersProp));
 
     useEffect(() => {
-        const initializeForm = async () => {
+        setCanManageOthers(Boolean(canManageOthersProp));
+    }, [canManageOthersProp]);
+
+    useEffect(() => {
+        const initializeForm = () => {
             console.log('VerlofAanvraagForm initializing with:', { initialData, selection, medewerkers: medewerkers.length });
             
-            // Check if user can manage events for others
-            let userCanManageOthers = false;
-            try {
-                userCanManageOthers = await canManageOthersEvents();
-            } catch (error) {
-                console.error('Error checking manage others permission:', error);
-            }
+            const userCanManageOthers = Boolean(canManageOthersProp);
             setCanManageOthers(userCanManageOthers);
             console.log('User can manage others events:', userCanManageOthers);
             
@@ -134,21 +146,20 @@ const VerlofAanvraagForm = ({ onSubmit, onClose, initialData = {}, medewerkers =
                     console.log('Using medewerker from selection (privileged user):', targetMedewerker);
                 } else {
                     // Otherwise use current user (for regular users or when no selection)
-                    const currentUser = await getCurrentUserInfo();
-                    console.log('Current user from SharePoint:', currentUser);
-                    
-                    if (currentUser && medewerkers.length > 0) {
-                        targetMedewerker = await findMedewerkerForCurrentUser(currentUser, medewerkers);
-                        console.log('Found medewerker for current user:', targetMedewerker);
-                        
-                        if (!targetMedewerker) {
-                            console.warn('No medewerker found for current user');
-                        }
+                    targetMedewerker = findMedewerkerForCurrentUser(
+                        currentUser,
+                        medewerkers,
+                        medewerkersByUsername,
+                        currentMedewerker
+                    );
+                    console.log('Resolved medewerker for current user:', targetMedewerker);
+                    if (!targetMedewerker) {
+                        console.warn('No medewerker found for current user');
                     }
                 }
                 
                 if (targetMedewerker) {
-                    setMedewerkerId(targetMedewerker.Id);
+                    setMedewerkerId(String(targetMedewerker.Id));
                     setMedewerkerUsername(targetMedewerker.Username);
                 }
                 const today = toInputDateString(new Date());
@@ -165,28 +176,39 @@ const VerlofAanvraagForm = ({ onSubmit, onClose, initialData = {}, medewerkers =
             } else {
                 // --- Bestaande aanvraag: Data uit initialData laden ---
                 console.log('Loading existing verlof data:', initialData);
-                setMedewerkerId(initialData.MedewerkerID || '');
-                if (initialData.MedewerkerID) {
-                    // Try to find medewerker by different criteria
-                    let medewerker = medewerkers.find(m => m.Id === initialData.MedewerkerID);
-                    if (!medewerker) {
-                        // Try to find by Username if MedewerkerID is actually a username
-                        medewerker = medewerkers.find(m => m.Username === initialData.MedewerkerID);
+                const resolveExistingMedewerker = (identifier) => {
+                    if (!identifier) {
+                        return null;
                     }
-                    if (!medewerker) {
-                        // Try to find by Title if MedewerkerID matches title
-                        medewerker = medewerkers.find(m => m.Title === initialData.MedewerkerID);
+                    let resolved = null;
+                    if (medewerkersById && typeof medewerkersById.get === 'function') {
+                        resolved = medewerkersById.get(String(identifier));
                     }
-                    
-                    console.log('Found medewerker for existing data:', medewerker, 'from MedewerkerID:', initialData.MedewerkerID);
-                    
-                    if (medewerker) {
-                        setMedewerkerId(medewerker.Id);
-                        setMedewerkerUsername(medewerker.Username);
-                    } else {
-                        console.warn('Could not find medewerker for MedewerkerID:', initialData.MedewerkerID);
-                        setMedewerkerUsername(initialData.MedewerkerID); // Fallback
+                    if (!resolved && typeof identifier === 'string' && medewerkersByUsername && typeof medewerkersByUsername.get === 'function') {
+                        resolved = medewerkersByUsername.get(identifier.toLowerCase());
                     }
+                    if (!resolved) {
+                        resolved = medewerkers.find((m) => {
+                            if (!m) return false;
+                            if (String(m.Id) === String(identifier)) return true;
+                            if (m.Username && m.Username.toLowerCase() === String(identifier).toLowerCase()) return true;
+                            if (m.Title && m.Title.toLowerCase() === String(identifier).toLowerCase()) return true;
+                            return false;
+                        });
+                    }
+                    return resolved || null;
+                };
+
+                const existingMedewerker = resolveExistingMedewerker(initialData.MedewerkerID);
+
+                if (existingMedewerker) {
+                    setMedewerkerId(String(existingMedewerker.Id));
+                    setMedewerkerUsername(existingMedewerker.Username);
+                    console.log('Resolved medewerker for existing data:', existingMedewerker);
+                } else {
+                    console.warn('Could not resolve medewerker for MedewerkerID:', initialData.MedewerkerID);
+                    setMedewerkerId(initialData.MedewerkerID ? String(initialData.MedewerkerID) : '');
+                    setMedewerkerUsername(initialData.MedewerkerID);
                 }
 
                 const { date: initialStartDate, time: initialStartTime } = splitDateTime(initialData.StartDatum, '09:00');
@@ -203,7 +225,16 @@ const VerlofAanvraagForm = ({ onSubmit, onClose, initialData = {}, medewerkers =
         };
 
         initializeForm();
-    }, [initialData, medewerkers, selection]);
+    }, [
+        initialData,
+        medewerkers,
+        selection,
+        currentUser,
+        canManageOthersProp,
+        currentMedewerker,
+        medewerkersById,
+        medewerkersByUsername
+    ]);
 
     const handleMedewerkerChange = (e) => {
         const selectedId = e.target.value;

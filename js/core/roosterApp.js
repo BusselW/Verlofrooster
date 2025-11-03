@@ -44,6 +44,58 @@ import { openHandleiding } from '../tutorial/roosterHandleiding.js';
 
 const { useState, useEffect, useMemo, useCallback, createElement: h } = React;
 
+const matchMedewerkerToUser = (user, medewerkers) => {
+    if (!user || !Array.isArray(medewerkers) || medewerkers.length === 0) {
+        return null;
+    }
+
+    let loginName = user.LoginName || '';
+    if (loginName.includes('|')) {
+        loginName = loginName.split('|')[1];
+    }
+
+    let domain = '';
+    let account = loginName;
+    if (loginName.includes('\\')) {
+        [domain, account] = loginName.split('\\');
+    }
+
+    const usernameCandidates = new Set();
+    if (loginName) {
+        usernameCandidates.add(loginName.toLowerCase());
+    }
+    if (account) {
+        usernameCandidates.add(account.toLowerCase());
+    }
+    if (domain && account) {
+        usernameCandidates.add(`${domain}\\${account}`.toLowerCase());
+    }
+
+    const emailCandidate = user.Email ? user.Email.toLowerCase() : null;
+    const titleCandidate = user.Title ? user.Title.toLowerCase() : null;
+
+    const strategies = [
+        (m) => m.Username && usernameCandidates.has(m.Username.toLowerCase()),
+        (m) => {
+            if (!m.Username) return false;
+            const parts = m.Username.split('\\');
+            const shortName = parts.length > 1 ? parts[1] : m.Username;
+            return shortName && usernameCandidates.has(shortName.toLowerCase());
+        },
+        (m) => emailCandidate && m.Email && m.Email.toLowerCase() === emailCandidate,
+        (m) => titleCandidate && m.Title && m.Title.toLowerCase() === titleCandidate
+    ];
+
+    for (const strategy of strategies) {
+        const match = medewerkers.find(strategy);
+        if (match) {
+            return match;
+        }
+    }
+
+    return null;
+};
+
 // =====================
 // Hoofd RoosterApp Component
 // =====================
@@ -184,6 +236,7 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
         pictureUrl: '',
         loading: !currentUser
     });
+    const [canManageOthers, setCanManageOthers] = useState(false);
     
     // Ref to track if we have initial data loaded (prevents infinite loop in error handling)
     const hasInitialDataRef = React.useRef(false);
@@ -244,6 +297,30 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
         loadPermissions();
     }, []);
 
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadManagePermission = async () => {
+            try {
+                const result = await canManageOthersEvents();
+                if (!cancelled) {
+                    setCanManageOthers(Boolean(result));
+                }
+            } catch (error) {
+                if (!cancelled) {
+                    setCanManageOthers(false);
+                }
+                console.error('Error checking manage others permission:', error);
+            }
+        };
+
+        loadManagePermission();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
     // Load user info and profile photo
     useEffect(() => {
         if (currentUser && currentUser.Email) {
@@ -281,6 +358,42 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [helpDropdownOpen, settingsDropdownOpen]);
+
+    const medewerkersById = useMemo(() => {
+        const map = new Map();
+        for (const medewerker of medewerkers) {
+            if (medewerker && medewerker.Id != null) {
+                map.set(String(medewerker.Id), medewerker);
+            }
+        }
+        return map;
+    }, [medewerkers]);
+
+    const medewerkersByUsername = useMemo(() => {
+        const map = new Map();
+        for (const medewerker of medewerkers) {
+            if (medewerker && typeof medewerker.Username === 'string') {
+                const usernameLower = medewerker.Username.toLowerCase();
+                map.set(usernameLower, medewerker);
+                if (medewerker.Username.includes('\\')) {
+                    const shortName = medewerker.Username.split('\\')[1].toLowerCase();
+                    map.set(shortName, medewerker);
+                }
+            }
+        }
+        return map;
+    }, [medewerkers]);
+
+    const [currentMedewerkerRecord, setCurrentMedewerkerRecord] = useState(null);
+
+    useEffect(() => {
+        if (!currentUser || medewerkers.length === 0) {
+            setCurrentMedewerkerRecord(null);
+            return;
+        }
+        const match = matchMedewerkerToUser(currentUser, medewerkers);
+        setCurrentMedewerkerRecord(match);
+    }, [currentUser, medewerkers]);
 
     // Initialize profile cards for employee hover information
     useEffect(() => {
@@ -2038,7 +2151,12 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             shiftTypes: shiftTypes,
             selection: selection,
             initialData: selection && selection.itemData ? selection.itemData : {},
-            onSubmit: handleVerlofSubmit
+            onSubmit: handleVerlofSubmit,
+            currentUser,
+            canManageOthers,
+            currentMedewerker: currentMedewerkerRecord,
+            medewerkersById,
+            medewerkersByUsername
         })),
         h(Modal, {
             isOpen: isCompensatieModalOpen,
@@ -2050,7 +2168,12 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             compensatieUrenItems: compensatieUrenItems,
             selection: selection,
             initialData: selection && selection.itemData ? selection.itemData : {},
-            onSubmit: handleCompensatieSubmit
+            onSubmit: handleCompensatieSubmit,
+            currentUser,
+            canManageOthers,
+            currentMedewerker: currentMedewerkerRecord,
+            medewerkersById,
+            medewerkersByUsername
         })),
         h(Modal, {
             isOpen: isZiekModalOpen,
@@ -2062,7 +2185,12 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             medewerkers: medewerkers,
             selection: selection,
             initialData: selection && selection.itemData ? selection.itemData : {},
-            ziekteRedenId: ziekteRedenId
+            ziekteRedenId: ziekteRedenId,
+            currentUser,
+            canManageOthers,
+            currentMedewerker: currentMedewerkerRecord,
+            medewerkersById,
+            medewerkersByUsername
         })),
         h(Modal, {
             isOpen: isZittingsvrijModalOpen,
@@ -2073,7 +2201,12 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             onSubmit: handleZittingsvrijSubmit,
             medewerkers: medewerkers,
             selection: selection,
-            initialData: selection && selection.itemData ? selection.itemData : {}
+            initialData: selection && selection.itemData ? selection.itemData : {},
+            currentUser,
+            canManageOthers,
+            currentMedewerker: currentMedewerkerRecord,
+            medewerkersById,
+            medewerkersByUsername
         }))
     );
 };

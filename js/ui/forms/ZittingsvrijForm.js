@@ -1,10 +1,103 @@
-
-import { getCurrentUserInfo } from '../../services/sharepointService.js';
-import { canManageOthersEvents } from '../contextmenu.js';
 import { validateFormSubmission, showCRUDRestrictionMessage } from '../../services/crudPermissionService.js';
 import { createSharePointDateTime } from '../../utils/dateTimeUtils.js';
 
 const { createElement: h, useState, useEffect, useRef } = React;
+
+const resolveCurrentUserMedewerker = (currentUser, currentMedewerker, medewerkers, medewerkersByUsername) => {
+    if (currentMedewerker) {
+        return currentMedewerker;
+    }
+    if (!currentUser || !Array.isArray(medewerkers) || medewerkers.length === 0) {
+        return null;
+    }
+
+    let loginName = currentUser.LoginName || '';
+    if (loginName.includes('|')) {
+        loginName = loginName.split('|')[1];
+    }
+
+    const candidates = new Set();
+    if (loginName) {
+        candidates.add(loginName.toLowerCase());
+    }
+
+    if (loginName.includes('\\')) {
+        const [, short] = loginName.split('\\');
+        if (short) {
+            candidates.add(short.toLowerCase());
+        }
+    }
+
+    if (currentUser.Email) {
+        candidates.add(currentUser.Email.toLowerCase());
+    }
+    if (currentUser.Title) {
+        candidates.add(currentUser.Title.toLowerCase());
+    }
+
+    if (medewerkersByUsername && typeof medewerkersByUsername.get === 'function') {
+        for (const value of candidates) {
+            const match = medewerkersByUsername.get(value);
+            if (match) {
+                return match;
+            }
+        }
+    }
+
+    return medewerkers.find((m) => {
+        if (!m) return false;
+        if (m.Username && candidates.has(m.Username.toLowerCase())) {
+            return true;
+        }
+        if (m.Username && m.Username.includes('\\')) {
+            const [, short] = m.Username.split('\\');
+            if (short && candidates.has(short.toLowerCase())) {
+                return true;
+            }
+        }
+        if (currentUser.Email && m.Email && m.Email.toLowerCase() === currentUser.Email.toLowerCase()) {
+            return true;
+        }
+        if (currentUser.Title && m.Title && m.Title.toLowerCase() === currentUser.Title.toLowerCase()) {
+            return true;
+        }
+        return false;
+    }) || null;
+};
+
+const resolveExistingMedewerker = (identifier, medewerkers, medewerkersById, medewerkersByUsername) => {
+    if (!identifier) {
+        return null;
+    }
+
+    if (medewerkersById && typeof medewerkersById.get === 'function') {
+        const byId = medewerkersById.get(String(identifier));
+        if (byId) {
+            return byId;
+        }
+    }
+
+    if (typeof identifier === 'string' && medewerkersByUsername && typeof medewerkersByUsername.get === 'function') {
+        const byUsername = medewerkersByUsername.get(identifier.toLowerCase());
+        if (byUsername) {
+            return byUsername;
+        }
+    }
+
+    return medewerkers.find((m) => {
+        if (!m) return false;
+        if (String(m.Id) === String(identifier)) {
+            return true;
+        }
+        if (m.Username && m.Username.toLowerCase() === String(identifier).toLowerCase()) {
+            return true;
+        }
+        if (m.Title && m.Title.toLowerCase() === String(identifier).toLowerCase()) {
+            return true;
+        }
+        return false;
+    }) || null;
+};
 
 const toInputDateString = (date) => {
     if (!date) return '';
@@ -45,7 +138,18 @@ const splitDateTime = (dateTimeString, defaultTime = '09:00') => {
  * @param {object} [props.initialData={}] - Optionele initiële data voor het formulier.
  * @param {Array<object>} props.medewerkers - Lijst van medewerkers om uit te kiezen.
  */
-const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = [], selection = null }) => {
+const ZittingsvrijForm = ({
+    onSubmit,
+    onCancel,
+    initialData = {},
+    medewerkers = [],
+    selection = null,
+    currentUser = null,
+    canManageOthers: canManageOthersProp = false,
+    currentMedewerker = null,
+    medewerkersById = null,
+    medewerkersByUsername = null
+}) => {
     const [medewerkerId, setMedewerkerId] = useState('');
     const [medewerkerUsername, setMedewerkerUsername] = useState('');
     const [startDate, setStartDate] = useState('');
@@ -58,23 +162,21 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
     const [terugkerend, setTerugkerend] = useState(initialData.Terugkerend || false);
     const [terugkerendTot, setTerugkerendTot] = useState('');
     const [terugkeerPatroon, setTerugkeerPatroon] = useState('Wekelijks');
-    const [canManageOthers, setCanManageOthers] = useState(false);
+    const [canManageOthers, setCanManageOthers] = useState(Boolean(canManageOthersProp));
     const isInitialized = useRef(false);
+
+    useEffect(() => {
+        setCanManageOthers(Boolean(canManageOthersProp));
+    }, [canManageOthersProp]);
 
     useEffect(() => {
         // Only initialize once
         if (isInitialized.current) return;
         
-        const initializeForm = async () => {
+        const initializeForm = () => {
             console.log('ZittingsvrijForm initializing with:', { initialData, selection, medewerkers: medewerkers.length });
             
-            // Check if user can manage events for others
-            let userCanManageOthers = false;
-            try {
-                userCanManageOthers = await canManageOthersEvents();
-            } catch (error) {
-                console.error('Error checking manage others permission:', error);
-            }
+            const userCanManageOthers = Boolean(canManageOthersProp);
             setCanManageOthers(userCanManageOthers);
             console.log('User can manage others events (zittingsvrij):', userCanManageOthers);
             
@@ -108,7 +210,7 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
                 // If user can manage others and selection contains medewerker data, use that
                 if (userCanManageOthers && selection && selection.medewerkerData) {
                     const targetMedewerker = selection.medewerkerData;
-                    setMedewerkerId(targetMedewerker.Id);
+                    setMedewerkerId(String(targetMedewerker.Id));
                     setMedewerkerUsername(targetMedewerker.Username);
                     employeeSet = true;
                     console.log('Using medewerker from selection (privileged user):', targetMedewerker);
@@ -117,15 +219,15 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
                 // should only be able to create events for themselves
                 
                 if (!employeeSet) {
-                    // Always default to current user
-                    const currentUser = await getCurrentUserInfo();
-                    if (currentUser && medewerkers.length > 0) {
-                        const loginName = currentUser.LoginName.split('|')[1];
-                        const medewerker = medewerkers.find(m => m.Username === loginName);
-                        if (medewerker) {
-                            setMedewerkerId(medewerker.Id);
-                            setMedewerkerUsername(medewerker.Username);
-                        }
+                    const resolved = resolveCurrentUserMedewerker(
+                        currentUser,
+                        currentMedewerker,
+                        medewerkers,
+                        medewerkersByUsername
+                    );
+                    if (resolved) {
+                        setMedewerkerId(String(resolved.Id));
+                        setMedewerkerUsername(resolved.Username);
                     }
                 }
 
@@ -134,11 +236,12 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
                 if (userCanManageOthers && selection && selection.medewerkerData) {
                     targetMedewerkerForTitle = selection.medewerkerData;
                 } else {
-                    const currentUser = await getCurrentUserInfo();
-                    if (currentUser && medewerkers.length > 0) {
-                        const loginName = currentUser.LoginName.split('|')[1];
-                        targetMedewerkerForTitle = medewerkers.find(m => m.Username === loginName);
-                    }
+                    targetMedewerkerForTitle = resolveCurrentUserMedewerker(
+                        currentUser,
+                        currentMedewerker,
+                        medewerkers,
+                        medewerkersByUsername
+                    );
                 }
                 
                 if (targetMedewerkerForTitle) {
@@ -153,10 +256,19 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
 
             } else {
                 // Bestaande aanvraag
-                setMedewerkerId(initialData.MedewerkerID || '');
-                if (initialData.MedewerkerID) {
-                    const medewerker = medewerkers.find(m => m.Id === initialData.MedewerkerID);
-                    if (medewerker) setMedewerkerUsername(medewerker.Username);
+                const resolved = resolveExistingMedewerker(
+                    initialData.MedewerkerID,
+                    medewerkers,
+                    medewerkersById,
+                    medewerkersByUsername
+                );
+                if (resolved) {
+                    setMedewerkerId(String(resolved.Id));
+                    setMedewerkerUsername(resolved.Username);
+                } else {
+                    const fallbackId = initialData.MedewerkerID ? String(initialData.MedewerkerID) : '';
+                    setMedewerkerId(fallbackId);
+                    setMedewerkerUsername(fallbackId);
                 }
 
                 const { date: initialStartDate, time: initialStartTime } = splitDateTime(initialData.ZittingsVrijeDagTijd, '09:00');
@@ -181,7 +293,16 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
         };
 
         initializeForm();
-    }, [initialData, medewerkers, selection]);
+    }, [
+        initialData,
+        medewerkers,
+        selection,
+        currentUser,
+        canManageOthersProp,
+        currentMedewerker,
+        medewerkersById,
+        medewerkersByUsername
+    ]);
 
     const handleMedewerkerChange = (e) => {
         const selectedId = e.target.value;
@@ -207,39 +328,38 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
         
         // Extra security check - if user doesn't have management rights, ensure they can only submit for themselves
         if (!canManageOthers) {
-            // Get current user
-            const currentUser = getCurrentUserInfo();
-            currentUser.then(user => {
-                if (user) {
-                    const loginName = user.LoginName.split('|')[1];
-                    const selectedMedewerker = medewerkers.find(m => m.Id === parseInt(medewerkerId, 10));
-                    
-                    // If not submitting for self, show error and return
-                    if (selectedMedewerker && selectedMedewerker.Username !== loginName) {
-                        if (window.NotificationSystem) {
-                            window.NotificationSystem.error('Je kunt alleen zittingsvrij registreren voor jezelf.', 'Toegang geweigerd');
-                        }
-                        return;
-                    }
-                    
-                    // Continue with form submission for own events
-                    submitForm();
-                }
-            }).catch(error => {
-                console.error('Error checking current user for zittingsvrij:', error);
+            const allowedMedewerker = resolveCurrentUserMedewerker(
+                currentUser,
+                currentMedewerker,
+                medewerkers,
+                medewerkersByUsername
+            );
+            const allowedId = allowedMedewerker ? String(allowedMedewerker.Id) : null;
+            const selectedMedewerker = medewerkers.find(m => m.Id === parseInt(medewerkerId, 10));
+
+            if (allowedId && String(medewerkerId) !== allowedId) {
                 if (window.NotificationSystem) {
-                    window.NotificationSystem.error('Er is een fout opgetreden bij het controleren van je gebruikersrechten.', 'Fout');
+                    window.NotificationSystem.error('Je kunt alleen zittingsvrij registreren voor jezelf.', 'Toegang geweigerd');
                 }
-            });
-        } else {
-            // User has management rights, proceed normally
-            submitForm();
+                return;
+            }
+            if (!allowedId && selectedMedewerker && selectedMedewerker.Username && currentUser && currentUser.LoginName) {
+                const loginName = currentUser.LoginName.includes('|') ? currentUser.LoginName.split('|')[1] : currentUser.LoginName;
+                if (selectedMedewerker.Username !== loginName) {
+                    if (window.NotificationSystem) {
+                        window.NotificationSystem.error('Je kunt alleen zittingsvrij registreren voor jezelf.', 'Toegang geweigerd');
+                    }
+                    return;
+                }
+            }
         }
+
+        submitForm();
     };
     
     // Separated form submission logic
     const submitForm = async () => {
-        const selectedMedewerker = medewerkers.find(m => m.Id === parseInt(medewerkerId, 10));
+    const selectedMedewerker = medewerkers.find(m => m.Id === parseInt(medewerkerId, 10));
         const fullName = selectedMedewerker ? selectedMedewerker.Title : 'Onbekend';
         const currentDate = new Date().toLocaleDateString('nl-NL');
 
@@ -252,7 +372,7 @@ const ZittingsvrijForm = ({ onSubmit, onCancel, initialData = {}, medewerkers = 
         const formData = {
             Title: finalTitle,
             Medewerker: selectedMedewerker ? selectedMedewerker.Title : null,
-            Gebruikersnaam: medewerkerUsername,
+            Gebruikersnaam: selectedMedewerker ? selectedMedewerker.Username : medewerkerUsername,
             ZittingsVrijeDagTijd: createSharePointDateTime(startDate, startTime),
             ZittingsVrijeDagTijdEind: createSharePointDateTime(endDate, endTime),
             Dagdeel: dagdeel,

@@ -1,9 +1,103 @@
-import { getCurrentUserInfo } from '../../services/sharepointService.js';
-import { canManageOthersEvents } from '../contextmenu.js';
 import { validateFormSubmission, showCRUDRestrictionMessage } from '../../services/crudPermissionService.js';
 import { createSharePointDateTime } from '../../utils/dateTimeUtils.js';
 
 const { createElement: h, useState, useEffect } = React;
+
+const resolveCurrentUserMedewerker = (currentUser, currentMedewerker, medewerkers, medewerkersByUsername) => {
+    if (currentMedewerker) {
+        return currentMedewerker;
+    }
+    if (!currentUser || !Array.isArray(medewerkers) || medewerkers.length === 0) {
+        return null;
+    }
+
+    let loginName = currentUser.LoginName || '';
+    if (loginName.includes('|')) {
+        loginName = loginName.split('|')[1];
+    }
+
+    const candidates = new Set();
+    if (loginName) {
+        candidates.add(loginName.toLowerCase());
+    }
+
+    if (loginName.includes('\\')) {
+        const [, short] = loginName.split('\\');
+        if (short) {
+            candidates.add(short.toLowerCase());
+        }
+    }
+
+    if (currentUser.Email) {
+        candidates.add(currentUser.Email.toLowerCase());
+    }
+    if (currentUser.Title) {
+        candidates.add(currentUser.Title.toLowerCase());
+    }
+
+    if (medewerkersByUsername && typeof medewerkersByUsername.get === 'function') {
+        for (const value of candidates) {
+            const match = medewerkersByUsername.get(value);
+            if (match) {
+                return match;
+            }
+        }
+    }
+
+    return medewerkers.find((m) => {
+        if (!m) return false;
+        if (m.Username && candidates.has(m.Username.toLowerCase())) {
+            return true;
+        }
+        if (m.Username && m.Username.includes('\\')) {
+            const [, short] = m.Username.split('\\');
+            if (short && candidates.has(short.toLowerCase())) {
+                return true;
+            }
+        }
+        if (currentUser.Email && m.Email && m.Email.toLowerCase() === currentUser.Email.toLowerCase()) {
+            return true;
+        }
+        if (currentUser.Title && m.Title && m.Title.toLowerCase() === currentUser.Title.toLowerCase()) {
+            return true;
+        }
+        return false;
+    }) || null;
+};
+
+const resolveExistingMedewerker = (identifier, medewerkers, medewerkersById, medewerkersByUsername) => {
+    if (!identifier) {
+        return null;
+    }
+
+    if (medewerkersById && typeof medewerkersById.get === 'function') {
+        const byId = medewerkersById.get(String(identifier));
+        if (byId) {
+            return byId;
+        }
+    }
+
+    if (typeof identifier === 'string' && medewerkersByUsername && typeof medewerkersByUsername.get === 'function') {
+        const byUsername = medewerkersByUsername.get(identifier.toLowerCase());
+        if (byUsername) {
+            return byUsername;
+        }
+    }
+
+    return medewerkers.find((m) => {
+        if (!m) return false;
+        if (String(m.Id) === String(identifier)) {
+            return true;
+        }
+        if (m.Username && m.Username.toLowerCase() === String(identifier).toLowerCase()) {
+            return true;
+        }
+        if (m.Title && m.Title.toLowerCase() === String(identifier).toLowerCase()) {
+            return true;
+        }
+        return false;
+    }) || null;
+};
 
 const toInputDateString = (date) => {
     if (!date) return '';
@@ -33,7 +127,19 @@ const splitDateTime = (dateTimeString, defaultTime = '09:00') => {
  * @param {Array<object>} [props.medewerkers=[]] - Lijst van medewerkers.
  * @param {object} [props.selection=null] - Geselecteerde datum/tijd uit de kalender.
  */
-const ZiekteMeldingForm = ({ onSubmit, onClose, shiftTypes = {}, initialData = {}, medewerkers = [], selection = null }) => {
+const ZiekteMeldingForm = ({
+    onSubmit,
+    onClose,
+    shiftTypes = {},
+    initialData = {},
+    medewerkers = [],
+    selection = null,
+    currentUser = null,
+    canManageOthers: canManageOthersProp = false,
+    currentMedewerker = null,
+    medewerkersById = null,
+    medewerkersByUsername = null
+}) => {
     const [medewerkerId, setMedewerkerId] = useState('');
     const [medewerkerUsername, setMedewerkerUsername] = useState('');
     const [startDate, setStartDate] = useState('');
@@ -43,20 +149,18 @@ const ZiekteMeldingForm = ({ onSubmit, onClose, shiftTypes = {}, initialData = {
     const [omschrijving, setOmschrijving] = useState('');
     const [status, setStatus] = useState('Nieuw');
     const [redenId, setRedenId] = useState(1); // Fixed RedenID for Ziekte
-    const [canManageOthers, setCanManageOthers] = useState(false);
+    const [canManageOthers, setCanManageOthers] = useState(Boolean(canManageOthersProp));
 
     useEffect(() => {
-        const initializeForm = async () => {
-            // Check if user can manage events for others
-            let userCanManageOthers = false;
-            try {
-                userCanManageOthers = await canManageOthersEvents();
-            } catch (error) {
-                console.error('Error checking manage others permission:', error);
-            }
+        setCanManageOthers(Boolean(canManageOthersProp));
+    }, [canManageOthersProp]);
+
+    useEffect(() => {
+        const initializeForm = () => {
+            const userCanManageOthers = Boolean(canManageOthersProp);
             setCanManageOthers(userCanManageOthers);
             console.log('User can manage others events (ziekte):', userCanManageOthers);
-            
+
             if (Object.keys(initialData).length === 0) {
                 // Nieuwe ziekmelding: Huidige gebruiker en defaults instellen
                 let targetMedewerker = null;
@@ -66,16 +170,16 @@ const ZiekteMeldingForm = ({ onSubmit, onClose, shiftTypes = {}, initialData = {
                     targetMedewerker = selection.medewerkerData;
                     console.log('Using medewerker from selection (privileged user):', targetMedewerker);
                 } else {
-                    // Otherwise use current user
-                    const currentUser = await getCurrentUserInfo();
-                    if (currentUser && medewerkers.length > 0) {
-                        const loginName = currentUser.LoginName.split('|')[1];
-                        targetMedewerker = medewerkers.find(m => m.Username === loginName);
-                    }
+                    targetMedewerker = resolveCurrentUserMedewerker(
+                        currentUser,
+                        currentMedewerker,
+                        medewerkers,
+                        medewerkersByUsername
+                    );
                 }
                 
                 if (targetMedewerker) {
-                    setMedewerkerId(targetMedewerker.Id);
+                    setMedewerkerId(String(targetMedewerker.Id));
                     setMedewerkerUsername(targetMedewerker.Username);
                 }
                 const today = toInputDateString(new Date());
@@ -91,10 +195,20 @@ const ZiekteMeldingForm = ({ onSubmit, onClose, shiftTypes = {}, initialData = {
                 setEndTime('17:00');
             } else {
                 // Bestaande ziekmelding: Data uit initialData laden
-                setMedewerkerId(initialData.MedewerkerID || '');
-                if (initialData.MedewerkerID) {
-                    const medewerker = medewerkers.find(m => m.Id === initialData.MedewerkerID);
-                    if (medewerker) setMedewerkerUsername(medewerker.Username);
+                const resolved = resolveExistingMedewerker(
+                    initialData.MedewerkerID,
+                    medewerkers,
+                    medewerkersById,
+                    medewerkersByUsername
+                );
+
+                if (resolved) {
+                    setMedewerkerId(String(resolved.Id));
+                    setMedewerkerUsername(resolved.Username);
+                } else {
+                    const fallbackId = initialData.MedewerkerID ? String(initialData.MedewerkerID) : '';
+                    setMedewerkerId(fallbackId);
+                    setMedewerkerUsername(fallbackId);
                 }
 
                 const { date: initialStartDate, time: initialStartTime } = splitDateTime(initialData.StartDatum, '09:00');
@@ -111,7 +225,16 @@ const ZiekteMeldingForm = ({ onSubmit, onClose, shiftTypes = {}, initialData = {
         };
 
         initializeForm();
-    }, [initialData, medewerkers, selection]);
+    }, [
+        initialData,
+        medewerkers,
+        selection,
+        currentUser,
+        canManageOthersProp,
+        currentMedewerker,
+        medewerkersById,
+        medewerkersByUsername
+    ]);
 
     const handleMedewerkerChange = (e) => {
         const selectedId = e.target.value;
@@ -127,14 +250,24 @@ const ZiekteMeldingForm = ({ onSubmit, onClose, shiftTypes = {}, initialData = {
         
         // Extra security check - if user doesn't have management rights, ensure they can only submit for themselves
         if (!canManageOthers) {
-            // Get current user
-            const currentUser = await getCurrentUserInfo();
-            if (currentUser) {
-                const loginName = currentUser.LoginName.split('|')[1];
-                const selectedMedewerker = medewerkers.find(m => m.Id === parseInt(medewerkerId, 10));
-                
-                // If not submitting for self, show error and return
-                if (selectedMedewerker && selectedMedewerker.Username !== loginName) {
+            const allowedMedewerker = resolveCurrentUserMedewerker(
+                currentUser,
+                currentMedewerker,
+                medewerkers,
+                medewerkersByUsername
+            );
+            const selectedMedewerker = medewerkers.find(m => m.Id === parseInt(medewerkerId, 10));
+            const allowedId = allowedMedewerker ? String(allowedMedewerker.Id) : null;
+
+            if (allowedId && String(medewerkerId) !== allowedId) {
+                if (window.NotificationSystem) {
+                    window.NotificationSystem.error('Je kunt alleen ziekte melden voor jezelf.', 'Toegang geweigerd');
+                }
+                return;
+            }
+            if (!allowedId && selectedMedewerker && selectedMedewerker.Username && currentUser && currentUser.LoginName) {
+                const loginName = currentUser.LoginName.includes('|') ? currentUser.LoginName.split('|')[1] : currentUser.LoginName;
+                if (selectedMedewerker.Username !== loginName) {
                     if (window.NotificationSystem) {
                         window.NotificationSystem.error('Je kunt alleen ziekte melden voor jezelf.', 'Toegang geweigerd');
                     }

@@ -981,6 +981,8 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
                             hasSelection: !!selectionData,
                             hasFirstClick: !!firstClickState
                         });
+
+                        let finalSelection = null;
                         
                         // Use existing selection if available, valid, and for the same employee
                         if (selectionData && selectionData.start && selectionData.end && selectionData.medewerkerId && selectionData.medewerkerId === employeeData.Username) {

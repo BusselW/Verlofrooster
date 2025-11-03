@@ -40,7 +40,7 @@ import { roosterTutorial } from './tutorial/roosterTutorialOrange.js';
 // REACT HOOKS
 // =============================================================================
 
-const { useState, createElement: h } = React;
+const { useState, useCallback, createElement: h } = React;
 
 // =============================================================================
 // COMPONENT - Main Application Wrapper
@@ -53,7 +53,7 @@ const { useState, createElement: h } = React;
 const MainAppWrapper = () => {
     const [appData, setAppData] = useState(null);
 
-    const handleUserValidated = (isValid, currentUser, userPermissions) => {
+    const handleUserValidated = useCallback((isValid, currentUser, userPermissions) => {
         // Check if user validation was successful
         if (!isValid) {
             console.error('❌ User validation failed');
@@ -62,8 +62,13 @@ const MainAppWrapper = () => {
         }
         
         console.log('✅ User validated successfully:', currentUser?.Title);
-        setAppData({ currentUser, userPermissions });
-    };
+        setAppData((previous) => {
+            if (previous?.currentUser?.Id === currentUser?.Id) {
+                return previous;
+            }
+            return { currentUser, userPermissions };
+        });
+    }, [setAppData]);
 
     // Render RoosterApp directly after validation (no unnecessary wrapper)
     return h(UserRegistrationCheck, { onUserValidated: handleUserValidated },

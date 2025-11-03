@@ -189,6 +189,8 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
     const hasInitialDataRef = React.useRef(false);
     // Ref to track if initial load has been triggered (prevents infinite loop in useEffect)
     const hasTriggeredInitialLoadRef = React.useRef(false);
+    // Ref to prevent concurrent data loads
+    const isLoadingDataRef = React.useRef(false);
     
     // Refs for stable access to current values in loadData (prevents recreation on state change)
     const weergaveTypeRef = React.useRef(weergaveType);
@@ -322,7 +324,14 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
      * @param {boolean} options.forceReload - Force reload even if cache exists
      */
     const loadData = useCallback(async ({ showSpinner = true, forceReload = false } = {}) => {
+        // Prevent concurrent loads
+        if (isLoadingDataRef.current) {
+            console.log(`⏭️ Skipping ${showSpinner ? 'data load' : 'silent refresh'} - already loading`);
+            return;
+        }
+        
         try {
+            isLoadingDataRef.current = true;
             console.log(`🔄 Starting ${showSpinner ? 'data load' : 'silent refresh'}...`);
             
             // Set appropriate loading state
@@ -377,6 +386,7 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             }
         } finally {
             console.log(`🏁 ${showSpinner ? 'loadData' : 'silent refresh'} complete`);
+            isLoadingDataRef.current = false;
             if (showSpinner) {
                 setLoading(false);
             } else {
@@ -429,7 +439,7 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
                 console.log('✅ Data already cached for this period');
             }
         }
-    }, [weergaveType, huidigJaar, huidigMaand, huidigWeek, isUserValidated]); // Removed silentRefreshData dependency
+    }, [weergaveType, huidigJaar, huidigMaand, huidigWeek, isUserValidated]); // loadData is stable (no deps), safe to omit
 
     // Form submission handlers
     const handleVerlofSubmit = useCallback(async (formData) => {

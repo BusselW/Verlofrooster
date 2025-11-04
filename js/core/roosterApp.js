@@ -689,8 +689,8 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
         }
     }, []); // No dependencies needed - silentRefreshData is stable
 
-    // Context menu handler
-    const showContextMenu = useCallback(async (e, medewerker, dag, item) => {
+    // Context menu handler - non-async for instant rendering
+    const showContextMenu = useCallback((e, medewerker, dag, item) => {
         console.log('showContextMenu called:', {
             medewerker: medewerker?.Username,
             dag: toISODate(dag),
@@ -710,182 +710,100 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
 
         // If there's an existing item, show edit/delete options
         if (item) {
-            console.log('🔍 Existing item found, checking permissions for edit/delete');
+            console.log('🔍 Existing item found, will check permissions on-click');
             
-            // Check if user can modify this item
-            const canModify = await canUserModifyItem(item, currentUsername);
-            console.log('🔐 User can modify item:', canModify);
+            // Optimistically show edit/delete - permission check happens on click
+            // Determine item type and add appropriate edit option
+            const isVerlof = 'RedenId' in item;
+            const isZittingsvrij = 'ZittingsVrijeDagTijd' in item;
+            const isCompensatie = 'StartCompensatieUren' in item;
             
-            if (canModify) {
-                // Determine item type and add appropriate edit option
-                const isVerlof = 'RedenId' in item;
-                const isZittingsvrij = 'ZittingsVrijeDagTijd' in item;
-                const isCompensatie = 'StartCompensatieUren' in item;
-                
-                if (isVerlof) {
-                    menuItems.push({
-                        label: 'Verlof bewerken',
-                        icon: 'fa-edit',
-                        onClick: (context) => {
-                            console.log('✏️ Verlof bewerken clicked with context:', context);
-                            const itemData = context?.contextData?.item || item;
-                            const employeeData = context?.contextData?.medewerker || medewerker;
-                            
-                            setSelection({
-                                start: new Date(itemData.StartDatum),
-                                end: new Date(itemData.EindDatum),
-                                medewerkerId: itemData.MedewerkerID,
-                                itemData: itemData,
-                                medewerkerData: employeeData
-                            });
-                            setIsVerlofModalOpen(true);
-                            setContextMenu(null);
-                        }
-                    });
-                } else if (isZittingsvrij) {
-                    menuItems.push({
-                        label: 'Zittingsvrij bewerken',
-                        icon: 'fa-edit',
-                        onClick: (context) => {
-                            console.log('✏️ Zittingsvrij bewerken clicked with context:', context);
-                            const itemData = context?.contextData?.item || item;
-                            const employeeData = context?.contextData?.medewerker || medewerker;
-                            
-                            setSelection({
-                                start: new Date(itemData.StartDatum),
-                                end: new Date(itemData.EindDatum),
-                                medewerkerId: itemData.Gebruikersnaam,
-                                itemData: itemData,
-                                medewerkerData: employeeData
-                            });
-                            setIsZittingsvrijModalOpen(true);
-                            setContextMenu(null);
-                        }
-                    });
-                } else if (isCompensatie) {
-                    menuItems.push({
-                        label: 'Compensatie uren bewerken',
-                        icon: 'fa-edit',
-                        onClick: (context) => {
-                            console.log('✏️ Compensatie uren bewerken clicked with context:', context);
-                            const itemData = context?.contextData?.item || item;
-                            const employeeData = context?.contextData?.medewerker || medewerker;
-                            
-                            setSelection({
-                                start: new Date(itemData.StartCompensatieUren),
-                                end: new Date(itemData.EindeCompensatieUren),
-                                medewerkerId: itemData.MedewerkerID,
-                                itemData: itemData,
-                                medewerkerData: employeeData
-                            });
-                            setIsCompensatieModalOpen(true);
-                            setContextMenu(null);
-                        }
-                    });
-                }
-
-                // Add comment edit option for items that have comments
-                if (item.Omschrijving || item.Opmerking || item.Comments) {
-                    menuItems.push({
-                        label: 'Commentaar bewerken',
-                        icon: 'fa-comment-edit',
-                        onClick: (context) => {
-                            console.log('✏️ Commentaar bewerken clicked with context:', context);
-                            const itemData = context?.contextData?.item || item;
-                            
-                            // Open a simple comment edit modal
-                            const newComment = prompt('Bewerk commentaar:', itemData.Omschrijving || itemData.Opmerking || itemData.Comments || '');
-                            if (newComment !== null) {
-                                // Update the item with new comment
-                                const updateData = { 
-                                    ...itemData, 
-                                    [itemData.Omschrijving !== undefined ? 'Omschrijving' : (itemData.Opmerking !== undefined ? 'Opmerking' : 'Comments')]: newComment 
-                                };
-                                
-                                if (isVerlof) {
-                                    handleVerlofSubmit(updateData);
-                                } else if (isZittingsvrij) {
-                                    handleZittingsvrijSubmit(updateData);
-                                } else if (isCompensatie) {
-                                    handleCompensatieSubmit(updateData);
-                                }
-                            }
-                            setContextMenu(null);
-                        }
-                    });
-                }
-
-                // Add delete option
+            if (isVerlof) {
                 menuItems.push({
-                    label: 'Verwijderen',
-                    icon: 'fa-trash',
-                    onClick: async (context) => {
-                        console.log('🗑️ Verwijderen clicked with context:', context);
+                    label: 'Verlof bewerken',
+                    icon: 'fa-edit',
+                    onClick: (context) => {
+                        console.log('✏️ Verlof bewerken clicked with context:', context);
+                        const itemData = context?.contextData?.item || item;
+                        const employeeData = context?.contextData?.medewerker || medewerker;
+                        
+                        setSelection({
+                            start: new Date(itemData.StartDatum),
+                            end: new Date(itemData.EindDatum),
+                            medewerkerId: itemData.MedewerkerID,
+                            itemData: itemData,
+                            medewerkerData: employeeData
+                        });
+                        setIsVerlofModalOpen(true);
+                        setContextMenu(null);
+                    }
+                });
+            } else if (isZittingsvrij) {
+                menuItems.push({
+                    label: 'Zittingsvrij bewerken',
+                    icon: 'fa-edit',
+                    onClick: (context) => {
+                        console.log('✏️ Zittingsvrij bewerken clicked with context:', context);
+                        const itemData = context?.contextData?.item || item;
+                        const employeeData = context?.contextData?.medewerker || medewerker;
+                        
+                        setSelection({
+                            start: new Date(itemData.StartDatum),
+                            end: new Date(itemData.EindDatum),
+                            medewerkerId: itemData.Gebruikersnaam,
+                            itemData: itemData,
+                            medewerkerData: employeeData
+                        });
+                        setIsZittingsvrijModalOpen(true);
+                        setContextMenu(null);
+                    }
+                });
+            } else if (isCompensatie) {
+                menuItems.push({
+                    label: 'Compensatie uren bewerken',
+                    icon: 'fa-edit',
+                    onClick: (context) => {
+                        console.log('✏️ Compensatie uren bewerken clicked with context:', context);
+                        const itemData = context?.contextData?.item || item;
+                        const employeeData = context?.contextData?.medewerker || medewerker;
+                        
+                        setSelection({
+                            start: new Date(itemData.StartCompensatieUren),
+                            end: new Date(itemData.EindeCompensatieUren),
+                            medewerkerId: itemData.MedewerkerID,
+                            itemData: itemData,
+                            medewerkerData: employeeData
+                        });
+                        setIsCompensatieModalOpen(true);
+                        setContextMenu(null);
+                    }
+                });
+            }
+
+            // Add comment edit option for items that have comments
+            if (item.Omschrijving || item.Opmerking || item.Comments) {
+                menuItems.push({
+                    label: 'Commentaar bewerken',
+                    icon: 'fa-comment-edit',
+                    onClick: (context) => {
+                        console.log('✏️ Commentaar bewerken clicked with context:', context);
                         const itemData = context?.contextData?.item || item;
                         
-                        // Determine item type from the actual item being deleted
-                        const isVerlofItem = 'RedenId' in itemData;
-                        const isZittingsvrijItem = 'ZittingsVrijeDagTijd' in itemData;
-                        const isCompensatieItem = 'StartCompensatieUren' in itemData;
-                        
-                        const itemDescription = isVerlofItem ? 'verlof aanvraag' : 
-                                              isZittingsvrijItem ? 'zittingsvrij periode' : 
-                                              isCompensatieItem ? 'compensatie uren' : 'item';
-                        
-                        if (confirm(`Weet je zeker dat je deze ${itemDescription} wilt verwijderen?`)) {
-                            try {
-                                console.log('🗑️ Deleting item:', itemData);
-                                console.log('🗑️ Item type detection:', {
-                                    isVerlof: isVerlofItem,
-                                    isZittingsvrij: isZittingsvrijItem,
-                                    isCompensatie: isCompensatieItem,
-                                    itemId: itemData.ID || itemData.Id
-                                });
-                                
-                                const listName = isVerlofItem ? 'Verlof' : 
-                                               isZittingsvrijItem ? 'IncidenteelZittingVrij' : 
-                                               isCompensatieItem ? 'CompensatieUren' : 'Unknown';
-                                
-                                console.log('🗑️ Using list name:', listName);
-                                
-                                await deleteSharePointListItem(
-                                    listName,
-                                    itemData.ID || itemData.Id
-                                );
-                                
-                                // Refresh data after deletion - only refresh the specific data type
-                                try {
-                                    if (listName === 'Verlof') {
-                                        const verlofData = await loadFilteredData(fetchSharePointList, 'Verlof', 'verlof', weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand);
-                                        setVerlofItems((verlofData || []).map(v => ({ ...v, StartDatum: createLocalDate(v.StartDatum), EindDatum: createLocalDate(v.EindDatum) })));
-                                    } else if (listName === 'IncidenteelZittingVrij') {
-                                        const zittingsvrijData = await loadFilteredData(fetchSharePointList, 'IncidenteelZittingVrij', 'zittingsvrij', weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand);
-                                        setZittingsvrijItems((zittingsvrijData || []).map(z => ({ ...z, StartDatum: createLocalDate(z.ZittingsVrijeDagTijd), EindDatum: createLocalDate(z.ZittingsVrijeDagTijdEind) })));
-                                    } else if (listName === 'CompensatieUren') {
-                                        const compensatieData = await loadFilteredData(fetchSharePointList, 'CompensatieUren', 'compensatie', weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand);
-                                        setCompensatieUrenItems((compensatieData || []).map(c => ({
-                                            ...c,
-                                            StartCompensatieUren: createLocalDate(c.StartCompensatieUren),
-                                            EindeCompensatieUren: createLocalDate(c.EindeCompensatieUren)
-                                        })));
-                                    }
-                                    console.log(`✅ ${listName} data refreshed after deletion`);
-                                } catch (error) {
-                                    console.error(`❌ Error refreshing ${listName} data:`, error);
-                                    // Fallback to full refresh if targeted refresh fails
-                                    clearAllCache();
-                                    await silentRefreshData(true);
-                                }
-                                console.log('✅ Item deleted successfully');
-                            } catch (error) {
-                                console.error('❌ Error deleting item:', error);
-                                console.error('❌ Error details:', {
-                                    message: error.message,
-                                    stack: error.stack,
-                                    itemData: itemData,
-                                    itemId: itemData.ID || itemData.Id
-                                });
-                                alert(`Fout bij verwijderen: ${error.message || 'Onbekende fout'}`);
+                        // Open a simple comment edit modal
+                        const newComment = prompt('Bewerk commentaar:', itemData.Omschrijving || itemData.Opmerking || itemData.Comments || '');
+                        if (newComment !== null) {
+                            // Update the item with new comment
+                            const updateData = { 
+                                ...itemData, 
+                                [itemData.Omschrijving !== undefined ? 'Omschrijving' : (itemData.Opmerking !== undefined ? 'Opmerking' : 'Comments')]: newComment 
+                            };
+                            
+                            if (isVerlof) {
+                                handleVerlofSubmit(updateData);
+                            } else if (isZittingsvrij) {
+                                handleZittingsvrijSubmit(updateData);
+                            } else if (isCompensatie) {
+                                handleCompensatieSubmit(updateData);
                             }
                         }
                         setContextMenu(null);
@@ -893,6 +811,83 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
                 });
             }
 
+            // Add delete option
+            menuItems.push({
+                label: 'Verwijderen',
+                icon: 'fa-trash',
+                onClick: async (context) => {
+                    console.log('🗑️ Verwijderen clicked with context:', context);
+                    const itemData = context?.contextData?.item || item;
+                    
+                    // Determine item type from the actual item being deleted
+                    const isVerlofItem = 'RedenId' in itemData;
+                    const isZittingsvrijItem = 'ZittingsVrijeDagTijd' in itemData;
+                    const isCompensatieItem = 'StartCompensatieUren' in itemData;
+                    
+                    const itemDescription = isVerlofItem ? 'verlof aanvraag' : 
+                                          isZittingsvrijItem ? 'zittingsvrij periode' : 
+                                          isCompensatieItem ? 'compensatie uren' : 'item';
+                    
+                    if (confirm(`Weet je zeker dat je deze ${itemDescription} wilt verwijderen?`)) {
+                        try {
+                            console.log('🗑️ Deleting item:', itemData);
+                            console.log('🗑️ Item type detection:', {
+                                isVerlof: isVerlofItem,
+                                isZittingsvrij: isZittingsvrijItem,
+                                isCompensatie: isCompensatieItem,
+                                itemId: itemData.ID || itemData.Id
+                            });
+                            
+                            const listName = isVerlofItem ? 'Verlof' : 
+                                           isZittingsvrijItem ? 'IncidenteelZittingVrij' : 
+                                           isCompensatieItem ? 'CompensatieUren' : 'Unknown';
+                            
+                            console.log('🗑️ Using list name:', listName);
+                            
+                            await deleteSharePointListItem(
+                                listName,
+                                itemData.ID || itemData.Id
+                            );
+                            
+                            // Refresh data after deletion - only refresh the specific data type
+                            try {
+                                if (listName === 'Verlof') {
+                                    const verlofData = await loadFilteredData(fetchSharePointList, 'Verlof', 'verlof', weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand);
+                                    setVerlofItems((verlofData || []).map(v => ({ ...v, StartDatum: createLocalDate(v.StartDatum), EindDatum: createLocalDate(v.EindDatum) })));
+                                } else if (listName === 'IncidenteelZittingVrij') {
+                                    const zittingsvrijData = await loadFilteredData(fetchSharePointList, 'IncidenteelZittingVrij', 'zittingsvrij', weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand);
+                                    setZittingsvrijItems((zittingsvrijData || []).map(z => ({ ...z, StartDatum: createLocalDate(z.ZittingsVrijeDagTijd), EindDatum: createLocalDate(z.ZittingsVrijeDagTijdEind) })));
+                                } else if (listName === 'CompensatieUren') {
+                                    const compensatieData = await loadFilteredData(fetchSharePointList, 'CompensatieUren', 'compensatie', weergaveType, huidigJaar, weergaveType === 'week' ? huidigWeek : huidigMaand);
+                                    setCompensatieUrenItems((compensatieData || []).map(c => ({
+                                        ...c,
+                                        StartCompensatieUren: createLocalDate(c.StartCompensatieUren),
+                                        EindeCompensatieUren: createLocalDate(c.EindeCompensatieUren)
+                                    })));
+                                }
+                                console.log(`✅ ${listName} data refreshed after deletion`);
+                            } catch (error) {
+                                console.error(`❌ Error refreshing ${listName} data:`, error);
+                                // Fallback to full refresh if targeted refresh fails
+                                clearAllCache();
+                                await silentRefreshData(true);
+                            }
+                            console.log('✅ Item deleted successfully');
+                        } catch (error) {
+                            console.error('❌ Error deleting item:', error);
+                            console.error('❌ Error details:', {
+                                message: error.message,
+                                stack: error.stack,
+                                itemData: itemData,
+                                itemId: itemData.ID || itemData.Id
+                            });
+                            alert(`Fout bij verwijderen: ${error.message || 'Onbekende fout'}`);
+                        }
+                    }
+                    setContextMenu(null);
+                }
+            });
+            
             // Add separator if we have edit options
             if (menuItems.length > 0) {
                 menuItems.push({ 

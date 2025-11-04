@@ -8,6 +8,56 @@ import { getModalConfig } from '../config/modalLayouts.js';
 const { useState, useEffect, createElement: h } = React;
 
 /**
+ * Helper function to format SharePoint date for HTML date input
+ * @param {string|Date} dateValue - SharePoint date value (ISO format or Date object)
+ * @returns {string} - Formatted date string (YYYY-MM-DD) or empty string
+ */
+const formatDateForInput = (dateValue) => {
+    if (!dateValue) return '';
+    
+    try {
+        const date = new Date(dateValue);
+        if (isNaN(date.getTime())) return '';
+        
+        // Format to YYYY-MM-DD for HTML date input
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}`;
+    } catch (error) {
+        console.error('[EnhancedBaseForm] Error formatting date:', error);
+        return '';
+    }
+};
+
+/**
+ * Helper function to format SharePoint datetime for HTML datetime-local input
+ * @param {string|Date} dateTimeValue - SharePoint datetime value
+ * @returns {string} - Formatted datetime string (YYYY-MM-DDTHH:mm) or empty string
+ */
+const formatDateTimeForInput = (dateTimeValue) => {
+    if (!dateTimeValue) return '';
+    
+    try {
+        const date = new Date(dateTimeValue);
+        if (isNaN(date.getTime())) return '';
+        
+        // Format to YYYY-MM-DDTHH:mm for HTML datetime-local input
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch (error) {
+        console.error('[EnhancedBaseForm] Error formatting datetime:', error);
+        return '';
+    }
+};
+
+/**
  * Enhanced base form component that supports modal layout configurations
  * @param {Object} props - Component props
  * @param {Function} props.onSave - Save handler function
@@ -241,10 +291,20 @@ export const EnhancedBaseForm = ({
                 break;
                 
             default:
+                // Handle date and datetime-local fields with proper formatting
+                let inputValue = value;
+                if (field.type === 'date') {
+                    inputValue = formatDateForInput(value);
+                    console.log(`[EnhancedBaseForm] Formatting date field ${field.name}:`, { original: value, formatted: inputValue });
+                } else if (field.type === 'datetime-local') {
+                    inputValue = formatDateTimeForInput(value);
+                    console.log(`[EnhancedBaseForm] Formatting datetime field ${field.name}:`, { original: value, formatted: inputValue });
+                }
+                
                 inputElement = h('input', {
                     ...baseProps,
                     type: field.type || 'text',
-                    value,
+                    value: inputValue,
                     placeholder: field.placeholder,
                     readOnly: isReadOnly,
                     className: isReadOnly ? 'form-input readonly' : baseProps.className,

@@ -9,6 +9,7 @@ const { createElement: h } = React;
 
 /**
  * Configuration for the day indicator form
+ * Field names match SharePoint DagenIndicators list: Title, Beschrijving, Kleur, Patroon, Validatie
  */
 const dagIndicatorConfig = {
     sections: [
@@ -34,7 +35,7 @@ const dagIndicatorConfig = {
                     help: 'Uitgebreide beschrijving van wat deze indicator betekent'
                 },
                 { 
-                    name: 'IndicatorKleur', 
+                    name: 'Kleur', 
                     label: 'Kleur', 
                     type: 'color', 
                     required: true,
@@ -42,51 +43,18 @@ const dagIndicatorConfig = {
                     help: 'Kleur voor deze indicator in het rooster'
                 },
                 { 
-                    name: 'Icoon', 
-                    label: 'Icoon', 
+                    name: 'Patroon', 
+                    label: 'Patroon', 
                     type: 'text',
-                    placeholder: '🎉',
-                    help: 'Emoji of icoon voor deze indicator (optioneel)'
+                    placeholder: 'solid',
+                    help: 'Visueel patroon voor deze indicator (bijv. solid, striped, dotted)'
                 },
                 { 
-                    name: 'Prioriteit', 
-                    label: 'Prioriteit', 
-                    type: 'select',
-                    required: true,
-                    placeholder: 'Selecteer prioriteit...',
-                    options: [
-                        { value: 'laag', label: 'Laag' },
-                        { value: 'normaal', label: 'Normaal' },
-                        { value: 'hoog', label: 'Hoog' },
-                        { value: 'kritiek', label: 'Kritiek' }
-                    ],
-                    help: 'Prioriteit van deze indicator voor weergave'
-                }
-            ]
-        },
-        {
-            title: 'Instellingen',
-            type: 'toggle-section',
-            icon: '⚙️',
-            background: 'neutral',
-            fields: [
-                { 
-                    name: 'Actief', 
-                    label: 'Actief', 
-                    type: 'toggle', 
-                    help: 'Schakel uit om deze indicator te deactiveren'
-                },
-                { 
-                    name: 'ZichtbaarInRooster', 
-                    label: 'Zichtbaar in Rooster', 
-                    type: 'toggle', 
-                    help: 'Toon deze indicator in de roosterweergave'
-                },
-                { 
-                    name: 'AutomatischToepassen', 
-                    label: 'Automatisch Toepassen', 
-                    type: 'toggle', 
-                    help: 'Pas deze indicator automatisch toe op basis van regels'
+                    name: 'Validatie', 
+                    label: 'Validatie', 
+                    type: 'text',
+                    placeholder: 'Validatie regel',
+                    help: 'Validatie regel voor deze indicator (optioneel)'
                 }
             ]
         }

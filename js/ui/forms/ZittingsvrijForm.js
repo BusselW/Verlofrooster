@@ -122,6 +122,13 @@ const getTimesForDagdeel = (dagdeel) => {
 
 const splitDateTime = (dateTimeString, defaultTime = '09:00') => {
     if (!dateTimeString) return { date: '', time: '' };
+    
+    // Add type checking to prevent "is not a function" errors
+    if (typeof dateTimeString !== 'string') {
+        console.warn('splitDateTime: Expected string but received:', typeof dateTimeString, dateTimeString);
+        return { date: '', time: defaultTime };
+    }
+    
     if (dateTimeString.includes('T')) {
         const [date, timePart] = dateTimeString.split('T');
         return { date, time: timePart.substring(0, 5) };

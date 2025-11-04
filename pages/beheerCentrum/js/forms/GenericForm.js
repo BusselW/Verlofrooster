@@ -28,22 +28,37 @@ export const GenericForm = ({ onSave, onCancel, initialData = {}, formFields = [
         const loadSelectOptions = async () => {
             const selectFields = formFields.filter(f => f.type === 'select' && f.listSource);
             
+            console.log('[GenericForm] Loading select options for fields:', selectFields.map(f => f.name));
+            console.log('[GenericForm] window.appConfiguratie available:', !!window.appConfiguratie);
+            
             for (const field of selectFields) {
                 try {
+                    console.log(`[GenericForm] Loading options for ${field.name} from listSource: ${field.listSource}`);
+                    console.log(`[GenericForm] appConfiguratie[${field.listSource}]:`, window.appConfiguratie[field.listSource]);
+                    
                     const listName = window.appConfiguratie[field.listSource]?.lijstTitel;
+                    console.log(`[GenericForm] Resolved list name for ${field.name}: ${listName}`);
+                    
                     if (listName) {
+                        console.log(`[GenericForm] Fetching items from list: ${listName}`);
                         const items = await getListItems(listName);
+                        console.log(`[GenericForm] Fetched ${items.length} items from ${listName}:`, items);
+                        
                         const options = items.map(item => ({
                             value: item[field.valueField],
                             label: item[field.valueField]
                         }));
+                        console.log(`[GenericForm] Created ${options.length} options for ${field.name}:`, options);
+                        
                         setSelectOptions(prev => ({
                             ...prev,
                             [field.name]: options
                         }));
+                    } else {
+                        console.warn(`[GenericForm] No list name found for ${field.name}. listSource: ${field.listSource}`);
                     }
                 } catch (error) {
-                    console.error(`Error loading options for ${field.name}:`, error);
+                    console.error(`[GenericForm] Error loading options for ${field.name}:`, error);
                 }
             }
         };
@@ -196,6 +211,14 @@ export const GenericForm = ({ onSave, onCancel, initialData = {}, formFields = [
                 break;
             case 'select':
                 const options = field.options || selectOptions[field.name] || [];
+                console.log(`[GenericForm] Rendering select for ${field.name}:`, {
+                    hasFieldOptions: !!field.options,
+                    fieldOptionsLength: field.options?.length,
+                    hasSelectOptions: !!selectOptions[field.name],
+                    selectOptionsLength: selectOptions[field.name]?.length,
+                    finalOptions: options,
+                    allSelectOptions: selectOptions
+                });
                 inputElement = h('select', { ...commonProps },
                     h('option', { value: '' }, 'Selecteer...'),
                     ...options.map(option => 

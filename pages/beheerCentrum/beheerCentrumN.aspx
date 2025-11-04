@@ -6,13 +6,11 @@
     <title>Verlofrooster - Beheercentrum</title>
     <link rel="icon" type="image/svg+xml" href="../../icons/favicon/favicon.svg">
    
-    <!-- <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"> -->
-    <!-- Fonts and Icons -->
-   
-    <!-- Modal Styling -->
-    <link rel="stylesheet" href="css/modalFormatting.css">
-    <!-- Modal spacing and nesting fixes -->
-    <link rel="stylesheet" href="css/modalFixesCompact.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Main Verlofrooster CSS (includes working modal styles) -->
+    <link rel="stylesheet" href="../../css/verlofrooster_s.css">
+    <link rel="stylesheet" href="../../css/verlofrooster_s1.css">
    
     <!-- SharePoint Config -->
     <script src="../../js/config/configLijst.js"></script>
@@ -511,6 +509,8 @@
         import { Modal } from './js/ui/modal.js';
         import { getFormComponent } from './js/forms/index.js';
         import * as linkInfo from '../../js/services/linkInfo.js';
+        import { isUserInAnyGroup } from '../../js/services/permissionService.js';
+        import { getCurrentUserInfo } from '../../js/services/sharepointService.js';
 
         const { useState, useEffect, createElement: h, useCallback } = React;
 
@@ -1044,7 +1044,7 @@
 
             useEffect(() => {
                 fetchData();
-            }, [activeTabId, contextInitialized, fetchData]);
+            }, [fetchData]);
 
             const handleAddNew = () => {
                 setEditingItem(null);
@@ -1057,14 +1057,19 @@
             };
 
             const handleDelete = async (item) => {
-                if (confirm(`Weet je zeker dat je dit item wilt verwijderen?`)) {
+                // Show item details in confirmation
+                const itemName = item.Naam || item.Title || item.Omschrijving || `ID ${item.Id}`;
+                const confirmMessage = `Weet je zeker dat je "${itemName}" wilt verwijderen?\n\nDeze actie kan niet ongedaan worden gemaakt.`;
+                
+                if (confirm(confirmMessage)) {
                     try {
                         const listName = activeTab.listConfig.lijstTitel;
                         await deleteListItem(listName, item.Id);
+                        console.log(`✅ Item verwijderd: ${itemName}`);
                         fetchData();
                     } catch (err) {
                         console.error('Fout bij verwijderen van item:', err);
-                        alert('Er is een fout opgetreden bij het verwijderen van het item.');
+                        alert(`Er is een fout opgetreden bij het verwijderen van het item.\n\n${err.message || 'Onbekende fout'}`);
                     }
                 }
             };
@@ -1077,6 +1082,9 @@
                     fetchData(); // Refresh data to show the change
                 } catch (err) {
                     console.error('Fout bij bijwerken van item via toggle:', err);
+                    alert(`Er is een fout opgetreden bij het bijwerken van het veld.\n\n${err.message || 'Onbekende fout'}`);
+                    // Refresh to revert the toggle UI
+                    fetchData();
                 }
             };
 
@@ -1091,13 +1099,16 @@
                     const listName = activeTab.listConfig.lijstTitel;
                     if (editingItem) {
                         await updateListItem(listName, editingItem.Id, formData);
+                        console.log(`✅ Item bijgewerkt in ${listName}`);
                     } else {
                         await createListItem(listName, formData);
+                        console.log(`✅ Nieuw item aangemaakt in ${listName}`);
                     }
                     handleCloseModal();
                     fetchData();
                 } catch (err) {
                     console.error('Fout bij opslaan van item:', err);
+                    alert(`Er is een fout opgetreden bij het opslaan.\n\n${err.message || 'Onbekende fout'}\n\nControleer de invoer en probeer het opnieuw.`);
                 }
             };
 
@@ -1191,20 +1202,123 @@
         // Main Beheercentrum Component
         const Beheercentrum = () => {
             const [loading, setLoading] = useState(true);
-            const [currentUser, setCurrentUser] = useState({ Title: 'Administrator' });
+            const [currentUser, setCurrentUser] = useState(null);
+            const [hasAccess, setHasAccess] = useState(false);
+            const [accessCheckComplete, setAccessCheckComplete] = useState(false);
 
             useEffect(() => {
-                // Simulate loading time for initialization
-                setTimeout(() => {
-                    setLoading(false);
-                }, 1000);
+                const checkUserAccess = async () => {
+                    try {
+                        console.log('🔐 Checking Beheercentrum access...');
+                        
+                        // Get current user info
+                        const user = await getCurrentUserInfo();
+                        if (!user) {
+                            console.error('❌ Could not get current user info');
+                            setAccessCheckComplete(true);
+                            setLoading(false);
+                            return;
+                        }
+                        
+                        setCurrentUser(user);
+                        console.log('👤 Current user:', user.Title);
+                        
+                        // Check if user has admin or functional permissions
+                        const adminGroups = ["1. Sharepoint beheer", "1.1. Mulder MT"];
+                        const functionalGroups = ["1. Sharepoint beheer", "1.1. Mulder MT", "2.6 Roosteraars"];
+                        
+                        const [isAdmin, isFunctional] = await Promise.all([
+                            isUserInAnyGroup(adminGroups),
+                            isUserInAnyGroup(functionalGroups)
+                        ]);
+                        
+                        const hasPermission = isAdmin || isFunctional;
+                        
+                        console.log('🔐 Access check result:', { isAdmin, isFunctional, hasPermission });
+                        
+                        setHasAccess(hasPermission);
+                        setAccessCheckComplete(true);
+                        setLoading(false);
+                        
+                    } catch (error) {
+                        console.error('❌ Error checking access:', error);
+                        setAccessCheckComplete(true);
+                        setLoading(false);
+                    }
+                };
+                
+                checkUserAccess();
             }, []);
 
-            if (loading) {
+            if (loading || !accessCheckComplete) {
                 return h('div', { className: 'full-width-container' },
                     h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: '1rem' } },
                         h('div', { className: 'loading-spinner' }),
-                        h('p', null, 'Beheercentrum laden...')
+                        h('p', null, 'Toegangsrechten controleren...')
+                    )
+                );
+            }
+
+            // Access Denied UI
+            if (!hasAccess) {
+                return h('div', { className: 'full-width-container' },
+                    h('div', {
+                        style: {
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            height: '100vh',
+                            backgroundColor: '#f5f5f5'
+                        }
+                    },
+                        h('div', {
+                            style: {
+                                backgroundColor: 'white',
+                                padding: '40px',
+                                borderRadius: '8px',
+                                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+                                maxWidth: '500px',
+                                textAlign: 'center'
+                            }
+                        },
+                            h('div', { style: { fontSize: '4rem', marginBottom: '20px' } }, '🔒'),
+                            h('h2', { style: { marginBottom: '20px', color: '#333' } }, 'Geen toegang'),
+                            h('p', { style: { marginBottom: '20px', color: '#666', lineHeight: '1.6' } },
+                                'U heeft geen toegang tot het Beheercentrum. Deze pagina is alleen beschikbaar voor beheerders en functioneel beheerders.'
+                            ),
+                            h('p', { style: { marginBottom: '30px', color: '#666', lineHeight: '1.6' } },
+                                'Neem contact op met de beheerder als u toegang nodig heeft.'
+                            ),
+                            currentUser && h('div', {
+                                style: {
+                                    backgroundColor: '#f8f9fa',
+                                    padding: '15px',
+                                    borderRadius: '4px',
+                                    fontSize: '0.9rem',
+                                    color: '#666',
+                                    marginBottom: '20px'
+                                }
+                            },
+                                h('p', { style: { margin: '5px 0' } }, h('strong', null, 'Gebruiker: '), currentUser.Title),
+                                h('p', { style: { margin: '5px 0' } }, h('strong', null, 'E-mail: '), currentUser.Email)
+                            ),
+                            h('button', {
+                                className: 'btn-primary',
+                                onClick: () => {
+                                    const targetUrl = linkInfo.getVerlofRoosterUrl();
+                                    window.location.href = targetUrl;
+                                },
+                                style: {
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    padding: '0.75rem 1.5rem'
+                                }
+                            },
+                                h('i', { className: 'fas fa-arrow-left' }),
+                                'Terug naar Verlofrooster'
+                            )
+                        )
                     )
                 );
             }
@@ -1274,69 +1388,6 @@
         );
 
         console.log('🎉 Beheercentrum (Full-Width) initialized successfully');
-       
-        // EMERGENCY MODAL BACKGROUND FIX
-        // Force modal backgrounds with JavaScript as a fallback
-        const forceModalBackgrounds = () => {
-            // Look for modal overlays
-            document.querySelectorAll('.modal-overlay, [class*="modal"]:not([class*="content"]):not([class*="body"])').forEach(overlay => {
-                if (overlay.classList.contains('modal-overlay') || (overlay.className.includes('modal') && !overlay.className.includes('content') && !overlay.className.includes('body'))) {
-                    overlay.style.setProperty('background-color', 'rgba(0, 0, 0, 0.8)', 'important');
-                    overlay.style.setProperty('background', 'rgba(0, 0, 0, 0.8)', 'important');
-                    overlay.style.setProperty('background-image', 'none', 'important');
-                    overlay.style.setProperty('backdrop-filter', 'none', 'important');
-                }
-            });
-           
-            // Look for modal content
-            document.querySelectorAll('.modal, .modal-content, .modal-dialog').forEach(modal => {
-                if (!modal.classList.contains('modal-overlay')) {
-                    modal.style.setProperty('background-color', '#ffffff', 'important');
-                    modal.style.setProperty('background', '#ffffff', 'important');
-                    modal.style.setProperty('background-image', 'none', 'important');
-                    modal.style.setProperty('opacity', '1', 'important');
-                }
-            });
-           
-            // Look for modal body and footer
-            document.querySelectorAll('.modal-body, .form-body, .modal-footer, .form-footer, .form-actions').forEach(section => {
-                section.style.setProperty('background-color', '#ffffff', 'important');
-                section.style.setProperty('background', '#ffffff', 'important');
-                section.style.setProperty('background-image', 'none', 'important');
-            });
-           
-            // Look for modal header
-            document.querySelectorAll('.modal-header, .form-header').forEach(header => {
-                header.style.setProperty('background', 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)', 'important');
-                header.style.setProperty('background-color', '#1e40af', 'important');
-                header.style.setProperty('color', '#ffffff', 'important');
-            });
-        };
-       
-        // Run immediately
-        forceModalBackgrounds();
-       
-        // Run on DOM changes (for dynamically created modals)
-        const observer = new MutationObserver((mutations) => {
-            let hasModalChanges = false;
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'childList') {
-                    mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === 1 && (node.classList?.contains('modal') || node.className?.includes('modal'))) {
-                            hasModalChanges = true;
-                        }
-                    });
-                }
-            });
-            if (hasModalChanges) {
-                setTimeout(forceModalBackgrounds, 10);
-            }
-        });
-       
-        observer.observe(document.body, { childList: true, subtree: true });
-       
-        // Also run periodically as a safety net
-        setInterval(forceModalBackgrounds, 2000);
     </script>
 </body>
 </html>

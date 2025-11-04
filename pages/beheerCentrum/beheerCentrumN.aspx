@@ -11,6 +11,9 @@
     <!-- Main Verlofrooster CSS (includes working modal styles) -->
     <link rel="stylesheet" href="../../css/verlofrooster_s.css">
     <link rel="stylesheet" href="../../css/verlofrooster_s1.css">
+    
+    <!-- Beheercentrum-specific styling -->
+    <link rel="stylesheet" href="css/beheerCentrum.css">
    
     <!-- SharePoint Config -->
     <script src="../../js/config/configLijst.js"></script>

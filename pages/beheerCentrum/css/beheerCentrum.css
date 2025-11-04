@@ -3,6 +3,12 @@
  * Clean, minimal CSS for forms, modals, and admin interface
  */
 
+/* ===== MODAL BODY PADDING FIX ===== */
+.modal .modal-body,
+.modal-body {
+    padding: 1.5rem !important;
+}
+
 /* ===== FORM FIELD CONTAINERS ===== */
 .form-field,
 .form-group {

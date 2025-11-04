@@ -4,9 +4,9 @@
  */
 
 import { Autocomplete } from '../ui/Autocomplete.js';
-import { searchSiteUsers } from '../dataService.js';
+import { searchSiteUsers, getListItems } from '../dataService.js';
 
-const { useState, createElement: h } = React;
+const { useState, useEffect, createElement: h } = React;
 
 /**
  * A generic form component that can handle all different data types
@@ -21,6 +21,35 @@ const { useState, createElement: h } = React;
 export const GenericForm = ({ onSave, onCancel, initialData = {}, formFields = [], title, tabType }) => {
     const [formData, setFormData] = useState(initialData);
     const [errors, setErrors] = useState({});
+    const [selectOptions, setSelectOptions] = useState({});
+
+    // Load options for select fields that have a listSource
+    useEffect(() => {
+        const loadSelectOptions = async () => {
+            const selectFields = formFields.filter(f => f.type === 'select' && f.listSource);
+            
+            for (const field of selectFields) {
+                try {
+                    const listName = window.appConfiguratie[field.listSource]?.lijstTitel;
+                    if (listName) {
+                        const items = await getListItems(listName);
+                        const options = items.map(item => ({
+                            value: item[field.valueField],
+                            label: item[field.valueField]
+                        }));
+                        setSelectOptions(prev => ({
+                            ...prev,
+                            [field.name]: options
+                        }));
+                    }
+                } catch (error) {
+                    console.error(`Error loading options for ${field.name}:`, error);
+                }
+            }
+        };
+        
+        loadSelectOptions();
+    }, [formFields]);
 
     const handleAutocompleteSelect = (user) => {
         // Map SharePoint user data to your form fields (for medewerkers)
@@ -166,9 +195,10 @@ export const GenericForm = ({ onSave, onCancel, initialData = {}, formFields = [
                 );
                 break;
             case 'select':
+                const options = field.options || selectOptions[field.name] || [];
                 inputElement = h('select', { ...commonProps },
                     h('option', { value: '' }, 'Selecteer...'),
-                    ...(field.options || []).map(option => 
+                    ...options.map(option => 
                         h('option', { key: option.value, value: option.value }, option.label)
                     )
                 );

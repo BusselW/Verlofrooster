@@ -128,16 +128,18 @@ export const MedewerkerForm = ({ onSave, onCancel, initialData = {}, title }) =>
             try {
                 console.log('🔄 Loading dropdown data...');
                 
-                // Load teams
-                const teamsData = await getListItems('Teams', ['Id', 'Title', 'TeamKleur']);
+                // Load teams - fetch Naam field instead of Title
+                const teamsData = await getListItems('Teams', 'Naam,Id');
+                console.log('✅ Teams data loaded:', teamsData);
                 const teamOptions = teamsData.map(team => ({
-                    value: team.Title,
-                    label: team.Title
+                    value: team.Naam,
+                    label: team.Naam
                 }));
                 setTeams(teamOptions);
                 
-                // Load functions
-                const functiesData = await getListItems('Functies', ['Id', 'Title']);
+                // Load functions - use correct list name keuzelijstFuncties
+                const functiesData = await getListItems('keuzelijstFuncties', 'Title,Id');
+                console.log('✅ Functies data loaded:', functiesData);
                 const functieOptions = functiesData.map(functie => ({
                     value: functie.Title,
                     label: functie.Title

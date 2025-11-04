@@ -5,9 +5,10 @@ const { useState, useEffect, useCallback, createElement: h } = React;
  * @param {{
  *   onSelect: (user: object) => void;
  *   searchFunction: (query: string) => Promise<object[]>;
+ *   placeholder?: string;
  * }} props
  */
-export const Autocomplete = ({ onSelect, searchFunction }) => {
+export const Autocomplete = ({ onSelect, searchFunction, placeholder }) => {
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -52,16 +53,29 @@ export const Autocomplete = ({ onSelect, searchFunction }) => {
                 setShowResults(true);
             },
             onBlur: () => setTimeout(() => setShowResults(false), 200), // Delay to allow click
-            placeholder: 'Zoek op naam, e-mail of username...',
+            placeholder: placeholder || 'Zoek op naam, e-mail of username...',
+            className: 'autocomplete-input'
         }),
-        showResults && h('ul', { className: 'autocomplete-results' },
-            loading && h('li', { className: 'loading-item' }, 'Laden...'),
-            !loading && results.length === 0 && query.length >= 3 && h('li', { className: 'no-results' }, 'Geen resultaten'),
-            results.map(user => h('li', {
+        h('span', { className: 'autocomplete-icon', 'aria-hidden': 'true' }, '🔍'),
+        showResults && h('div', { className: 'autocomplete-dropdown' },
+            loading && h('div', { className: 'autocomplete-option loading-item' }, 
+                h('span', {}, '⏳ Laden...')
+            ),
+            !loading && results.length === 0 && query.length >= 3 && h('div', { className: 'autocomplete-option no-results' }, 
+                h('span', {}, '❌ Geen resultaten gevonden')
+            ),
+            !loading && results.length === 0 && query.length < 3 && query.length > 0 && h('div', { className: 'autocomplete-option hint-item' }, 
+                h('span', {}, '💡 Type minimaal 3 karakters om te zoeken')
+            ),
+            results.map(user => h('div', {
                 key: user.Id,
+                className: 'autocomplete-option',
                 onClick: () => handleSelect(user),
             }, 
-                h('div', { className: 'user-title' }, user.Title), // e.g., Bussel, van, W.
+                h('div', { className: 'user-title' }, 
+                    h('span', { className: 'user-icon' }, '👤'),
+                    user.Title
+                ),
                 h('div', { className: 'user-details' }, `${user.LoginName} - ${user.Email}`)
             ))
         )

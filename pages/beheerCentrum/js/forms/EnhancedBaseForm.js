@@ -45,6 +45,7 @@ export const EnhancedBaseForm = ({
     const modalConfig = getModalConfig(modalType, modalOverrides);
 
     useEffect(() => {
+        console.log('[EnhancedBaseForm] initialData updated:', initialData);
         setFormData(initialData);
         setErrors({});
     }, [initialData]);
@@ -192,23 +193,28 @@ export const EnhancedBaseForm = ({
                 break;
                 
             case 'color':
+                console.log(`[EnhancedBaseForm] Rendering color field ${field.name} with value:`, value);
                 inputElement = h('div', { className: 'color-input-group' },
                     h('input', {
                         ...baseProps,
                         type: 'color',
                         value: value || '#ffffff',
                         className: 'color-picker',
-                        onChange: (e) => handleInputChange(field.name, e.target.value)
+                        onChange: (e) => {
+                            console.log(`[EnhancedBaseForm] Color picker changed for ${field.name}:`, e.target.value);
+                            handleInputChange(field.name, e.target.value);
+                        }
                     }),
                     h('input', {
                         ...baseProps,
                         type: 'text',
-                        value,
+                        value: value || '',
                         placeholder: field.placeholder || '#FFFFFF',
                         className: 'color-text',
                         onChange: (e) => {
                             let val = e.target.value;
                             if (val && !val.startsWith('#')) val = '#' + val;
+                            console.log(`[EnhancedBaseForm] Color text changed for ${field.name}:`, val);
                             handleInputChange(field.name, val);
                         }
                     }),

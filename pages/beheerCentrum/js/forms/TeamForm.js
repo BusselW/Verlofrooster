@@ -9,6 +9,7 @@ const { createElement: h } = React;
 
 /**
  * Configuration for the team form
+ * Field names match SharePoint Teams list: Naam, Kleur, Teamleider, TeamleiderId, Actief
  */
 const teamConfig = {
     sections: [
@@ -16,14 +17,14 @@ const teamConfig = {
             title: 'Team Informatie',
             fields: [
                 { 
-                    name: 'Title', 
+                    name: 'Naam', 
                     label: 'Team Naam', 
                     type: 'text', 
                     required: true, 
                     placeholder: 'Bijv. Ontwikkeling' 
                 },
                 { 
-                    name: 'TeamKleur', 
+                    name: 'Kleur', 
                     label: 'Team Kleur', 
                     type: 'color', 
                     required: true, 
@@ -31,12 +32,18 @@ const teamConfig = {
                     help: 'Deze kleur wordt gebruikt in de roosterweergave'
                 },
                 { 
-                    name: 'Omschrijving', 
-                    label: 'Omschrijving', 
-                    type: 'textarea', 
-                    colSpan: 2,
-                    rows: 3,
-                    placeholder: 'Beschrijf de rol en verantwoordelijkheden van dit team...' 
+                    name: 'Teamleider', 
+                    label: 'Teamleider Naam', 
+                    type: 'text',
+                    placeholder: 'Bijv. Jan de Vries',
+                    help: 'Volledige naam van de teamleider'
+                },
+                { 
+                    name: 'TeamleiderId', 
+                    label: 'Teamleider ID', 
+                    type: 'text',
+                    placeholder: 'Bijv. org\\jdevries',
+                    help: 'Gebruikersnaam in formaat domein\\gebruiker'
                 }
             ]
         },
@@ -51,12 +58,6 @@ const teamConfig = {
                     label: 'Team Actief', 
                     type: 'toggle', 
                     help: 'Schakel uit om team te deactiveren' 
-                },
-                { 
-                    name: 'ZichtbaarInRooster', 
-                    label: 'Zichtbaar in Rooster', 
-                    type: 'toggle', 
-                    help: 'Toon dit team in de roosterweergave' 
                 }
             ]
         }

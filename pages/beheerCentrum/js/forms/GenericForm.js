@@ -23,6 +23,12 @@ export const GenericForm = ({ onSave, onCancel, initialData = {}, formFields = [
     const [errors, setErrors] = useState({});
     const [selectOptions, setSelectOptions] = useState({});
 
+    // Sync formData when initialData changes (for edit mode)
+    useEffect(() => {
+        console.log('[GenericForm] initialData changed:', initialData);
+        setFormData(initialData);
+    }, [initialData]);
+
     // Load options for select fields that have a listSource
     useEffect(() => {
         const loadSelectOptions = async () => {
@@ -165,12 +171,18 @@ export const GenericForm = ({ onSave, onCancel, initialData = {}, formFields = [
                 });
                 break;
             case 'color':
+                const currentColor = formData[field.name] || '#ffffff';
+                console.log(`[GenericForm] Rendering color picker for ${field.name}:`, currentColor);
+                
                 inputElement = h('div', { className: 'color-input-group' },
                     h('input', { 
-                        ...commonProps, 
+                        id: field.name + '_picker',
+                        name: field.name,
                         type: 'color',
                         className: 'color-picker',
+                        value: currentColor,
                         onChange: (e) => {
+                            console.log(`[GenericForm] Color picker changed for ${field.name}:`, e.target.value);
                             setFormData(prev => ({
                                 ...prev,
                                 [field.name]: e.target.value
@@ -178,9 +190,11 @@ export const GenericForm = ({ onSave, onCancel, initialData = {}, formFields = [
                         }
                     }),
                     h('input', { 
-                        ...commonProps, 
+                        id: field.name + '_text',
+                        name: field.name + '_text',
                         type: 'text', 
                         className: 'color-text',
+                        value: currentColor,
                         placeholder: '#FFFFFF',
                         pattern: '^#[0-9A-Fa-f]{6}$',
                         onChange: (e) => {
@@ -189,6 +203,7 @@ export const GenericForm = ({ onSave, onCancel, initialData = {}, formFields = [
                             if (value && !value.startsWith('#')) {
                                 value = '#' + value;
                             }
+                            console.log(`[GenericForm] Color text changed for ${field.name}:`, value);
                             setFormData(prev => ({
                                 ...prev,
                                 [field.name]: value
@@ -198,7 +213,7 @@ export const GenericForm = ({ onSave, onCancel, initialData = {}, formFields = [
                     h('div', { 
                         className: 'color-preview',
                         style: { 
-                            backgroundColor: formData[field.name] || '#ffffff',
+                            backgroundColor: currentColor,
                             width: '30px',
                             height: '30px',
                             borderRadius: '4px',

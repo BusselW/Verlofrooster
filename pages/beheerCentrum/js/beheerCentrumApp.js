@@ -654,6 +654,7 @@ const ContentContainer = () => {
     };
 
     const handleEdit = (item) => {
+        console.log('[BeheerCentrum] Editing item:', item);
         setEditingItem(item);
         setIsModalOpen(true);
     };

@@ -8,6 +8,61 @@ import { getCurrentUserInfo, getSharePointListItems } from '../services/sharepoi
 const { createElement: h } = window.React;
 
 /**
+ * Robust user-to-medewerker matching with multiple strategies
+ */
+const matchMedewerkerToUser = (user, medewerkers) => {
+    if (!user || !Array.isArray(medewerkers) || medewerkers.length === 0) {
+        return null;
+    }
+
+    let loginName = user.LoginName || '';
+    if (loginName.includes('|')) {
+        loginName = loginName.split('|')[1];
+    }
+
+    let domain = '';
+    let account = loginName;
+    if (loginName.includes('\\')) {
+        [domain, account] = loginName.split('\\');
+    }
+
+    const usernameCandidates = new Set();
+    if (loginName) {
+        usernameCandidates.add(loginName.toLowerCase());
+    }
+    if (account) {
+        usernameCandidates.add(account.toLowerCase());
+    }
+    if (domain && account) {
+        usernameCandidates.add(`${domain}\\${account}`.toLowerCase());
+    }
+
+    const emailCandidate = user.Email ? user.Email.toLowerCase() : null;
+    const titleCandidate = user.Title ? user.Title.toLowerCase() : null;
+
+    const strategies = [
+        (m) => m.Username && usernameCandidates.has(m.Username.toLowerCase()),
+        (m) => {
+            if (!m.Username) return false;
+            const parts = m.Username.split('\\');
+            const shortName = parts.length > 1 ? parts[1] : m.Username;
+            return shortName && usernameCandidates.has(shortName.toLowerCase());
+        },
+        (m) => emailCandidate && m.Email && m.Email.toLowerCase() === emailCandidate,
+        (m) => titleCandidate && m.Title && m.Title.toLowerCase() === titleCandidate
+    ];
+
+    for (const strategy of strategies) {
+        const match = medewerkers.find(strategy);
+        if (match) {
+            return match;
+        }
+    }
+
+    return null;
+};
+
+/**
  * UserRegistrationCheck Component
  * Controleert of de huidige gebruiker is geregistreerd in de Medewerkers lijst
  * @param {Object} props
@@ -36,29 +91,27 @@ const UserRegistrationCheck = ({ onUserValidated, children }) => {
                 setUserInfo(user);
                 console.log('👤 Current user:', user.Title);
                 
-                // Extract username from LoginName (format: i:0#.w|domain\username)
-                const loginName = user.LoginName.split('|')[1] || user.LoginName;
-                console.log('� Login name:', loginName);
-                
-                // Check if user exists in Medewerkers list
+                // Check if user exists in Medewerkers list using robust matching
                 const medewerkers = await getSharePointListItems('Medewerkers');
-                const exists = medewerkers.some(m => m.Username === loginName);
+                const match = matchMedewerkerToUser(user, medewerkers);
+                const exists = match !== null;
+                
+                if (match) {
+                    console.log('✅ Matched user to medewerker:', match.Title, '(Username:', match.Username, ')');
+                } else {
+                    console.warn('⚠️ No medewerker match found for user:', user.Title, user.LoginName, user.Email);
+                }
                 
                 // Note: Permission checking can be added later if needed via permissionService
                 // For now, we just check if user is registered in Medewerkers
                 const hasPrivilegedAccess = false; // Placeholder
                 setHasPermission(hasPrivilegedAccess);
                 
-                if (exists) {
-                    console.log('✅ User is registered in Medewerkers list');
-                    setIsRegistered(true);
-                    if (onUserValidated) {
-                        // Call with the expected signature: (isValid, currentUser, userPermissions)
-                        onUserValidated(true, user, hasPrivilegedAccess);
-                    }
-                } else {
-                    console.warn('⚠️ User is not registered in Medewerkers list');
-                    setIsRegistered(false);
+                setIsRegistered(exists);
+                
+                if (exists && onUserValidated) {
+                    // Call with the expected signature: (isValid, currentUser, userPermissions)
+                    onUserValidated(true, user, hasPrivilegedAccess);
                 }
                 
             } catch (error) {

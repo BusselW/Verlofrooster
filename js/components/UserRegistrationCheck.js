@@ -12,6 +12,7 @@ const { createElement: h } = window.React;
  */
 const matchMedewerkerToUser = (user, medewerkers) => {
     if (!user || !Array.isArray(medewerkers) || medewerkers.length === 0) {
+        console.warn('matchMedewerkerToUser: Invalid input', { user: !!user, medewerkers: medewerkers?.length });
         return null;
     }
 
@@ -40,6 +41,22 @@ const matchMedewerkerToUser = (user, medewerkers) => {
     const emailCandidate = user.Email ? user.Email.toLowerCase() : null;
     const titleCandidate = user.Title ? user.Title.toLowerCase() : null;
 
+    console.log('🔍 Matching user with candidates:', {
+        loginName,
+        domain,
+        account,
+        usernameCandidates: Array.from(usernameCandidates),
+        email: emailCandidate,
+        title: titleCandidate
+    });
+
+    const strategyNames = [
+        'Direct Username Match',
+        'Short Username Match',
+        'Email Match',
+        'Title Match'
+    ];
+
     const strategies = [
         (m) => m.Username && usernameCandidates.has(m.Username.toLowerCase()),
         (m) => {
@@ -52,13 +69,16 @@ const matchMedewerkerToUser = (user, medewerkers) => {
         (m) => titleCandidate && m.Title && m.Title.toLowerCase() === titleCandidate
     ];
 
-    for (const strategy of strategies) {
+    for (let i = 0; i < strategies.length; i++) {
+        const strategy = strategies[i];
         const match = medewerkers.find(strategy);
         if (match) {
+            console.log(`✅ Strategy ${i + 1} (${strategyNames[i]}) matched:`, match.Title, match.Username);
             return match;
         }
     }
 
+    console.warn('❌ No matching strategy found. Checked', medewerkers.length, 'medewerkers');
     return null;
 };
 

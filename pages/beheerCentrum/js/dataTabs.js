@@ -46,22 +46,31 @@ export const beheerTabs = [
             { Header: 'Acties', accessor: 'actions', isAction: true },
         ],
         formFields: [
-            { name: 'Naam', label: 'Naam', type: 'text' },
-            { name: 'Username', label: 'Username', type: 'text' },
-            { name: 'E_x002d_mail', label: 'E-mail', type: 'email' },
-            { name: 'Functie', label: 'Functie', type: 'select', listSource: 'keuzelijstFuncties', valueField: 'Title' },
-            { name: 'Team', label: 'Team', type: 'select', listSource: 'Teams', valueField: 'Naam' },
-            { name: 'Werkschema', label: 'Werkschema', type: 'text' },
-            { name: 'UrenPerWeek', label: 'Uren per week', type: 'number' },
-            { name: 'Geboortedatum', label: 'Geboortedatum', type: 'date' },
-            { name: 'Werkdagen', label: 'Werkdagen', type: 'textarea' },
-            { name: 'HalveDagType', label: 'Halve dag type', type: 'text' },
-            { name: 'HalveDagWeekdag', label: 'Halve dag weekdag', type: 'text' },
-            { name: 'Horen', label: 'Horen', type: 'checkbox' },
-            { name: 'Verbergen', label: 'Verbergen in rooster', type: 'checkbox' },
-            { name: 'Actief', label: 'Actief', type: 'checkbox' },
-            { name: 'Opmerking', label: 'Opmerking', type: 'textarea' },
-            { name: 'OpmerkingGeldigTot', label: 'Opmerking geldig tot', type: 'date' },
+            // Basic Information Section
+            { name: 'Naam', label: 'Naam', type: 'text', section: 'Basisinformatie' },
+            { name: 'Username', label: 'Username', type: 'text', section: 'Basisinformatie' },
+            { name: 'E_x002d_mail', label: 'E-mail', type: 'email', section: 'Basisinformatie' },
+            { name: 'Geboortedatum', label: 'Geboortedatum', type: 'date', section: 'Basisinformatie' },
+            
+            // Work Information Section
+            { name: 'Functie', label: 'Functie', type: 'select', listSource: 'keuzelijstFuncties', valueField: 'Title', section: 'Werkinformatie' },
+            { name: 'Team', label: 'Team', type: 'select', listSource: 'Teams', valueField: 'Naam', section: 'Werkinformatie' },
+            { name: 'Werkschema', label: 'Werkschema', type: 'text', section: 'Werkinformatie' },
+            { name: 'UrenPerWeek', label: 'Uren per week', type: 'number', section: 'Werkinformatie' },
+            
+            // Schedule Details Section
+            { name: 'Werkdagen', label: 'Werkdagen', type: 'textarea', section: 'Schema details', fullWidth: true },
+            { name: 'HalveDagType', label: 'Halve dag type', type: 'text', section: 'Schema details' },
+            { name: 'HalveDagWeekdag', label: 'Halve dag weekdag', type: 'text', section: 'Schema details' },
+            
+            // Settings Section
+            { name: 'Horen', label: 'Horen', type: 'checkbox', section: 'Instellingen' },
+            { name: 'Verbergen', label: 'Verbergen in rooster', type: 'checkbox', section: 'Instellingen' },
+            { name: 'Actief', label: 'Actief', type: 'checkbox', section: 'Instellingen' },
+            
+            // Notes Section
+            { name: 'Opmerking', label: 'Opmerking', type: 'textarea', section: 'Opmerkingen', fullWidth: true },
+            { name: 'OpmerkingGeldigTot', label: 'Opmerking geldig tot', type: 'date', section: 'Opmerkingen' },
         ]
     },
 

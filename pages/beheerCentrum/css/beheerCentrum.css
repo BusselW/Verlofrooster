@@ -132,6 +132,10 @@ label {
 .form-grid {
     display: grid;
     gap: 1rem;
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.form-grid.cols-1 {
     grid-template-columns: 1fr;
 }
 
@@ -154,19 +158,20 @@ label {
 /* ===== FORM SECTIONS ===== */
 .form-section {
     margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
 }
 
-.form-section-title {
-    font-size: 1rem;
+.form-section:last-child {
+    margin-bottom: 0;
+}
+
+.form-section-title,
+.section-title {
+    font-size: 0.95rem;
     font-weight: 600;
-    color: #1e293b;
-    margin: 0 0 1rem 0;
+    color: #2c3e50;
+    margin: 0 0 0.75rem 0;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 2px solid #e9ecef;
 }
 
 .form-section-fields {

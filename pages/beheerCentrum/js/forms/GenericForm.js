@@ -119,7 +119,7 @@ export const GenericForm = ({ onSave, onCancel, initialData = {}, formFields = [
         onSave(dataToSave);
     };
 
-    const renderField = (field, isFullWidth = false) => {
+    const renderField = (field) => {
         if (!field) return null;
 
         const isReadOnly = (tabType === 'medewerkers' && field.name === 'Username') || 
@@ -220,7 +220,7 @@ export const GenericForm = ({ onSave, onCancel, initialData = {}, formFields = [
         }
 
         const fieldClass = field.type === 'checkbox' ? 'form-field toggle-switch' : 'form-field';
-        const containerClass = `${fieldClass} ${isFullWidth ? 'full-width' : ''}`;
+        const containerClass = `${fieldClass} ${field.fullWidth ? 'full-width' : ''}`;
 
         return h('div', { key: field.name, className: containerClass },
             h('label', { htmlFor: field.name, className: field.required ? 'required' : '' }, field.label),
@@ -229,9 +229,37 @@ export const GenericForm = ({ onSave, onCancel, initialData = {}, formFields = [
         );
     };
 
-    const textFields = formFields.filter(f => !['checkbox', 'textarea'].includes(f.type));
-    const booleanFields = formFields.filter(f => f.type === 'checkbox');
-    const textAreaFields = formFields.filter(f => f.type === 'textarea');
+    // Group fields by section
+    const groupedFields = formFields.reduce((acc, field) => {
+        const section = field.section || 'default';
+        if (!acc[section]) acc[section] = [];
+        acc[section].push(field);
+        return acc;
+    }, {});
+
+    // Render grouped sections
+    const renderSections = () => {
+        return Object.entries(groupedFields).map(([sectionName, fields]) => {
+            const regularFields = fields.filter(f => f.type !== 'checkbox' && !f.fullWidth);
+            const fullWidthFields = fields.filter(f => f.fullWidth);
+            const checkboxFields = fields.filter(f => f.type === 'checkbox');
+
+            return h('div', { key: sectionName, className: 'form-section' },
+                sectionName !== 'default' && h('h3', { className: 'section-title' }, sectionName),
+                
+                // Regular fields in grid
+                regularFields.length > 0 && h('div', { className: 'form-grid' },
+                    ...regularFields.map(field => renderField(field))
+                ),
+                
+                // Full width fields
+                ...fullWidthFields.map(field => renderField(field)),
+                
+                // Checkbox fields
+                ...checkboxFields.map(field => renderField(field))
+            );
+        });
+    };
 
     return h('form', { className: 'modal-form', onSubmit: handleSubmit },
         h('div', { className: 'modal-header' },
@@ -254,19 +282,8 @@ export const GenericForm = ({ onSave, onCancel, initialData = {}, formFields = [
                 })
             ),
 
-            // Regular form fields in a grid
-            textFields.length > 0 && h('div', { className: 'form-grid' },
-                ...textFields.map(field => renderField(field))
-            ),
-
-            // Text area fields (full width)
-            ...textAreaFields.map(field => renderField(field, true)),
-
-            // Boolean fields (toggles)
-            booleanFields.length > 0 && h('div', { className: 'toggle-group' },
-                h('h3', { className: 'toggle-group-title' }, 'Instellingen'),
-                ...booleanFields.map(field => renderField(field))
-            )
+            // Render all sections
+            ...renderSections()
         ),
 
         h('div', { className: 'modal-footer' },

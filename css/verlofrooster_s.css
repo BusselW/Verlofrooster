@@ -2108,7 +2108,7 @@ td .compensatie-uur-container img.compensatie-icon-svg {
         0 8px 16px rgba(15, 23, 42, 0.1),
         inset 0 1px 0 rgba(255, 255, 255, 0.8);
     width: 100%;
-    max-width: 700px;
+    max-width: 900px;
     max-height: 90vh;
     display: flex;
     flex-direction: column;

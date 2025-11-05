@@ -944,6 +944,8 @@
 
         // Updated TabContent component
         const TabContent = ({ tab, data, loading, error, onAddNew, onEdit, onDelete, onToggle, showAllColumns, onToggleColumns }) => {
+            const [searchQuery, setSearchQuery] = useState('');
+
             if (loading) {
                 return h('div', { style: { textAlign: 'center', padding: '3rem' } },
                     h('div', { className: 'loading-spinner' }),
@@ -960,18 +962,68 @@
                 );
             }
 
+            // Filter data based on search query
+            const filteredData = React.useMemo(() => {
+                if (!searchQuery.trim()) return data;
+
+                const query = searchQuery.toLowerCase();
+                return data.filter(row => {
+                    // Search through all fields in the row
+                    return Object.entries(row).some(([key, value]) => {
+                        if (value === null || value === undefined) return false;
+                        
+                        // Convert value to string and search
+                        const stringValue = String(value).toLowerCase();
+                        return stringValue.includes(query);
+                    });
+                });
+            }, [data, searchQuery]);
+
             const totalColumns = tab.listConfig ? tab.listConfig.velden.length - 2 : 0;
             const displayedColumns = showAllColumns ? totalColumns : (tab.columns ? tab.columns.length - 1 : 0);
 
             return h('div', { className: 'beheer-tab-panel beheer-tab-active' },
                 h('div', { className: 'tab-actions' },
-                    h('button', {
-                        className: 'btn-primary',
-                        onClick: onAddNew,
-                        style: { display: 'flex', alignItems: 'center', gap: '0.5rem' }
-                    },
-                        h('i', { className: 'fas fa-plus' }),
-                        `Nieuwe ${tab.label.slice(0, -1)} toevoegen`
+                    h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', flex: '1' } },
+                        h('button', {
+                            className: 'btn-primary',
+                            onClick: onAddNew,
+                            style: { display: 'flex', alignItems: 'center', gap: '0.5rem' }
+                        },
+                            h('i', { className: 'fas fa-plus' }),
+                            `Nieuwe ${tab.label.slice(0, -1)} toevoegen`
+                        ),
+                        // Search filter
+                        h('div', { className: 'search-filter-container', style: { flex: '1', maxWidth: '400px' } },
+                            h('div', { className: 'autocomplete-container', style: { width: '100%' } },
+                                h('input', {
+                                    type: 'text',
+                                    value: searchQuery,
+                                    onChange: (e) => setSearchQuery(e.target.value),
+                                    placeholder: `Zoek in ${tab.label.toLowerCase()}...`,
+                                    className: 'autocomplete-input',
+                                    style: { width: '100%' }
+                                }),
+                                h('span', { 
+                                    className: 'autocomplete-icon', 
+                                    'aria-hidden': 'true',
+                                    style: { 
+                                        pointerEvents: searchQuery ? 'auto' : 'none', 
+                                        cursor: searchQuery ? 'pointer' : 'default' 
+                                    },
+                                    onClick: searchQuery ? () => setSearchQuery('') : undefined,
+                                    title: searchQuery ? 'Wis zoekopdracht' : 'Zoeken'
+                                }, searchQuery ? '✖️' : '🔍')
+                            ),
+                            searchQuery && h('div', { 
+                                style: { 
+                                    fontSize: '12px', 
+                                    color: 'var(--text-secondary)', 
+                                    marginTop: '4px',
+                                    fontWeight: '500'
+                                } 
+                            }, `${filteredData.length} van ${data.length} resultaten`)
+                        )
                     ),
                     h('div', { style: { display: 'flex', gap: '15px', alignItems: 'center' } },
                         h('span', { style: { fontSize: '13px', color: 'var(--text-secondary)' } },
@@ -992,7 +1044,7 @@
                 ),
                 h(DataTable, {
                     columns: showAllColumns ? null : tab.columns,
-                    data,
+                    data: filteredData,
                     listConfig: tab.listConfig,
                     onEdit,
                     onDelete,

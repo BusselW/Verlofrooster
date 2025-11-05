@@ -11,13 +11,21 @@
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registratie - Verlofrooster</title>
-    <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"> -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" href="data:," />
 
-    <!-- React Libraries -->
-    <script src="https://som.org.om.local/sites/MulderT/SBeheer/CPW/L/react.development.js"></script>
-    <script src="https://som.org.om.local/sites/MulderT/SBeheer/CPW/L/react-dom.development.js"></script>
+    <!-- React Libraries with CDN fallback -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Fallback to local SharePoint if CDN fails -->
+    <script>  
+        if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+            document.write('<script src="https://som.org.om.local/sites/MulderT/SBeheer/CPW/L/react.development.js"><\/script>');
+            document.write('<script src="https://som.org.om.local/sites/MulderT/SBeheer/CPW/L/react-dom.development.js"><\/script>');
+        }
+    </script>
 
     <!-- Configuration -->
     <script src="../../js/config/configLijst.js"></script>
@@ -122,6 +130,9 @@
     <div id="root"></div>
 
     <script type="module">
+        // Import ErrorBoundary
+        import { ErrorBoundary } from '../../js/core/ErrorBoundary.js';
+        
         // Import services (adjust paths as needed)
         import { fetchSharePointList, getCurrentUser, getUserInfo, trimLoginNaamPrefix } from '../../js/services/sharepointService.js';
         import { getCurrentUserGroups, isUserInAnyGroup } from '../../js/services/permissionService.js';
@@ -161,13 +172,13 @@
                             group.toLowerCase().includes('sharepoint beheer') || 
                             group.toLowerCase().includes('1. sharepoint beheer')
                         );
-                        setDebugMode(true);
+                        setDebugMode(isAdmin);
 
                         // Check if user exists in Medewerkers list
                         const shouldRedirect = await checkUserInMedewerkersList(currentUser, isAdmin);
                         if (shouldRedirect) {
                             console.log('User found in Medewerkers list, redirecting to verlofrooster...');
-                            window.location.href = '/sites/mulderT/CustomPW/Verlof/CPW/Rooster/Verlofrooster.aspx';
+                            window.location.href = '../../verlofRooster.aspx';
                             return; // Stop execution if redirecting
                         }
 
@@ -224,10 +235,39 @@
                         return match;
                     });
 
-                    if (userMatch) {
+                    // Try multiple matching strategies (same as UserRegistrationCheck)
+                    const matchedUser = medewerkers.find(medewerker => {
+                        if (!medewerker.Username) return false;
+                        
+                        const medewerkerNorm = trimLoginNaamPrefix(medewerker.Username).toLowerCase();
+                        const userNorm = normalizedUsername.toLowerCase();
+                        
+                        // Strategy 1: Direct username match
+                        if (medewerkerNorm === userNorm) return true;
+                        
+                        // Strategy 2: Short username match (after last backslash)
+                        const userShort = userNorm.split('\\').pop();
+                        const medewerkerShort = medewerkerNorm.split('\\').pop();
+                        if (userShort === medewerkerShort) return true;
+                        
+                        // Strategy 3: Email match
+                        if (currentUser.Email && medewerker.Email) {
+                            if (currentUser.Email.toLowerCase() === medewerker.Email.toLowerCase()) return true;
+                        }
+                        
+                        // Strategy 4: Title/Name match
+                        if (currentUser.Title && medewerker.Naam) {
+                            if (currentUser.Title.toLowerCase() === medewerker.Naam.toLowerCase()) return true;
+                        }
+                        
+                        return false;
+                    });
+
+                    if (matchedUser) {
                         console.log('✅ User found in Medewerkers list:', {
-                            naam: userMatch.Naam,
-                            actief: userMatch.Actief,
+                            naam: matchedUser.Naam,
+                            username: matchedUser.Username,
+                            actief: matchedUser.Actief,
                             redirecting: true
                         });
                         return true; // User found, should redirect
@@ -385,7 +425,7 @@
                     
                     // Immediately redirect to the main app instead of showing completion screen
                     console.log('Registration completed, redirecting to main app...');
-                    window.location.href = '/sites/mulderT/CustomPW/Verlof/CPW/Rooster/Verlofrooster.aspx';
+                    window.location.href = '../../verlofRooster.aspx';
                     
                 } catch (error) {
                     console.error('Registration failed:', error);
@@ -455,7 +495,7 @@
                                 document.body.appendChild(successDiv);
                                 
                                 setTimeout(() => {
-                                    window.location.href = '/sites/mulderT/CustomPW/Verlof/CPW/Rooster/Verlofrooster.aspx';
+                                    window.location.href = '../../verlofRooster.aspx';
                                 }, 1500);
                             }
                         }
@@ -556,8 +596,12 @@
             const container = document.getElementById('root');
             if (container) {
                 const root = ReactDOM.createRoot(container);
-                root.render(h(App));
-                console.log('Template application initialized successfully');
+                root.render(
+                    h(ErrorBoundary, null,
+                        h(App)
+                    )
+                );
+                console.log('Registration application initialized successfully');
             } else {
                 console.error('Root container not found');
             }

@@ -505,6 +505,8 @@ const DataTable = ({ columns, data, onEdit, onDelete, listConfig }) => {
 
 const TabContent = ({ tab, data, loading, error, onAddNew, onEdit, onDelete, showAllColumns, onToggleColumns }) => {
     const [searchQuery, setSearchQuery] = useState('');
+    
+    console.log('🔍 TabContent rendering with search filter. SearchQuery:', searchQuery);
 
     if (loading) {
         return h('div', { className: 'loading-spinner' }, 'Laden...');

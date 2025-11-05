@@ -5,8 +5,12 @@ import { getSharePointContext, initializeSharePointContext } from '../../js/shar
 const BlokkenMonitor = () => {
     const [counts, setCounts] = useState({
         verlof: 0,
-        compensatie: 0,
+        ziekte: 0,
         zittingsvrij: 0,
+        zvvo: 0,
+        zvm: 0,
+        compensatie: 0,
+        total: 0
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -62,8 +66,8 @@ const BlokkenMonitor = () => {
         );
     }
 
-    // Calculate total blokken count
-    const totalBlokken = counts.verlof + counts.compensatie + counts.zittingsvrij;
+    // Use total from API or calculate if not provided
+    const totalBlokken = counts.total || (counts.verlof + counts.ziekte + counts.zittingsvrij + counts.zvvo + counts.zvm + counts.compensatie);
     
     return h('div', { className: 'admin-tab-panel admin-tab-active', id: 'monitoring-content' },
         h('fieldset', null,
@@ -89,8 +93,9 @@ const BlokkenMonitor = () => {
                 )
             ),
             
-            // Individual counts grid
-            h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' } },
+            // Individual counts grid - organized by category
+            h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' } },
+                // VER - Verlof
                 h('div', { 
                     className: 'count-card', 
                     style: { 
@@ -102,12 +107,13 @@ const BlokkenMonitor = () => {
                         borderLeft: '4px solid #22c55e'
                     } 
                 },
-                    h('h4', { style: { margin: '0 0 0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' } }, 'Verlof Aanvragen'),
+                    h('h4', { style: { margin: '0 0 0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: '600' } }, 'VER - Verlof'),
                     h('p', { style: { margin: '0', fontSize: '2rem', fontWeight: '700', color: '#22c55e' } }, counts.verlof),
                     h('p', { style: { margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' } }, 
                         `${((counts.verlof / totalBlokken) * 100 || 0).toFixed(1)}%`
                     )
                 ),
+                // ZKT - Ziekte
                 h('div', { 
                     className: 'count-card', 
                     style: { 
@@ -116,15 +122,16 @@ const BlokkenMonitor = () => {
                         border: '1px solid var(--border)', 
                         borderRadius: '0.5rem', 
                         textAlign: 'center',
-                        borderLeft: '4px solid #3b82f6'
+                        borderLeft: '4px solid #ef4444'
                     } 
                 },
-                    h('h4', { style: { margin: '0 0 0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' } }, 'Compensatie-uren'),
-                    h('p', { style: { margin: '0', fontSize: '2rem', fontWeight: '700', color: '#3b82f6' } }, counts.compensatie),
+                    h('h4', { style: { margin: '0 0 0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: '600' } }, 'ZKT - Ziekte'),
+                    h('p', { style: { margin: '0', fontSize: '2rem', fontWeight: '700', color: '#ef4444' } }, counts.ziekte),
                     h('p', { style: { margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' } }, 
-                        `${((counts.compensatie / totalBlokken) * 100 || 0).toFixed(1)}%`
+                        `${((counts.ziekte / totalBlokken) * 100 || 0).toFixed(1)}%`
                     )
                 ),
+                // ZV - Zittingsvrij
                 h('div', { 
                     className: 'count-card', 
                     style: { 
@@ -136,10 +143,64 @@ const BlokkenMonitor = () => {
                         borderLeft: '4px solid #f59e0b'
                     } 
                 },
-                    h('h4', { style: { margin: '0 0 0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' } }, 'Zittingsvrij Dagen'),
+                    h('h4', { style: { margin: '0 0 0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: '600' } }, 'ZV - Zittingsvrij'),
                     h('p', { style: { margin: '0', fontSize: '2rem', fontWeight: '700', color: '#f59e0b' } }, counts.zittingsvrij),
                     h('p', { style: { margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' } }, 
                         `${((counts.zittingsvrij / totalBlokken) * 100 || 0).toFixed(1)}%`
+                    )
+                ),
+                // ZVVO
+                h('div', { 
+                    className: 'count-card', 
+                    style: { 
+                        padding: '1rem', 
+                        backgroundColor: 'var(--bg-secondary)', 
+                        border: '1px solid var(--border)', 
+                        borderRadius: '0.5rem', 
+                        textAlign: 'center',
+                        borderLeft: '4px solid #f97316'
+                    } 
+                },
+                    h('h4', { style: { margin: '0 0 0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: '600' } }, 'ZVVO'),
+                    h('p', { style: { margin: '0', fontSize: '2rem', fontWeight: '700', color: '#f97316' } }, counts.zvvo),
+                    h('p', { style: { margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' } }, 
+                        `${((counts.zvvo / totalBlokken) * 100 || 0).toFixed(1)}%`
+                    )
+                ),
+                // ZVM
+                h('div', { 
+                    className: 'count-card', 
+                    style: { 
+                        padding: '1rem', 
+                        backgroundColor: 'var(--bg-secondary)', 
+                        border: '1px solid var(--border)', 
+                        borderRadius: '0.5rem', 
+                        textAlign: 'center',
+                        borderLeft: '4px solid #fb923c'
+                    } 
+                },
+                    h('h4', { style: { margin: '0 0 0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: '600' } }, 'ZVM'),
+                    h('p', { style: { margin: '0', fontSize: '2rem', fontWeight: '700', color: '#fb923c' } }, counts.zvm),
+                    h('p', { style: { margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' } }, 
+                        `${((counts.zvm / totalBlokken) * 100 || 0).toFixed(1)}%`
+                    )
+                ),
+                // Compensatie-uren
+                h('div', { 
+                    className: 'count-card', 
+                    style: { 
+                        padding: '1rem', 
+                        backgroundColor: 'var(--bg-secondary)', 
+                        border: '1px solid var(--border)', 
+                        borderRadius: '0.5rem', 
+                        textAlign: 'center',
+                        borderLeft: '4px solid #3b82f6'
+                    } 
+                },
+                    h('h4', { style: { margin: '0 0 0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: '600' } }, 'Compensatie-uren'),
+                    h('p', { style: { margin: '0', fontSize: '2rem', fontWeight: '700', color: '#3b82f6' } }, counts.compensatie),
+                    h('p', { style: { margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' } }, 
+                        `${((counts.compensatie / totalBlokken) * 100 || 0).toFixed(1)}%`
                     )
                 )
             ),

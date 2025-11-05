@@ -245,7 +245,8 @@ async function getChoiceFieldOptions(listName, fieldName) {
 
 /**
  * Get counts of items for Verlof, CompensatieUren, and IncidenteelZittingVrij for the current month.
- * @returns {Promise<{verlof: number, compensatie: number, zittingsvrij: number}>} Object with counts.
+ * Now includes detailed counts by category (VER, ZKT, ZV, ZVVO, ZVM)
+ * @returns {Promise<{verlof: number, ziekte: number, zittingsvrij: number, zvvo: number, zvm: number, compensatie: number, total: number}>} Object with counts.
  */
 async function getBlokkenCounts() {
     try {
@@ -263,16 +264,63 @@ async function getBlokkenCounts() {
         const dateRangeFilter = (startField, endField) => 
             `${startField} ge datetime'${filterStart}' and ${endField} le datetime'${filterEnd}'`;
 
+        // Fetch all items including the Reden field for categorization
         const [verlofItems, compensatieItems, zittingsvrijItems] = await Promise.all([
-            getListItems('Verlof', 'Id', dateRangeFilter('StartDatum', 'EindDatum')),
+            getListItems('Verlof', 'Id,Reden', dateRangeFilter('StartDatum', 'EindDatum')),
             getListItems('CompensatieUren', 'Id', dateRangeFilter('StartCompensatieUren', 'EindeCompensatieUren')),
             getListItems('IncidenteelZittingVrij', 'Id', dateRangeFilter('ZittingsVrijeDagTijd', 'ZittingsVrijeDagTijdEind'))
         ]);
 
+        // Categorize Verlof items by Reden field
+        let verlofCount = 0;
+        let ziekteCount = 0;
+        let zittingsvrijCount = 0; // ZV
+        let zvvoCount = 0; // ZVVO
+        let zvmCount = 0; // ZVM
+
+        verlofItems.forEach(item => {
+            const reden = (item.Reden || '').toUpperCase().trim();
+            
+            // Check for specific keywords in the Reden field
+            if (reden.includes('VER') || reden.includes('VERLOF')) {
+                verlofCount++;
+            } else if (reden.includes('ZKT') || reden.includes('ZIEKT')) {
+                ziekteCount++;
+            } else if (reden.includes('ZVVO')) {
+                zvvoCount++;
+            } else if (reden.includes('ZVM')) {
+                zvmCount++;
+            } else if (reden.includes('ZV') || reden.includes('ZITTING')) {
+                zittingsvrijCount++;
+            } else {
+                // Default categorization if no match - count as verlof
+                verlofCount++;
+            }
+        });
+
+        // Add IncidenteelZittingVrij items to zittingsvrij count
+        zittingsvrijCount += zittingsvrijItems.length;
+
+        const totalCount = verlofCount + ziekteCount + zittingsvrijCount + zvvoCount + zvmCount + compensatieItems.length;
+
+        console.log('📊 Blokken Counts by Category:', {
+            VER: verlofCount,
+            ZKT: ziekteCount,
+            ZV: zittingsvrijCount,
+            ZVVO: zvvoCount,
+            ZVM: zvmCount,
+            Compensatie: compensatieItems.length,
+            Total: totalCount
+        });
+
         return {
-            verlof: verlofItems.length,
+            verlof: verlofCount,
+            ziekte: ziekteCount,
+            zittingsvrij: zittingsvrijCount,
+            zvvo: zvvoCount,
+            zvm: zvmCount,
             compensatie: compensatieItems.length,
-            zittingsvrij: zittingsvrijItems.length,
+            total: totalCount
         };
     } catch (error) {
         console.error("Fout bij ophalen blokken tellingen:", error);

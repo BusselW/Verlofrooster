@@ -5,7 +5,7 @@
 
 import { getCurrentUserInfo, getSharePointListItems } from '../services/sharepointService.js';
 
-const { createElement: h } = window.React;
+const { createElement: h, useState, useEffect } = window.React;
 
 /**
  * Robust user-to-medewerker matching with multiple strategies
@@ -89,16 +89,17 @@ const matchMedewerkerToUser = (user, medewerkers) => {
  * @param {Function} props.onUserValidated - Callback wanneer validatie succesvol is
  * @param {React.Component} props.children - Child components om te renderen na validatie
  */
-const UserRegistrationCheck = ({ onUserValidated, children }) => {
-    const [isValidating, setIsValidating] = React.useState(true);
-    const [isRegistered, setIsRegistered] = React.useState(false);
-    const [userInfo, setUserInfo] = React.useState(null);
-    const [hasPermission, setHasPermission] = React.useState(false);
+export const UserRegistrationCheck = ({ onUserValidated, children }) => {
+    const [isValidating, setIsValidating] = useState(true);
+    const [isRegistered, setIsRegistered] = useState(false);
+    const [userInfo, setUserInfo] = useState(null);
+    const [hasPermission, setHasPermission] = useState(false);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const validateUser = async () => {
             try {
-                console.log('🔍 Validating user registration...');
+                console.log('🔍 [UserRegistrationCheck] Starting validation...');
+                console.log('🔍 [UserRegistrationCheck] Component mounted and running');
                 
                 // Get current user info
                 const user = await getCurrentUserInfo();
@@ -128,16 +129,21 @@ const UserRegistrationCheck = ({ onUserValidated, children }) => {
                 setHasPermission(hasPrivilegedAccess);
                 
                 setIsRegistered(exists);
+                console.log('🎯 [UserRegistrationCheck] User registration status:', exists ? 'REGISTERED' : 'NOT REGISTERED');
                 
                 if (exists && onUserValidated) {
+                    console.log('✅ [UserRegistrationCheck] User is registered, calling onUserValidated callback');
                     // Call with the expected signature: (isValid, currentUser, userPermissions)
                     onUserValidated(true, user, hasPrivilegedAccess);
+                } else if (!exists) {
+                    console.log('⚠️ [UserRegistrationCheck] User is NOT registered, will show registration prompt');
                 }
                 
             } catch (error) {
-                console.error('❌ Error validating user:', error);
+                console.error('❌ [UserRegistrationCheck] Error validating user:', error);
                 setIsRegistered(false);
             } finally {
+                console.log('🏁 [UserRegistrationCheck] Validation complete, setting isValidating to false');
                 setIsValidating(false);
             }
         };
@@ -147,6 +153,7 @@ const UserRegistrationCheck = ({ onUserValidated, children }) => {
     
     // Loading state
     if (isValidating) {
+        console.log('🔄 [UserRegistrationCheck] Rendering loading state');
         return h('div', { 
             style: { 
                 display: 'flex', 
@@ -164,17 +171,23 @@ const UserRegistrationCheck = ({ onUserValidated, children }) => {
     
     // Not registered state - redirect to registration page
     if (!isRegistered) {
+        console.log('⚠️ [UserRegistrationCheck] Rendering registration prompt - user is NOT registered');
         const redirectToRegistration = () => {
             window.location.href = 'pages/instellingenCentrum/registratieCentrumN.aspx';
         };
 
         return h('div', {
             style: {
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                height: '100vh',
-                backgroundColor: '#f5f5f5'
+                backgroundColor: '#f5f5f5',
+                zIndex: 9999
             }
         },
             h('div', {
@@ -229,7 +242,9 @@ const UserRegistrationCheck = ({ onUserValidated, children }) => {
     }
     
     // Registered - render children
+    console.log('✅ [UserRegistrationCheck] User is registered, rendering children');
     return children;
 };
 
+// Also export as default for compatibility
 export default UserRegistrationCheck;

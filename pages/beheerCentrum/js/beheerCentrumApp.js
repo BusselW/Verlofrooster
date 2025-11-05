@@ -504,6 +504,8 @@ const DataTable = ({ columns, data, onEdit, onDelete, listConfig }) => {
 };
 
 const TabContent = ({ tab, data, loading, error, onAddNew, onEdit, onDelete, showAllColumns, onToggleColumns }) => {
+    const [searchQuery, setSearchQuery] = useState('');
+
     if (loading) {
         return h('div', { className: 'loading-spinner' }, 'Laden...');
     }
@@ -511,6 +513,23 @@ const TabContent = ({ tab, data, loading, error, onAddNew, onEdit, onDelete, sho
     if (error) {
         return h('div', { className: 'error-message' }, `Fout bij laden: ${error.message}`);
     }
+
+    // Filter data based on search query
+    const filteredData = React.useMemo(() => {
+        if (!searchQuery.trim()) return data;
+
+        const query = searchQuery.toLowerCase();
+        return data.filter(row => {
+            // Search through all fields in the row
+            return Object.entries(row).some(([key, value]) => {
+                if (value === null || value === undefined) return false;
+                
+                // Convert value to string and search
+                const stringValue = String(value).toLowerCase();
+                return stringValue.includes(query);
+            });
+        });
+    }, [data, searchQuery]);
 
     const totalColumns = tab.listConfig ? tab.listConfig.velden.length - 2 : 0; // -2 for ID and Title
     const displayedColumns = showAllColumns ? totalColumns : (tab.columns ? tab.columns.length - 1 : 0); // -1 for actions
@@ -520,34 +539,65 @@ const TabContent = ({ tab, data, loading, error, onAddNew, onEdit, onDelete, sho
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center',
-            marginBottom: '20px'
+            marginBottom: '20px',
+            gap: '20px'
         }},
-            h('button', { 
-                className: 'btn-primary btn-with-icon',
-                onClick: onAddNew,
-                style: {
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    padding: '12px 20px'
-                }
-            }, 
-                h('svg', { 
-                    className: 'icon icon-add', 
-                    width: '16', 
-                    height: '16', 
-                    fill: 'currentColor', 
-                    viewBox: '0 0 20 20' 
-                },
-                    h('path', { 
-                        fillRule: 'evenodd', 
-                        d: 'M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z',
-                        clipRule: 'evenodd' 
-                    })
+            h('div', { style: { display: 'flex', gap: '12px', alignItems: 'center', flex: '1' } },
+                h('button', { 
+                    className: 'btn-primary btn-with-icon',
+                    onClick: onAddNew,
+                    style: {
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        padding: '12px 20px'
+                    }
+                }, 
+                    h('svg', { 
+                        className: 'icon icon-add', 
+                        width: '16', 
+                        height: '16', 
+                        fill: 'currentColor', 
+                        viewBox: '0 0 20 20' 
+                    },
+                        h('path', { 
+                            fillRule: 'evenodd', 
+                            d: 'M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z',
+                            clipRule: 'evenodd' 
+                        })
+                    ),
+                    `Nieuwe ${tab.label.slice(0, -1)} toevoegen`
                 ),
-                `Nieuwe ${tab.label.slice(0, -1)} toevoegen`
+                // Search filter
+                h('div', { className: 'search-filter-container', style: { flex: '1', maxWidth: '400px' } },
+                    h('div', { className: 'autocomplete-container', style: { width: '100%' } },
+                        h('input', {
+                            type: 'text',
+                            value: searchQuery,
+                            onChange: (e) => setSearchQuery(e.target.value),
+                            placeholder: `Zoek in ${tab.label.toLowerCase()}...`,
+                            className: 'autocomplete-input',
+                            style: { width: '100%' }
+                        }),
+                        h('span', { 
+                            className: 'autocomplete-icon', 
+                            'aria-hidden': 'true',
+                            style: { pointerEvents: searchQuery ? 'auto' : 'none', cursor: searchQuery ? 'pointer' : 'default' },
+                            onClick: searchQuery ? () => setSearchQuery('') : undefined,
+                            title: searchQuery ? 'Wis zoekopdracht' : 'Zoeken'
+                        }, searchQuery ? '✖️' : '🔍')
+                    ),
+                    searchQuery && h('div', { 
+                        style: { 
+                            fontSize: '12px', 
+                            color: 'var(--beheer-text-secondary)', 
+                            marginTop: '4px',
+                            fontWeight: '500'
+                        } 
+                    }, `${filteredData.length} van ${data.length} resultaten`)
+                )
             ),
             h('div', { style: { display: 'flex', gap: '15px', alignItems: 'center' } },
                 h('span', { 
@@ -591,7 +641,7 @@ const TabContent = ({ tab, data, loading, error, onAddNew, onEdit, onDelete, sho
         ),
         h(DataTable, { 
             columns: showAllColumns ? null : tab.columns, // null = auto-generate all
-            data,
+            data: filteredData,
             listConfig: tab.listConfig,
             onEdit,
             onDelete

@@ -162,8 +162,12 @@ const UserRegistrationCheck = ({ onUserValidated, children }) => {
         );
     }
     
-    // Not registered state
+    // Not registered state - redirect to registration page
     if (!isRegistered) {
+        const redirectToRegistration = () => {
+            window.location.href = 'pages/instellingenCentrum/registratieCentrumN.aspx';
+        };
+
         return h('div', {
             style: {
                 display: 'flex',
@@ -183,27 +187,42 @@ const UserRegistrationCheck = ({ onUserValidated, children }) => {
                     textAlign: 'center'
                 }
             },
-                h('div', { style: { fontSize: '4rem', marginBottom: '20px' } }, '⚠️'),
-                h('h2', { style: { marginBottom: '20px', color: '#333' } }, 'Geen toegang'),
+                h('div', { style: { fontSize: '4rem', marginBottom: '20px' } }, '👤'),
+                h('h2', { style: { marginBottom: '20px', color: '#333' } }, 'Account Registratie Vereist'),
                 h('p', { style: { marginBottom: '20px', color: '#666', lineHeight: '1.6' } },
-                    hasPermission 
-                        ? 'U heeft beheerdersrechten maar bent nog niet geregistreerd in de Medewerkers lijst.'
-                        : 'U bent nog niet geregistreerd als medewerker in het systeem.'
+                    `Hallo ${userInfo?.Title || 'gebruiker'}! Om het verlofrooster te kunnen gebruiken, moet je eerst je account registreren en instellen.`
                 ),
-                h('p', { style: { marginBottom: '30px', color: '#666', lineHeight: '1.6' } },
-                    'Neem contact op met de beheerder om uzelf te laten registreren in de Medewerkers lijst.'
-                ),
+                h('button', {
+                    onClick: redirectToRegistration,
+                    style: {
+                        width: '100%',
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        fontWeight: '500',
+                        fontSize: '16px',
+                        padding: '12px 24px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        marginBottom: '16px',
+                        transition: 'background-color 0.2s'
+                    },
+                    onMouseEnter: (e) => e.target.style.backgroundColor = '#2563eb',
+                    onMouseLeave: (e) => e.target.style.backgroundColor = '#3b82f6'
+                }, '→ Ga naar Registratie'),
                 userInfo && h('div', {
                     style: {
-                        backgroundColor: '#f8f9fa',
-                        padding: '15px',
-                        borderRadius: '4px',
-                        fontSize: '0.9rem',
-                        color: '#666'
+                        marginTop: '24px',
+                        paddingTop: '16px',
+                        borderTop: '1px solid #e5e7eb'
                     }
                 },
-                    h('p', { style: { margin: '5px 0' } }, h('strong', null, 'Naam: '), userInfo.Title),
-                    h('p', { style: { margin: '5px 0' } }, h('strong', null, 'E-mail: '), userInfo.Email)
+                    h('p', {
+                        style: {
+                            fontSize: '12px',
+                            color: '#9ca3af'
+                        }
+                    }, `Ingelogd als: ${userInfo.LoginName}`)
                 )
             )
         );

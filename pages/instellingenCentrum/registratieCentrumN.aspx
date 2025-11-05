@@ -67,34 +67,37 @@
         }
         
         .step-number {
-            width: 40px;
-            height: 40px;
+            width: 50px; /* Increased from 40px */
+            height: 50px; /* Increased from 40px */
             border-radius: 50%;
             background: #e9ecef;
             color: #6c757d;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 600;
-            margin-bottom: 8px;
+            font-weight: 700; /* Increased from 600 */
+            font-size: 1.2rem; /* Added explicit size */
+            margin-bottom: 10px; /* Increased from 8px */
             transition: all 0.3s ease;
         }
         
         .progress-step.active .step-number {
             background: #007bff;
             color: white;
+            box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3); /* Added shadow for active state */
         }
         
         .progress-step.current .step-number {
             background: #28a745;
             color: white;
+            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3); /* Added shadow for current state */
         }
         
         .step-title {
             font-weight: 600;
             color: #333;
             margin-bottom: 4px;
-            font-size: 14px;
+            font-size: 0.95rem; /* Increased from 14px for better readability */
             text-align: center;
         }
         
@@ -107,7 +110,7 @@
         }
         
         .step-label {
-            font-size: 12px;
+            font-size: 0.8rem; /* Increased from 12px for better readability */
             color: #6c757d;
             text-align: center;
         }
@@ -115,13 +118,35 @@
         .navigation-buttons {
             display: flex;
             justify-content: space-between;
-            padding: 20px 0;
-            margin-top: 20px;
+            padding: 24px 0; /* Increased from 20px */
+            margin-top: 24px; /* Increased from 20px */
+            gap: 12px; /* Added gap for mobile */
         }
         
         .btn-group {
             display: flex;
-            gap: 10px;
+            gap: 12px; /* Increased from 10px */
+        }
+        
+        /* Make navigation buttons more prominent */
+        .navigation-buttons .btn {
+            min-width: 120px; /* Ensure buttons are large enough */
+            justify-content: center;
+        }
+        
+        /* Responsive adjustments for navigation */
+        @media (max-width: 640px) {
+            .navigation-buttons {
+                flex-direction: column;
+            }
+            
+            .btn-group {
+                width: 100%;
+            }
+            
+            .navigation-buttons .btn {
+                width: 100%;
+            }
         }
     </style>
 </head>

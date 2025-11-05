@@ -406,12 +406,13 @@
             const [stepSaveTrigger, setStepSaveTrigger] = useState(0);
 
             const handleStepSave = async () => {
-                // For step 1 (profile), trigger save
-                if (currentStep === 1) {
+                // For steps 1 and 2 (profile and work hours), trigger save
+                if (currentStep === 1 || currentStep === 2) {
+                    console.log(`Step ${currentStep}: Triggering save before advancing`);
                     setStepSaveTrigger(prev => prev + 1);
                 } else {
-                    // For steps 2 and 3, just advance to next step without saving
-                    // (User can configure these later via settings)
+                    // For step 3 (settings), just advance without saving
+                    // (User can configure these later via settings, or they're already auto-saved)
                     console.log(`Step ${currentStep}: Advancing without mandatory save`);
                     if (currentStep < 3) {
                         setCurrentStep(currentStep + 1);
@@ -546,9 +547,9 @@
                         
                         currentStep === 2 && h('button', {
                             className: 'btn btn-primary',
-                            onClick: handleNext,
+                            onClick: handleStepSave,
                             disabled: isSubmitting
-                        }, 'Volgende'),
+                        }, 'Opslaan & Volgende'),
                         
                         currentStep === 3 && h('button', {
                             className: 'btn btn-success',

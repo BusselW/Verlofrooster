@@ -83,9 +83,9 @@ export const WorkHoursTab = ({ user, data, isRegistration = false, onDataUpdate,
     // Handle save trigger from parent (registration wizard)
     React.useEffect(() => {
         if (isRegistration && stepSaveTrigger > 0) {
-            console.log('Save triggered from registration wizard for WorkHoursTab');
-            // In registration mode, don't auto-save - let user manually save
-            // Only call handleSave if it's explicitly triggered
+            console.log('💾 Save triggered from registration wizard for WorkHoursTab');
+            // Automatically save work hours when triggered from registration wizard
+            handleSave();
         }
     }, [stepSaveTrigger]);
 
@@ -307,6 +307,11 @@ export const WorkHoursTab = ({ user, data, isRegistration = false, onDataUpdate,
                 console.log('Week B saved with ID:', weekBResult?.ID || weekBResult?.Id);
                 
                 setFeedback({ type: 'success', message: 'Roterend werkrooster (Week A & B) succesvol opgeslagen!' });
+                
+                // Call onSaveComplete callback if provided (for registration wizard)
+                if (onSaveComplete) {
+                    onSaveComplete(true);
+                }
             } else {
                 // FIXED SCHEDULE: Save 1 record
                 console.log('Saving fixed schedule - creating 1 record');
@@ -912,18 +917,17 @@ export const WorkHoursTab = ({ user, data, isRegistration = false, onDataUpdate,
                             feedback.type === 'info' ? '1px solid #bee5eb' : '1px solid #f5c6cb'
                 }
             }, feedback.message),
-            // Show save button in both modes - settings always, registration optionally
-            h('button', {
+            // Only show save button in settings mode (not in registration mode since it's integrated in the wizard navigation)
+            !isRegistration && h('button', {
                 className: 'btn btn-primary save-btn',
                 onClick: handleSave,
                 disabled: isLoading || !userInfo,
                 style: { 
                     fontSize: '16px', 
-                    padding: '12px 24px',
-                    marginBottom: isRegistration ? '10px' : '0'
+                    padding: '12px 24px'
                 }
             }, 
-                isLoading ? 'Bezig met opslaan...' : (isRegistration ? 'Werktijden opslaan' : 'Opslaan')
+                isLoading ? 'Bezig met opslaan...' : 'Opslaan'
             ),
             !isRegistration && h('p', { 
                 className: 'text-muted', 

@@ -90,16 +90,35 @@ const matchMedewerkerToUser = (user, medewerkers) => {
  * @param {React.Component} props.children - Child components om te renderen na validatie
  */
 export const UserRegistrationCheck = ({ onUserValidated, children }) => {
+    console.log('🎬 [UserRegistrationCheck] Component function called');
+    console.log('🎬 [UserRegistrationCheck] Props:', { 
+        hasOnUserValidated: !!onUserValidated, 
+        hasChildren: !!children,
+        childrenType: children ? typeof children : 'null'
+    });
+    
     const [isValidating, setIsValidating] = useState(true);
     const [isRegistered, setIsRegistered] = useState(false);
     const [userInfo, setUserInfo] = useState(null);
     const [hasPermission, setHasPermission] = useState(false);
 
+    console.log('🎬 [UserRegistrationCheck] State initialized:', {
+        isValidating,
+        isRegistered,
+        hasUserInfo: !!userInfo,
+        hasPermission
+    });
+
     useEffect(() => {
+        console.log('🎬 [UserRegistrationCheck] useEffect triggered');
         const validateUser = async () => {
             try {
                 console.log('🔍 [UserRegistrationCheck] Starting validation...');
                 console.log('🔍 [UserRegistrationCheck] Component mounted and running');
+                console.log('🔍 [UserRegistrationCheck] window.appConfiguratie exists:', !!window.appConfiguratie);
+                if (window.appConfiguratie) {
+                    console.log('🔍 [UserRegistrationCheck] siteUrl:', window.appConfiguratie.instellingen?.siteUrl);
+                }
                 
                 // Get current user info
                 const user = await getCurrentUserInfo();
@@ -151,9 +170,18 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
         validateUser();
     }, [onUserValidated]);
     
+    console.log('🎨 [UserRegistrationCheck] Render phase - Current state:', {
+        isValidating,
+        isRegistered,
+        hasUserInfo: !!userInfo,
+        willRenderLoading: isValidating,
+        willRenderPrompt: !isValidating && !isRegistered,
+        willRenderChildren: !isValidating && isRegistered
+    });
+    
     // Loading state
     if (isValidating) {
-        console.log('🔄 [UserRegistrationCheck] Rendering loading state');
+        console.log('🔄 [UserRegistrationCheck] RETURNING: Loading state');
         return h('div', { 
             style: { 
                 display: 'flex', 
@@ -171,8 +199,11 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
     
     // Not registered state - redirect to registration page
     if (!isRegistered) {
-        console.log('⚠️ [UserRegistrationCheck] Rendering registration prompt - user is NOT registered');
+        console.log('⚠️ [UserRegistrationCheck] RETURNING: Registration prompt - user is NOT registered');
+        console.log('⚠️ [UserRegistrationCheck] User info for prompt:', userInfo);
+        
         const redirectToRegistration = () => {
+            console.log('🔗 [UserRegistrationCheck] Redirecting to registration page...');
             window.location.href = 'pages/instellingenCentrum/registratieCentrumN.aspx';
         };
 
@@ -242,7 +273,8 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
     }
     
     // Registered - render children
-    console.log('✅ [UserRegistrationCheck] User is registered, rendering children');
+    console.log('✅ [UserRegistrationCheck] RETURNING: children (user is registered)');
+    console.log('✅ [UserRegistrationCheck] Children value:', children);
     return children;
 };
 

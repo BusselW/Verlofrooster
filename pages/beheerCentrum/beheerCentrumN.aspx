@@ -944,27 +944,12 @@
 
         // Updated TabContent component
         const TabContent = ({ tab, data, loading, error, onAddNew, onEdit, onDelete, onToggle, showAllColumns, onToggleColumns }) => {
+            // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURNS
             const [searchQuery, setSearchQuery] = useState('');
-
-            if (loading) {
-                return h('div', { style: { textAlign: 'center', padding: '3rem' } },
-                    h('div', { className: 'loading-spinner' }),
-                    h('p', { style: { marginTop: '1rem' } }, 'Laden...')
-                );
-            }
-
-            if (error) {
-                return h('div', { style: { textAlign: 'center', padding: '3rem' } },
-                    h('div', { style: { color: 'var(--danger)', marginBottom: '1rem' } },
-                        h('i', { className: 'fas fa-exclamation-triangle', style: { fontSize: '2rem' } })
-                    ),
-                    h('p', { style: { color: 'var(--danger)' } }, `Fout bij laden: ${error.message}`)
-                );
-            }
-
-            // Filter data based on search query
+            
+            // Filter data based on search query - must be before early returns
             const filteredData = React.useMemo(() => {
-                if (!searchQuery.trim()) return data;
+                if (!data || !searchQuery.trim()) return data || [];
 
                 const query = searchQuery.toLowerCase();
                 return data.filter(row => {
@@ -981,6 +966,23 @@
 
             const totalColumns = tab.listConfig ? tab.listConfig.velden.length - 2 : 0;
             const displayedColumns = showAllColumns ? totalColumns : (tab.columns ? tab.columns.length - 1 : 0);
+
+            // NOW we can have conditional returns
+            if (loading) {
+                return h('div', { style: { textAlign: 'center', padding: '3rem' } },
+                    h('div', { className: 'loading-spinner' }),
+                    h('p', { style: { marginTop: '1rem' } }, 'Laden...')
+                );
+            }
+
+            if (error) {
+                return h('div', { style: { textAlign: 'center', padding: '3rem' } },
+                    h('div', { style: { color: 'var(--danger)', marginBottom: '1rem' } },
+                        h('i', { className: 'fas fa-exclamation-triangle', style: { fontSize: '2rem' } })
+                    ),
+                    h('p', { style: { color: 'var(--danger)' } }, `Fout bij laden: ${error.message}`)
+                );
+            }
 
             return h('div', { className: 'beheer-tab-panel beheer-tab-active' },
                 h('div', { className: 'tab-actions' },

@@ -60,13 +60,38 @@ export const CreateAnnouncementButton = ({ onCreateClick, canManage }) => {
 /**
  * Create Announcement Form Component - Renders in Portal
  */
-const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
+const CreateAnnouncementForm = ({ onClose, onSave, teams = [], editData = null }) => {
+    // Set default dates: today for start, +1 week for end
+    const getDefaultDates = () => {
+        const now = new Date();
+        const startDate = new Date(now);
+        const endDate = new Date(now);
+        endDate.setDate(endDate.getDate() + 7); // +1 week
+        
+        // Format for datetime-local input: YYYY-MM-DDTHH:MM
+        const formatDateTime = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        };
+        
+        return {
+            start: formatDateTime(startDate),
+            end: formatDateTime(endDate)
+        };
+    };
+    
+    const defaultDates = getDefaultDates();
+    
     const [formData, setFormData] = useState({
-        Title: '',
-        Body: '',
-        DatumTijdStart: '',
-        DatumTijdEinde: '',
-        UitzendenAan: 'Iedereen'
+        Title: editData?.Title || '',
+        Body: editData?.Body || '',
+        DatumTijdStart: editData?.DatumTijdStart || defaultDates.start,
+        DatumTijdEinde: editData?.DatumTijdEinde || defaultDates.end,
+        UitzendenAan: editData?.UitzendenAan || 'Iedereen'
     });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
@@ -96,12 +121,19 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                 UitzendenAan: formData.UitzendenAan
             };
 
-            await createSharePointListItem('Mededeling', announcementData);
+            if (editData?.ID) {
+                // Update existing
+                const { updateSharePointListItem } = await import('../services/sharepointService.js');
+                await updateSharePointListItem('Mededeling', editData.ID, announcementData);
+            } else {
+                // Create new
+                await createSharePointListItem('Mededeling', announcementData);
+            }
             
             if (onSave) await onSave();
             onClose();
         } catch (err) {
-            console.error('Error creating announcement:', err);
+            console.error('Error saving announcement:', err);
             setError('Fout bij opslaan: ' + (err.message || 'Onbekende fout'));
         } finally {
             setSaving(false);
@@ -135,19 +167,19 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
         h('div', {
             style: {
                 backgroundColor: 'white',
-                borderRadius: '8px',
-                maxWidth: '95%',
+                borderRadius: '12px',
+                maxWidth: '700px',
                 width: '100%',
-                maxHeight: '85vh',
+                maxHeight: '90vh',
                 overflow: 'auto',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
             },
             onClick: (e) => e.stopPropagation()  // ✅ Prevent close when clicking inside
         },
             // Header
             h('div', {
                 style: {
-                    padding: '12px 16px',
+                    padding: '24px',
                     borderBottom: '1px solid #e5e7eb',
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -157,7 +189,7 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                 h('h2', {
                     style: {
                         margin: 0,
-                        fontSize: '18px',
+                        fontSize: '24px',
                         fontWeight: '600',
                         color: '#111827',
                         display: 'flex',
@@ -189,20 +221,20 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
             // Form
             h('form', {
                 onSubmit: handleSubmit,
-                style: { padding: '16px' }
+                style: { padding: '24px' }
             },
                 // Error message
                 error && h('div', {
                     style: {
                         backgroundColor: '#fee2e2',
                         color: '#991b1b',
-                        padding: '8px 12px',
-                        borderRadius: '6px',
-                        marginBottom: '12px',
-                        fontSize: '13px',
+                        padding: '12px 16px',
+                        borderRadius: '8px',
+                        marginBottom: '20px',
+                        fontSize: '14px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px'
+                        gap: '8px'
                     }
                 },
                     h('i', { className: 'fas fa-exclamation-circle' }),
@@ -210,14 +242,14 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                 ),
 
                 // Title
-                h('div', { style: { marginBottom: '12px' } },
+                h('div', { style: { marginBottom: '20px' } },
                     h('label', {
                         style: {
                             display: 'block',
-                            fontSize: '13px',
+                            fontSize: '14px',
                             fontWeight: '500',
                             color: '#374151',
-                            marginBottom: '4px'
+                            marginBottom: '8px'
                         }
                     },
                         'Titel ',
@@ -230,10 +262,10 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                         placeholder: 'Bijv: Belangrijke Mededeling',
                         style: {
                             width: '100%',
-                            padding: '6px 10px',
-                            fontSize: '13px',
+                            padding: '10px 12px',
+                            fontSize: '14px',
                             border: '1px solid #d1d5db',
-                            borderRadius: '6px',
+                            borderRadius: '8px',
                             outline: 'none',
                             transition: 'border-color 0.2s'
                         },
@@ -243,14 +275,14 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                 ),
 
                 // Body
-                h('div', { style: { marginBottom: '12px' } },
+                h('div', { style: { marginBottom: '20px' } },
                     h('label', {
                         style: {
                             display: 'block',
-                            fontSize: '13px',
+                            fontSize: '14px',
                             fontWeight: '500',
                             color: '#374151',
-                            marginBottom: '4px'
+                            marginBottom: '8px'
                         }
                     },
                         'Bericht ',
@@ -260,13 +292,13 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                         value: formData.Body,
                         onChange: (e) => updateField('Body', e.target.value),
                         placeholder: 'Typ hier je bericht... (HTML ondersteund)',
-                        rows: 4,
+                        rows: 6,
                         style: {
                             width: '100%',
-                            padding: '6px 10px',
-                            fontSize: '13px',
+                            padding: '10px 12px',
+                            fontSize: '14px',
                             border: '1px solid #d1d5db',
-                            borderRadius: '6px',
+                            borderRadius: '8px',
                             outline: 'none',
                             fontFamily: 'inherit',
                             resize: 'vertical',
@@ -277,21 +309,21 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                     }),
                     h('p', {
                         style: {
-                            fontSize: '11px',
+                            fontSize: '12px',
                             color: '#6b7280',
-                            marginTop: '4px',
-                            margin: '4px 0 0 0'
+                            marginTop: '6px',
+                            margin: '6px 0 0 0'
                         }
-                    }, 'Je kunt HTML gebruiken voor opmaak')
+                    }, 'Je kunt HTML gebruiken voor opmaak (bijv. <b>vet</b>, <i>cursief</i>)')
                 ),
 
-                // Date range and audience in one row
+                // Date range
                 h('div', {
                     style: {
                         display: 'grid',
-                        gridTemplateColumns: '1fr 1fr 1fr',
-                        gap: '12px',
-                        marginBottom: '16px'
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: '16px',
+                        marginBottom: '20px'
                     }
                 },
                     // Start date
@@ -299,10 +331,10 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                         h('label', {
                             style: {
                                 display: 'block',
-                                fontSize: '13px',
+                                fontSize: '14px',
                                 fontWeight: '500',
                                 color: '#374151',
-                                marginBottom: '4px'
+                                marginBottom: '8px'
                             }
                         }, 'Zichtbaar vanaf'),
                         h('input', {
@@ -311,10 +343,10 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                             onChange: (e) => updateField('DatumTijdStart', e.target.value),
                             style: {
                                 width: '100%',
-                                padding: '6px 10px',
-                                fontSize: '13px',
+                                padding: '10px 12px',
+                                fontSize: '14px',
                                 border: '1px solid #d1d5db',
-                                borderRadius: '6px',
+                                borderRadius: '8px',
                                 outline: 'none'
                             }
                         })
@@ -324,10 +356,10 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                         h('label', {
                             style: {
                                 display: 'block',
-                                fontSize: '13px',
+                                fontSize: '14px',
                                 fontWeight: '500',
                                 color: '#374151',
-                                marginBottom: '4px'
+                                marginBottom: '8px'
                             }
                         }, 'Zichtbaar tot'),
                         h('input', {
@@ -336,50 +368,51 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                             onChange: (e) => updateField('DatumTijdEinde', e.target.value),
                             style: {
                                 width: '100%',
-                                padding: '6px 10px',
-                                fontSize: '13px',
+                                padding: '10px 12px',
+                                fontSize: '14px',
                                 border: '1px solid #d1d5db',
-                                borderRadius: '6px',
+                                borderRadius: '8px',
                                 outline: 'none'
                             }
                         })
-                    ),
-                    // Target audience - moved into same row
-                    h('div', null,
-                        h('label', {
-                            style: {
-                                display: 'block',
-                                fontSize: '13px',
-                                fontWeight: '500',
-                                color: '#374151',
-                                marginBottom: '4px'
-                            }
-                        }, 'Doelgroep'),
-                        h('select', {
-                            value: formData.UitzendenAan,
-                            onChange: (e) => updateField('UitzendenAan', e.target.value),
-                            style: {
-                                width: '100%',
-                                padding: '6px 10px',
-                                fontSize: '13px',
-                                border: '1px solid #d1d5db',
-                                borderRadius: '6px',
-                                outline: 'none',
-                                backgroundColor: 'white',
-                                cursor: 'pointer'
-                            }
-                        },
-                            h('option', { value: 'Iedereen' }, 'Iedereen'),
-                            Array.isArray(teams) ? teams.map(team => {
-                                const teamName = typeof team === 'string' ? team : (team.naam || team.Naam || team.name || 'Onbekend Team');
-                                const teamId = typeof team === 'string' ? team : (team.id || teamName);
-                                
-                                return h('option', { 
-                                    key: teamId, 
-                                    value: teamName 
-                                }, teamName);
-                            }) : null
-                        )
+                    )
+                ),
+
+                // Target audience
+                h('div', { style: { marginBottom: '24px' } },
+                    h('label', {
+                        style: {
+                            display: 'block',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            color: '#374151',
+                            marginBottom: '8px'
+                        }
+                    }, 'Doelgroep'),
+                    h('select', {
+                        value: formData.UitzendenAan,
+                        onChange: (e) => updateField('UitzendenAan', e.target.value),
+                        style: {
+                            width: '100%',
+                            padding: '10px 12px',
+                            fontSize: '14px',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '8px',
+                            outline: 'none',
+                            backgroundColor: 'white',
+                            cursor: 'pointer'
+                        }
+                    },
+                        h('option', { value: 'Iedereen' }, 'Iedereen'),
+                        Array.isArray(teams) ? teams.map(team => {
+                            const teamName = typeof team === 'string' ? team : (team.naam || team.Naam || team.name || 'Onbekend Team');
+                            const teamId = typeof team === 'string' ? team : (team.id || teamName);
+                            
+                            return h('option', { 
+                                key: teamId, 
+                                value: teamName 
+                            }, teamName);
+                        }) : null
                     )
                 ),
 
@@ -387,9 +420,9 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                 h('div', {
                     style: {
                         display: 'flex',
-                        gap: '8px',
+                        gap: '12px',
                         justifyContent: 'flex-end',
-                        paddingTop: '12px',
+                        paddingTop: '16px',
                         borderTop: '1px solid #e5e7eb'
                     }
                 },
@@ -398,13 +431,13 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                         onClick: onClose,
                         disabled: saving,
                         style: {
-                            padding: '6px 16px',
-                            fontSize: '13px',
+                            padding: '10px 20px',
+                            fontSize: '14px',
                             fontWeight: '500',
                             color: '#374151',
                             backgroundColor: '#f3f4f6',
                             border: 'none',
-                            borderRadius: '6px',
+                            borderRadius: '8px',
                             cursor: saving ? 'not-allowed' : 'pointer',
                             opacity: saving ? 0.5 : 1
                         }
@@ -413,13 +446,13 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                         type: 'submit',
                         disabled: saving,
                         style: {
-                            padding: '6px 16px',
-                            fontSize: '13px',
+                            padding: '10px 20px',
+                            fontSize: '14px',
                             fontWeight: '500',
                             color: 'white',
                             backgroundColor: '#3b82f6',
                             border: 'none',
-                            borderRadius: '6px',
+                            borderRadius: '8px',
                             cursor: saving ? 'not-allowed' : 'pointer',
                             opacity: saving ? 0.7 : 1,
                             display: 'flex',
@@ -443,6 +476,7 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
     const [mededelingen, setMededelingen] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
+    const [editingMededeling, setEditingMededeling] = useState(null);
 
     useEffect(() => {
         loadMededelingen();
@@ -475,12 +509,20 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
     };
 
     const handleCreateClick = () => {
+        setEditingMededeling(null);
+        setShowForm(true);
+        if (onCreateFormToggle) onCreateFormToggle(true);
+    };
+
+    const handleEditClick = (mededeling) => {
+        setEditingMededeling(mededeling);
         setShowForm(true);
         if (onCreateFormToggle) onCreateFormToggle(true);
     };
 
     const handleCloseForm = () => {
         setShowForm(false);
+        setEditingMededeling(null);
         if (onCreateFormToggle) onCreateFormToggle(false);
     };
 
@@ -519,7 +561,8 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
         return h(CreateAnnouncementForm, {
             onClose: handleCloseForm,
             onSave: handleSave,
-            teams: teams || []
+            teams: teams || [],
+            editData: editingMededeling
         });
     }
 
@@ -600,13 +643,17 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                 const showFromDate = startDate ? startDate.toLocaleDateString('nl-NL', {
                     day: '2-digit',
                     month: 'short',
-                    year: 'numeric'
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
                 }) : null;
                 
                 const showUntilDate = endDate ? endDate.toLocaleDateString('nl-NL', {
                     day: '2-digit',
                     month: 'short',
-                    year: 'numeric'
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
                 }) : null;
 
                 return h('div', { 
@@ -671,14 +718,13 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                             h('button', {
                                 onClick: (e) => {
                                     e.stopPropagation();
-                                    console.log('Edit mededeling:', m.ID);
-                                    // TODO: Implement edit functionality
+                                    handleEditClick(m);
                                 },
                                 title: 'Bewerken',
                                 style: {
                                     background: 'none',
                                     border: 'none',
-                                    color: '#6b7280',
+                                    color: '#3b82f6',
                                     cursor: 'pointer',
                                     padding: '4px',
                                     borderRadius: '4px',
@@ -688,11 +734,11 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                                 },
                                 onMouseEnter: (e) => {
                                     e.currentTarget.style.backgroundColor = '#eff6ff';
-                                    e.currentTarget.style.color = '#2563eb';
+                                    e.currentTarget.style.color = '#1e40af';
                                 },
                                 onMouseLeave: (e) => {
                                     e.currentTarget.style.backgroundColor = 'transparent';
-                                    e.currentTarget.style.color = '#6b7280';
+                                    e.currentTarget.style.color = '#3b82f6';
                                 }
                             },
                                 h('i', { 
@@ -708,22 +754,7 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                                         try {
                                             const { deleteSharePointListItem } = await import('../services/sharepointService.js');
                                             await deleteSharePointListItem('Mededeling', m.ID);
-                                            console.log('Mededeling verwijderd:', m.ID);
-                                            // Reload announcements
-                                            const loadMededelingenFn = async () => {
-                                                const { fetchSharePointList } = await import('../services/sharepointService.js');
-                                                const data = await fetchSharePointList('Mededeling');
-                                                const now = new Date();
-                                                const activeMededelingen = (data || []).filter(med => {
-                                                    const start = med.DatumTijdStart ? new Date(med.DatumTijdStart) : null;
-                                                    const end = med.DatumTijdEinde ? new Date(med.DatumTijdEinde) : null;
-                                                    if (start && now < start) return false;
-                                                    if (end && now > end) return false;
-                                                    return true;
-                                                });
-                                                setMededelingen(activeMededelingen);
-                                            };
-                                            await loadMededelingenFn();
+                                            await loadMededelingen();
                                         } catch (err) {
                                             console.error('Error deleting announcement:', err);
                                             alert('Fout bij verwijderen: ' + err.message);
@@ -734,7 +765,7 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                                 style: {
                                     background: 'none',
                                     border: 'none',
-                                    color: '#6b7280',
+                                    color: '#dc2626',
                                     cursor: 'pointer',
                                     padding: '4px',
                                     borderRadius: '4px',
@@ -744,11 +775,11 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                                 },
                                 onMouseEnter: (e) => {
                                     e.currentTarget.style.backgroundColor = '#fef2f2';
-                                    e.currentTarget.style.color = '#dc2626';
+                                    e.currentTarget.style.color = '#991b1b';
                                 },
                                 onMouseLeave: (e) => {
                                     e.currentTarget.style.backgroundColor = 'transparent';
-                                    e.currentTarget.style.color = '#6b7280';
+                                    e.currentTarget.style.color = '#dc2626';
                                 }
                             },
                                 h('i', { 

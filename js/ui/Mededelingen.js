@@ -135,19 +135,19 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
         h('div', {
             style: {
                 backgroundColor: 'white',
-                borderRadius: '12px',
-                maxWidth: '700px',
+                borderRadius: '8px',
+                maxWidth: '95%',
                 width: '100%',
-                maxHeight: '90vh',
+                maxHeight: '85vh',
                 overflow: 'auto',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
             },
             onClick: (e) => e.stopPropagation()  // ✅ Prevent close when clicking inside
         },
             // Header
             h('div', {
                 style: {
-                    padding: '24px',
+                    padding: '12px 16px',
                     borderBottom: '1px solid #e5e7eb',
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -157,12 +157,12 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                 h('h2', {
                     style: {
                         margin: 0,
-                        fontSize: '24px',
+                        fontSize: '18px',
                         fontWeight: '600',
                         color: '#111827',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '12px'
+                        gap: '8px'
                     }
                 },
                     h('i', { 
@@ -189,20 +189,20 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
             // Form
             h('form', {
                 onSubmit: handleSubmit,
-                style: { padding: '24px' }
+                style: { padding: '16px' }
             },
                 // Error message
                 error && h('div', {
                     style: {
                         backgroundColor: '#fee2e2',
                         color: '#991b1b',
-                        padding: '12px 16px',
-                        borderRadius: '8px',
-                        marginBottom: '20px',
-                        fontSize: '14px',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        marginBottom: '12px',
+                        fontSize: '13px',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px'
+                        gap: '6px'
                     }
                 },
                     h('i', { className: 'fas fa-exclamation-circle' }),
@@ -210,14 +210,14 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                 ),
 
                 // Title
-                h('div', { style: { marginBottom: '20px' } },
+                h('div', { style: { marginBottom: '12px' } },
                     h('label', {
                         style: {
                             display: 'block',
-                            fontSize: '14px',
+                            fontSize: '13px',
                             fontWeight: '500',
                             color: '#374151',
-                            marginBottom: '8px'
+                            marginBottom: '4px'
                         }
                     },
                         'Titel ',
@@ -230,10 +230,10 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                         placeholder: 'Bijv: Belangrijke Mededeling',
                         style: {
                             width: '100%',
-                            padding: '10px 12px',
-                            fontSize: '14px',
+                            padding: '6px 10px',
+                            fontSize: '13px',
                             border: '1px solid #d1d5db',
-                            borderRadius: '8px',
+                            borderRadius: '6px',
                             outline: 'none',
                             transition: 'border-color 0.2s'
                         },
@@ -243,14 +243,14 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                 ),
 
                 // Body
-                h('div', { style: { marginBottom: '20px' } },
+                h('div', { style: { marginBottom: '12px' } },
                     h('label', {
                         style: {
                             display: 'block',
-                            fontSize: '14px',
+                            fontSize: '13px',
                             fontWeight: '500',
                             color: '#374151',
-                            marginBottom: '8px'
+                            marginBottom: '4px'
                         }
                     },
                         'Bericht ',
@@ -260,13 +260,13 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                         value: formData.Body,
                         onChange: (e) => updateField('Body', e.target.value),
                         placeholder: 'Typ hier je bericht... (HTML ondersteund)',
-                        rows: 6,
+                        rows: 4,
                         style: {
                             width: '100%',
-                            padding: '10px 12px',
-                            fontSize: '14px',
+                            padding: '6px 10px',
+                            fontSize: '13px',
                             border: '1px solid #d1d5db',
-                            borderRadius: '8px',
+                            borderRadius: '6px',
                             outline: 'none',
                             fontFamily: 'inherit',
                             resize: 'vertical',
@@ -277,20 +277,21 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                     }),
                     h('p', {
                         style: {
-                            fontSize: '12px',
+                            fontSize: '11px',
                             color: '#6b7280',
-                            marginTop: '6px'
+                            marginTop: '4px',
+                            margin: '4px 0 0 0'
                         }
-                    }, 'Je kunt HTML gebruiken voor opmaak (bijv. <b>vet</b>, <i>cursief</i>)')
+                    }, 'Je kunt HTML gebruiken voor opmaak')
                 ),
 
-                // Date range
+                // Date range and audience in one row
                 h('div', {
                     style: {
                         display: 'grid',
-                        gridTemplateColumns: '1fr 1fr',
-                        gap: '16px',
-                        marginBottom: '20px'
+                        gridTemplateColumns: '1fr 1fr 1fr',
+                        gap: '12px',
+                        marginBottom: '16px'
                     }
                 },
                     // Start date
@@ -298,10 +299,10 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                         h('label', {
                             style: {
                                 display: 'block',
-                                fontSize: '14px',
+                                fontSize: '13px',
                                 fontWeight: '500',
                                 color: '#374151',
-                                marginBottom: '8px'
+                                marginBottom: '4px'
                             }
                         }, 'Zichtbaar vanaf'),
                         h('input', {
@@ -310,10 +311,10 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                             onChange: (e) => updateField('DatumTijdStart', e.target.value),
                             style: {
                                 width: '100%',
-                                padding: '10px 12px',
-                                fontSize: '14px',
+                                padding: '6px 10px',
+                                fontSize: '13px',
                                 border: '1px solid #d1d5db',
-                                borderRadius: '8px',
+                                borderRadius: '6px',
                                 outline: 'none'
                             }
                         })
@@ -323,10 +324,10 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                         h('label', {
                             style: {
                                 display: 'block',
-                                fontSize: '14px',
+                                fontSize: '13px',
                                 fontWeight: '500',
                                 color: '#374151',
-                                marginBottom: '8px'
+                                marginBottom: '4px'
                             }
                         }, 'Zichtbaar tot'),
                         h('input', {
@@ -335,51 +336,50 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                             onChange: (e) => updateField('DatumTijdEinde', e.target.value),
                             style: {
                                 width: '100%',
-                                padding: '10px 12px',
-                                fontSize: '14px',
+                                padding: '6px 10px',
+                                fontSize: '13px',
                                 border: '1px solid #d1d5db',
-                                borderRadius: '8px',
+                                borderRadius: '6px',
                                 outline: 'none'
                             }
                         })
-                    )
-                ),
-
-                // Target audience
-                h('div', { style: { marginBottom: '24px' } },
-                    h('label', {
-                        style: {
-                            display: 'block',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            color: '#374151',
-                            marginBottom: '8px'
-                        }
-                    }, 'Doelgroep'),
-                    h('select', {
-                        value: formData.UitzendenAan,
-                        onChange: (e) => updateField('UitzendenAan', e.target.value),
-                        style: {
-                            width: '100%',
-                            padding: '10px 12px',
-                            fontSize: '14px',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '8px',
-                            outline: 'none',
-                            backgroundColor: 'white',
-                            cursor: 'pointer'
-                        }
-                    },
-                        h('option', { value: 'Iedereen' }, 'Iedereen'),
-                        Array.isArray(teams) ? teams.map(team => {
-                            const teamName = typeof team === 'string' ? team : (team.naam || team.Naam || team.name || 'Onbekend Team');
-                            const teamId = typeof team === 'string' ? team : (team.id || teamName);
-                            
-                            return h('option', { 
-                                key: teamId, 
-                                value: teamName 
-                            }, teamName);
-                        }) : null
+                    ),
+                    // Target audience - moved into same row
+                    h('div', null,
+                        h('label', {
+                            style: {
+                                display: 'block',
+                                fontSize: '13px',
+                                fontWeight: '500',
+                                color: '#374151',
+                                marginBottom: '4px'
+                            }
+                        }, 'Doelgroep'),
+                        h('select', {
+                            value: formData.UitzendenAan,
+                            onChange: (e) => updateField('UitzendenAan', e.target.value),
+                            style: {
+                                width: '100%',
+                                padding: '6px 10px',
+                                fontSize: '13px',
+                                border: '1px solid #d1d5db',
+                                borderRadius: '6px',
+                                outline: 'none',
+                                backgroundColor: 'white',
+                                cursor: 'pointer'
+                            }
+                        },
+                            h('option', { value: 'Iedereen' }, 'Iedereen'),
+                            Array.isArray(teams) ? teams.map(team => {
+                                const teamName = typeof team === 'string' ? team : (team.naam || team.Naam || team.name || 'Onbekend Team');
+                                const teamId = typeof team === 'string' ? team : (team.id || teamName);
+                                
+                                return h('option', { 
+                                    key: teamId, 
+                                    value: teamName 
+                                }, teamName);
+                            }) : null
+                        )
                     )
                 ),
 
@@ -387,9 +387,9 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                 h('div', {
                     style: {
                         display: 'flex',
-                        gap: '12px',
+                        gap: '8px',
                         justifyContent: 'flex-end',
-                        paddingTop: '16px',
+                        paddingTop: '12px',
                         borderTop: '1px solid #e5e7eb'
                     }
                 },
@@ -398,13 +398,13 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                         onClick: onClose,
                         disabled: saving,
                         style: {
-                            padding: '10px 20px',
-                            fontSize: '14px',
+                            padding: '6px 16px',
+                            fontSize: '13px',
                             fontWeight: '500',
                             color: '#374151',
                             backgroundColor: '#f3f4f6',
                             border: 'none',
-                            borderRadius: '8px',
+                            borderRadius: '6px',
                             cursor: saving ? 'not-allowed' : 'pointer',
                             opacity: saving ? 0.5 : 1
                         }
@@ -413,18 +413,18 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                         type: 'submit',
                         disabled: saving,
                         style: {
-                            padding: '10px 20px',
-                            fontSize: '14px',
+                            padding: '6px 16px',
+                            fontSize: '13px',
                             fontWeight: '500',
                             color: 'white',
                             backgroundColor: '#3b82f6',
                             border: 'none',
-                            borderRadius: '8px',
+                            borderRadius: '6px',
                             cursor: saving ? 'not-allowed' : 'pointer',
                             opacity: saving ? 0.7 : 1,
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '8px'
+                            gap: '6px'
                         }
                     },
                         saving && h('i', { className: 'fas fa-spinner fa-spin' }),

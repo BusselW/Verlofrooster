@@ -531,9 +531,9 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
     return h('div', { 
         className: 'mededelingen-container',
         style: {
-            maxWidth: '1200px',
-            margin: '0 auto 24px',
-            padding: '0 16px'
+            width: '100%',
+            margin: '0 0 16px 0',
+            padding: '0'
         }
     },
         // Section header
@@ -542,8 +542,8 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                marginBottom: '16px',
-                paddingBottom: '8px',
+                marginBottom: '12px',
+                paddingBottom: '6px',
                 borderBottom: '2px solid #e5e7eb'
             }
         },
@@ -551,13 +551,13 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                 className: 'fas fa-bullhorn',
                 style: { 
                     color: '#3b82f6',
-                    fontSize: '18px'
+                    fontSize: '16px'
                 }
             }),
             h('h3', {
                 style: {
                     margin: 0,
-                    fontSize: '20px',
+                    fontSize: '16px',
                     fontWeight: '600',
                     color: '#111827'
                 }
@@ -579,9 +579,9 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
         h('div', {
             className: 'mededelingen-grid',
             style: {
-                display: 'grid',
-                gap: '16px',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))'
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
             }
         },
             mededelingen.map(m => {
@@ -614,20 +614,20 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                     className: 'mededeling-card',
                     style: {
                         backgroundColor: 'white',
-                        borderRadius: '12px',
-                        padding: '20px',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                        borderLeft: '4px solid #3b82f6',
+                        borderRadius: '6px',
+                        padding: '10px 12px',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+                        borderLeft: '3px solid #3b82f6',
                         transition: 'all 0.2s ease',
                         cursor: 'default'
                     },
                     onMouseEnter: (e) => {
-                        e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.12)';
+                        e.currentTarget.style.transform = 'translateX(2px)';
                     },
                     onMouseLeave: (e) => {
-                        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.08)';
+                        e.currentTarget.style.transform = 'translateX(0)';
                     }
                 },
                     h('div', { 
@@ -636,14 +636,14 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'flex-start',
-                            marginBottom: '16px',
+                            marginBottom: '8px',
                             gap: '12px'
                         }
                     },
                         h('h4', { 
                             style: { 
                                 margin: 0,
-                                fontSize: '18px',
+                                fontSize: '14px',
                                 fontWeight: '600',
                                 color: '#111827',
                                 flex: 1
@@ -654,8 +654,8 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                                 fontSize: '11px',
                                 color: '#6b7280',
                                 backgroundColor: '#f3f4f6',
-                                padding: '4px 10px',
-                                borderRadius: '6px',
+                                padding: '2px 8px',
+                                borderRadius: '4px',
                                 whiteSpace: 'nowrap',
                                 fontWeight: '500'
                             }
@@ -664,10 +664,10 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                     h('div', { 
                         className: 'mededeling-body',
                         style: {
-                            fontSize: '14px',
-                            lineHeight: '1.6',
+                            fontSize: '13px',
+                            lineHeight: '1.5',
                             color: '#374151',
-                            marginBottom: '16px'
+                            marginBottom: '8px'
                         },
                         dangerouslySetInnerHTML: { 
                             __html: m.Body || '' 
@@ -677,11 +677,11 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                         className: 'mededeling-footer',
                         style: {
                             display: 'flex',
-                            gap: '12px',
+                            gap: '8px',
                             fontSize: '11px',
                             color: '#6b7280',
-                            paddingTop: '12px',
-                            borderTop: '1px solid #e5e7eb',
+                            paddingTop: '8px',
+                            borderTop: '1px solid #f3f4f6',
                             flexWrap: 'wrap'
                         }
                     },
@@ -691,7 +691,7 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                                 alignItems: 'center', 
                                 gap: '4px',
                                 backgroundColor: '#f9fafb',
-                                padding: '4px 8px',
+                                padding: '2px 6px',
                                 borderRadius: '4px'
                             }
                         },
@@ -704,7 +704,7 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                                 alignItems: 'center', 
                                 gap: '4px',
                                 backgroundColor: '#f0fdf4',
-                                padding: '4px 8px',
+                                padding: '2px 6px',
                                 borderRadius: '4px',
                                 color: '#15803d'
                             }
@@ -718,7 +718,7 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                                 alignItems: 'center', 
                                 gap: '4px',
                                 backgroundColor: '#fef2f2',
-                                padding: '4px 8px',
+                                padding: '2px 6px',
                                 borderRadius: '4px',
                                 color: '#991b1b'
                             }
@@ -732,7 +732,7 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                                 alignItems: 'center', 
                                 gap: '4px',
                                 backgroundColor: '#eff6ff',
-                                padding: '4px 8px',
+                                padding: '2px 6px',
                                 borderRadius: '4px',
                                 color: '#1e40af'
                             }

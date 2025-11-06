@@ -649,17 +649,114 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                                 flex: 1
                             } 
                         }, m.Title || 'Mededeling'),
-                        h('span', {
+                        h('div', {
                             style: {
-                                fontSize: '11px',
-                                color: '#6b7280',
-                                backgroundColor: '#f3f4f6',
-                                padding: '2px 8px',
-                                borderRadius: '4px',
-                                whiteSpace: 'nowrap',
-                                fontWeight: '500'
+                                display: 'flex',
+                                gap: '6px',
+                                alignItems: 'center'
                             }
-                        }, formattedDate.split(' ').slice(0, 3).join(' '))
+                        },
+                            h('span', {
+                                style: {
+                                    fontSize: '11px',
+                                    color: '#6b7280',
+                                    backgroundColor: '#f3f4f6',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px',
+                                    whiteSpace: 'nowrap',
+                                    fontWeight: '500'
+                                }
+                            }, formattedDate.split(' ').slice(0, 3).join(' ')),
+                            // Edit button
+                            h('button', {
+                                onClick: (e) => {
+                                    e.stopPropagation();
+                                    console.log('Edit mededeling:', m.ID);
+                                    // TODO: Implement edit functionality
+                                },
+                                title: 'Bewerken',
+                                style: {
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#6b7280',
+                                    cursor: 'pointer',
+                                    padding: '4px',
+                                    borderRadius: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    transition: 'all 0.2s'
+                                },
+                                onMouseEnter: (e) => {
+                                    e.currentTarget.style.backgroundColor = '#eff6ff';
+                                    e.currentTarget.style.color = '#2563eb';
+                                },
+                                onMouseLeave: (e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.color = '#6b7280';
+                                }
+                            },
+                                h('i', { 
+                                    className: 'fas fa-edit',
+                                    style: { fontSize: '12px' }
+                                })
+                            ),
+                            // Delete button
+                            h('button', {
+                                onClick: async (e) => {
+                                    e.stopPropagation();
+                                    if (confirm('Weet je zeker dat je deze mededeling wilt verwijderen?')) {
+                                        try {
+                                            const { deleteSharePointListItem } = await import('../services/sharepointService.js');
+                                            await deleteSharePointListItem('Mededeling', m.ID);
+                                            console.log('Mededeling verwijderd:', m.ID);
+                                            // Reload announcements
+                                            const loadMededelingenFn = async () => {
+                                                const { fetchSharePointList } = await import('../services/sharepointService.js');
+                                                const data = await fetchSharePointList('Mededeling');
+                                                const now = new Date();
+                                                const activeMededelingen = (data || []).filter(med => {
+                                                    const start = med.DatumTijdStart ? new Date(med.DatumTijdStart) : null;
+                                                    const end = med.DatumTijdEinde ? new Date(med.DatumTijdEinde) : null;
+                                                    if (start && now < start) return false;
+                                                    if (end && now > end) return false;
+                                                    return true;
+                                                });
+                                                setMededelingen(activeMededelingen);
+                                            };
+                                            await loadMededelingenFn();
+                                        } catch (err) {
+                                            console.error('Error deleting announcement:', err);
+                                            alert('Fout bij verwijderen: ' + err.message);
+                                        }
+                                    }
+                                },
+                                title: 'Verwijderen',
+                                style: {
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#6b7280',
+                                    cursor: 'pointer',
+                                    padding: '4px',
+                                    borderRadius: '4px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    transition: 'all 0.2s'
+                                },
+                                onMouseEnter: (e) => {
+                                    e.currentTarget.style.backgroundColor = '#fef2f2';
+                                    e.currentTarget.style.color = '#dc2626';
+                                },
+                                onMouseLeave: (e) => {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.color = '#6b7280';
+                                }
+                            },
+                                h('i', { 
+                                    className: 'fas fa-trash',
+                                    style: { fontSize: '12px' }
+                                })
+                            )
+                        )
                     ),
                     h('div', { 
                         className: 'mededeling-body',

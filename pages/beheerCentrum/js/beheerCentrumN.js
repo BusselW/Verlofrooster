@@ -67,8 +67,6 @@ async function initialiseerSharePointVerbinding() {
         // Update context in user manager module
         setSharePointContext(sharePointContext);
         
-        console.log('SharePoint verbinding succesvol opgezet');
-        
         // Load current user info
         await laadHuidigeGebruiker();
         
@@ -136,8 +134,6 @@ function pasThemaToe(theme) {
         body.classList.remove('dark-theme');
         body.classList.add('light-theme');
     }
-    
-    console.log(`${isDarkTheme ? 'Donker' : 'Licht'} thema toegepast`);
 }
 
 /**

@@ -193,7 +193,6 @@
                             throw new Error('Kan huidige gebruiker niet laden. Probeer de pagina te vernieuwen.');
                         }
                         setUser(currentUser);
-                        console.log('✅ Current user loaded:', currentUser.Title || currentUser.LoginName);
 
                         // Check if user is in SharePoint admin group for debug mode
                         let isAdmin = false;
@@ -371,12 +370,10 @@
             const handleStepSave = async () => {
                 // For steps 1 and 2 (profile and work hours), trigger save
                 if (currentStep === 1 || currentStep === 2) {
-                    console.log(`Step ${currentStep}: Triggering save before advancing`);
                     setStepSaveTrigger(prev => prev + 1);
                 } else {
                     // For step 3 (settings), just advance without saving
                     // (User can configure these later via settings, or they're already auto-saved)
-                    console.log(`Step ${currentStep}: Advancing without mandatory save`);
                     if (currentStep < 3) {
                         setCurrentStep(currentStep + 1);
                     } else {
@@ -406,14 +403,10 @@
                     setIsSubmitting(true);
                     setErrors({});
                     
-                    // Here you would normally save the registration data to SharePoint
-                    console.log('Registration data:', registrationData);
-                    
                     // Simulate API call
                     await new Promise(resolve => setTimeout(resolve, 1000));
                     
                     // Immediately redirect to the main app instead of showing completion screen
-                    console.log('Registration completed, redirecting to main app...');
                     window.location.href = '../../verlofRooster.aspx';
                     
                 } catch (error) {
@@ -463,7 +456,6 @@
                                 setCurrentStep(currentStep + 1);
                             } else {
                                 // Only redirect after completing all steps or when user finishes
-                                console.log('All registration steps completed, redirecting to main app...');
                                 
                                 // Show success message briefly before redirect
                                 const successDiv = document.createElement('div');

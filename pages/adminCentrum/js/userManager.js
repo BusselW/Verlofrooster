@@ -90,7 +90,6 @@ export async function krijgGenormaliseerdGebruikersnaamVanSharePoint(inputWaarde
                 const gebruikerData = await response.json();
                 if (gebruikerData.d.results && gebruikerData.d.results.length > 0) {
                     const gebruiker = gebruikerData.d.results[0];
-                    console.log('Gevonden gebruiker:', gebruiker);
                     
                     // Return de genormaliseerde gebruikersnaam met domein prefix (bijv. "org\busselw")
                     // Verwijder alleen de SharePoint claim prefix, behoud domein\gebruikersnaam
@@ -111,7 +110,6 @@ export async function krijgGenormaliseerdGebruikersnaamVanSharePoint(inputWaarde
         }
         
         // Als geen gebruiker gevonden, return gesaneerde input (behoud domein indien aanwezig)
-        console.log('Geen gebruiker gevonden, gebruik gesaneerde input');
         return gesaneerdInput;
         
     } catch (error) {
@@ -153,7 +151,6 @@ export async function laadGebruikersInstellingen(themeCallback) {
             if (instellingenData.d.results && instellingenData.d.results.length > 0) {
                 const gebruikersInstellingen = instellingenData.d.results[0];
                 const soortWeergave = gebruikersInstellingen.SoortWeergave;
-                console.log('Gebruikersinstellingen geladen:', soortWeergave);
                 if (soortWeergave && themeCallback) {
                     themeCallback(soortWeergave);
                     return gebruikersInstellingen;
@@ -161,7 +158,6 @@ export async function laadGebruikersInstellingen(themeCallback) {
             }
         }
         
-        console.log('Geen gebruikersinstellingen gevonden, standaard lichte thema wordt toegepast');
         if (themeCallback) themeCallback('light');
         return null;
     } catch (error) {

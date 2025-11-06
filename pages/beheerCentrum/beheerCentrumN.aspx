@@ -500,8 +500,6 @@
 
     <!-- Main App Script with updated imports -->
     <script type="module">
-        console.log('🚀 Beheercentrum (Full-Width) starting execution...');
-       
         // Make React available to imported ES6 modules
         window.React = React;
        
@@ -1122,7 +1120,6 @@
                     try {
                         const listName = activeTab.listConfig.lijstTitel;
                         await deleteListItem(listName, item.Id);
-                        console.log(`✅ Item verwijderd: ${itemName}`);
                         fetchData();
                     } catch (err) {
                         console.error('Fout bij verwijderen van item:', err);
@@ -1156,10 +1153,8 @@
                     const listName = activeTab.listConfig.lijstTitel;
                     if (editingItem) {
                         await updateListItem(listName, editingItem.Id, formData);
-                        console.log(`✅ Item bijgewerkt in ${listName}`);
                     } else {
                         await createListItem(listName, formData);
-                        console.log(`✅ Nieuw item aangemaakt in ${listName}`);
                     }
                     handleCloseModal();
                     fetchData();
@@ -1266,8 +1261,6 @@
             useEffect(() => {
                 const checkUserAccess = async () => {
                     try {
-                        console.log('🔐 Checking Beheercentrum access...');
-                        
                         // Get current user info
                         const user = await getCurrentUserInfo();
                         if (!user) {
@@ -1278,7 +1271,6 @@
                         }
                         
                         setCurrentUser(user);
-                        console.log('👤 Current user:', user.Title);
                         
                         // Check if user has admin or functional permissions
                         const adminGroups = ["1. Sharepoint beheer", "1.1. Mulder MT"];
@@ -1290,8 +1282,6 @@
                         ]);
                         
                         const hasPermission = isAdmin || isFunctional;
-                        
-                        console.log('🔐 Access check result:', { isAdmin, isFunctional, hasPermission });
                         
                         setHasAccess(hasPermission);
                         setAccessCheckComplete(true);
@@ -1444,7 +1434,7 @@
             )
         );
 
-        console.log('🎉 Beheercentrum (Full-Width) initialized successfully');
+            </script>
     </script>
 </body>
 </html>

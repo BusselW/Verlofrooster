@@ -227,7 +227,6 @@
 
             const checkUserPermissions = async () => {
                 try {
-                    console.log('🔍 Checking user permissions...');
                     setLoading(true);
 
                     // Initialize SharePoint context first
@@ -256,9 +255,6 @@
                         ),
                         loading: false
                     };
-                    
-                    console.log('👥 User groups:', groupsArray);
-                    console.log('🔑 Admin permissions:', permissions);
 
                     setUserPermissions(permissions);
 

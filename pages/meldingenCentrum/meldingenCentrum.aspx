@@ -36,8 +36,6 @@
     <div id="root"></div>
 
     <script type="module">
-        console.log('🚀 Meldingencentrum starting...');
-        
         // Make React available globally
         window.React = React;
         window.ReactDOM = ReactDOM;
@@ -52,8 +50,6 @@
         const root = ReactDOM.createRoot(container);
         
         root.render(h(App));
-        
-        console.log('✅ Meldingencentrum initialized');
     </script>
 </body>
 </html>

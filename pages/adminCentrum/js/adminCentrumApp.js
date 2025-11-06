@@ -21,18 +21,14 @@ const BlokkenMonitor = () => {
                 setLoading(true);
                 setError(null);
 
-                console.log('🔍 BlokkenMonitor: Starting to fetch blokken counts...');
-
                 // Ensure SharePoint context is initialized
                 const context = getSharePointContext();
                 if (!context.siteUrl || !context.requestDigest) {
-                    console.log('⚠️ SharePoint context not initialized, initializing now...');
                     await initializeSharePointContext();
                 }
 
                 // Use the existing getBlokkenCounts function
                 const blokkenCounts = await getBlokkenCounts();
-                console.log('✅ BlokkenMonitor: Successfully fetched counts:', blokkenCounts);
 
                 setCounts(blokkenCounts);
             } catch (err) {

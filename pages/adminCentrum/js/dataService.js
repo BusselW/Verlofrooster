@@ -303,16 +303,6 @@ async function getBlokkenCounts() {
 
         const totalCount = verlofCount + ziekteCount + zittingsvrijCount + zvvoCount + zvmCount + compensatieItems.length;
 
-        console.log('📊 Blokken Counts by Category:', {
-            VER: verlofCount,
-            ZKT: ziekteCount,
-            ZV: zittingsvrijCount,
-            ZVVO: zvvoCount,
-            ZVM: zvmCount,
-            Compensatie: compensatieItems.length,
-            Total: totalCount
-        });
-
         return {
             verlof: verlofCount,
             ziekte: ziekteCount,

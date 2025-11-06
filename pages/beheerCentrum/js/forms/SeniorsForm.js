@@ -147,12 +147,10 @@ export const SeniorsForm = ({ onSave, onCancel, initialData = {}, title }) => {
         // Remove claims prefix if present (i:0#.w|domain\username -> domain\username)
         if (username.includes('|')) {
             username = username.split('|').pop();
-            console.log('🔧 Removed claims prefix, new username:', username);
         }
         
         // Ensure single backslash (not double)
         username = username.replace(/\\\\/g, '\\');
-        console.log('🔧 Processed username for display:', username);
         
         setFormData(prev => ({
             ...prev,
@@ -163,9 +161,7 @@ export const SeniorsForm = ({ onSave, onCancel, initialData = {}, title }) => {
 
     // Handle team selection - automatically populate TeamID
     const handleTeamChange = (teamName) => {
-        console.log('👥 Team selected:', teamName);
         const teamId = teamsMap.get(teamName);
-        console.log('🔧 Setting TeamID to:', teamId);
         
         setFormData(prev => ({
             ...prev,

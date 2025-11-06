@@ -83,7 +83,6 @@ export const WorkHoursTab = ({ user, data, isRegistration = false, onDataUpdate,
     // Handle save trigger from parent (registration wizard)
     React.useEffect(() => {
         if (isRegistration && stepSaveTrigger > 0) {
-            console.log('💾 Save triggered from registration wizard for WorkHoursTab');
             // Automatically save work hours when triggered from registration wizard
             handleSave();
         }
@@ -119,8 +118,6 @@ export const WorkHoursTab = ({ user, data, isRegistration = false, onDataUpdate,
     // Load existing work hours from UrenPerWeek SharePoint list
     const loadExistingWorkHours = async (userLoginName) => {
         try {
-            console.log('Loading existing work hours for user:', userLoginName);
-            
             // Fetch all UrenPerWeek records for the current user
             const urenPerWeekItems = await fetchSharePointList('UrenPerWeek');
             
@@ -129,10 +126,7 @@ export const WorkHoursTab = ({ user, data, isRegistration = false, onDataUpdate,
                 item.MedewerkerID === userLoginName
             );
             
-            console.log(`Found ${userRecords.length} existing work hour records for user`);
-            
             if (userRecords.length === 0) {
-                console.log('No existing work hours found, using defaults');
                 setHasExistingData(false);
                 setFeedback({ 
                     type: 'info', 
@@ -150,8 +144,6 @@ export const WorkHoursTab = ({ user, data, isRegistration = false, onDataUpdate,
                 record.Ingangsdatum === mostRecentDate
             );
             
-            console.log(`Most recent records (${mostRecentDate}):`, mostRecentRecords);
-            
             // Determine if this is a rotating schedule
             const isRotating = mostRecentRecords.length === 2 && 
                               mostRecentRecords.some(r => r.IsRotatingSchedule === true);
@@ -159,7 +151,6 @@ export const WorkHoursTab = ({ user, data, isRegistration = false, onDataUpdate,
             setHasExistingData(true);
             
             if (isRotating) {
-                console.log('Loading rotating schedule data');
                 setScheduleType('rotating');
                 
                 // Find Week A and Week B records
@@ -169,13 +160,11 @@ export const WorkHoursTab = ({ user, data, isRegistration = false, onDataUpdate,
                 if (weekARecord) {
                     const weekAHours = parseWorkHoursFromRecord(weekARecord);
                     setWorkHours(weekAHours);
-                    console.log('Loaded Week A hours:', weekAHours);
                 }
                 
                 if (weekBRecord) {
                     const weekBHours = parseWorkHoursFromRecord(weekBRecord);
                     setWorkHoursB(weekBHours);
-                    console.log('Loaded Week B hours:', weekBHours);
                 }
                 
                 // Set cycle start date if available
@@ -189,14 +178,12 @@ export const WorkHoursTab = ({ user, data, isRegistration = false, onDataUpdate,
                 });
                 
             } else {
-                console.log('Loading fixed schedule data');
                 setScheduleType('fixed');
                 
                 // Use the most recent single record
                 const fixedRecord = mostRecentRecords[0];
                 const fixedHours = parseWorkHoursFromRecord(fixedRecord);
                 setWorkHours(fixedHours);
-                console.log('Loaded fixed schedule hours:', fixedHours);
                 
                 setFeedback({ 
                     type: 'success', 
@@ -264,13 +251,6 @@ export const WorkHoursTab = ({ user, data, isRegistration = false, onDataUpdate,
         try {
             if (scheduleType === 'rotating') {
                 // ROTATING SCHEDULE: Save 2 records (Week A and Week B)
-                console.log('Saving rotating schedule - creating 2 records with proper WeekType');
-                console.log('🔄 Rotation parameters:', {
-                    scheduleType: scheduleType,
-                    ingangsdatum: ingangsdatum,
-                    cycleStartDate: cycleStartDate,
-                    userId: userInfo?.LoginName
-                });
                 
                 // Week A data
                 const weekAData = generateWorkScheduleData(workHours, {
@@ -294,17 +274,11 @@ export const WorkHoursTab = ({ user, data, isRegistration = false, onDataUpdate,
                 weekAData.Title = `${userInfo?.Title || userInfo?.LoginName} - Week A (${new Date(ingangsdatum).toLocaleDateString('nl-NL')})`;
                 weekBData.Title = `${userInfo?.Title || userInfo?.LoginName} - Week B (${new Date(ingangsdatum).toLocaleDateString('nl-NL')})`;
                 
-                console.log('✅ Week A data generated:', weekAData);
-                console.log('✅ Week B data generated:', weekBData);
-                
                 // Save both weeks
-                const [weekAResult, weekBResult] = await Promise.all([
+                await Promise.all([
                     createSharePointListItem('UrenPerWeek', weekAData),
                     createSharePointListItem('UrenPerWeek', weekBData)
                 ]);
-                
-                console.log('Week A saved with ID:', weekAResult?.ID || weekAResult?.Id);
-                console.log('Week B saved with ID:', weekBResult?.ID || weekBResult?.Id);
                 
                 setFeedback({ type: 'success', message: 'Roterend werkrooster (Week A & B) succesvol opgeslagen!' });
                 
@@ -314,7 +288,6 @@ export const WorkHoursTab = ({ user, data, isRegistration = false, onDataUpdate,
                 }
             } else {
                 // FIXED SCHEDULE: Save 1 record
-                console.log('Saving fixed schedule - creating 1 record');
                 
                 const scheduleData = generateWorkScheduleData(workHours, {
                     weekType: null,           // WeekType = null for fixed schedules
@@ -327,11 +300,7 @@ export const WorkHoursTab = ({ user, data, isRegistration = false, onDataUpdate,
                 // Add a descriptive title
                 scheduleData.Title = `${userInfo?.Title || userInfo?.LoginName} - Vast Rooster (${new Date(ingangsdatum).toLocaleDateString('nl-NL')})`;
                 
-                console.log('Fixed schedule data:', scheduleData);
-                
-                const result = await createSharePointListItem('UrenPerWeek', scheduleData);
-                
-                console.log('Fixed schedule saved with ID:', result?.ID || result?.Id);
+                await createSharePointListItem('UrenPerWeek', scheduleData);
                 
                 setFeedback({ type: 'success', message: 'Werkrooster succesvol opgeslagen!' });
                 

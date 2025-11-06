@@ -58,7 +58,6 @@
                         // const someData = await fetchSharePointList('SomeList');
                         // setData({ someData });
 
-                        console.log('App initialized successfully');
                     } catch (err) {
                         console.error('Error initializing app:', err);
                         setError(err.message);
@@ -212,7 +211,6 @@
             if (container) {
                 const root = ReactDOM.createRoot(container);
                 root.render(h(App));
-                console.log('Template application initialized successfully');
             } else {
                 console.error('Root container not found');
             }

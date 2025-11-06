@@ -189,25 +189,28 @@
 
                         // Load current user
                         const currentUser = await getCurrentUser();
+                        if (!currentUser) {
+                            throw new Error('Kan huidige gebruiker niet laden. Probeer de pagina te vernieuwen.');
+                        }
                         setUser(currentUser);
+                        console.log('✅ Current user loaded:', currentUser.Title || currentUser.LoginName);
 
                         // Check if user is in SharePoint admin group for debug mode
-                        const userGroups = await getCurrentUserGroups();
-                        const isAdmin = userGroups.some(group => 
-                            group.toLowerCase().includes('sharepoint beheer') || 
-                            group.toLowerCase().includes('1. sharepoint beheer')
-                        );
-                        setDebugMode(isAdmin);
-
-                        // Check if user exists in Medewerkers list
-                        const shouldRedirect = await checkUserInMedewerkersList(currentUser, isAdmin);
-                        if (shouldRedirect) {
-                            console.log('User found in Medewerkers list, redirecting to verlofrooster...');
-                            window.location.href = '../../verlofRooster.aspx';
-                            return; // Stop execution if redirecting
+                        let isAdmin = false;
+                        try {
+                            const userGroups = await getCurrentUserGroups();
+                            isAdmin = userGroups.some(group => 
+                                group.toLowerCase().includes('sharepoint beheer') || 
+                                group.toLowerCase().includes('1. sharepoint beheer')
+                            );
+                            setDebugMode(isAdmin);
+                        } catch (groupError) {
+                            console.warn('Could not check user groups:', groupError);
+                            // Continue anyway - not being able to check groups is not critical
                         }
 
-                        console.log('App initialized successfully');
+                        // Users only reach this page if they're not registered
+                        // No need to check again - they're here to register!
                     } catch (err) {
                         console.error('Error initializing app:', err);
                         setError(err.message);
@@ -218,107 +221,6 @@
 
                 initializeApp();
             }, []);
-
-            // Function to check if user exists in Medewerkers list
-            const checkUserInMedewerkersList = async (currentUser, isAdmin) => {
-                if (!currentUser || !currentUser.LoginName) {
-                    console.log('No current user or login name found');
-                    return false;
-                }
-
-                try {
-                    // Get normalized username (remove domain prefix)
-                    const normalizedUsername = trimLoginNaamPrefix(currentUser.LoginName);
-                    console.log('🔍 Checking user registration:', {
-                        originalLoginName: currentUser.LoginName,
-                        normalizedUsername: normalizedUsername,
-                        isAdmin: isAdmin,
-                        debugMode: isAdmin
-                    });
-
-                    // Fetch Medewerkers list
-                    const medewerkers = await fetchSharePointList('Medewerkers');
-                    console.log('📋 Medewerkers list loaded:', medewerkers.length, 'entries');
-
-                    // Check for match in Medewerkers list
-                    const userMatch = medewerkers.find(medewerker => {
-                        if (!medewerker.Username) return false;
-                        
-                        const medewerkerNormalizedUsername = trimLoginNaamPrefix(medewerker.Username);
-                        const match = medewerkerNormalizedUsername.toLowerCase() === normalizedUsername.toLowerCase();
-                        
-                        if (match) {
-                            console.log('✅ User match found:', {
-                                medewerkerUsername: medewerker.Username,
-                                normalizedMedewerkerUsername: medewerkerNormalizedUsername,
-                                userNormalizedUsername: normalizedUsername,
-                                medewerkerNaam: medewerker.Naam,
-                                medewerkerActief: medewerker.Actief
-                            });
-                        }
-                        
-                        return match;
-                    });
-
-                    // Try multiple matching strategies (same as UserRegistrationCheck)
-                    const matchedUser = medewerkers.find(medewerker => {
-                        if (!medewerker.Username) return false;
-                        
-                        const medewerkerNorm = trimLoginNaamPrefix(medewerker.Username).toLowerCase();
-                        const userNorm = normalizedUsername.toLowerCase();
-                        
-                        // Strategy 1: Direct username match
-                        if (medewerkerNorm === userNorm) return true;
-                        
-                        // Strategy 2: Short username match (after last backslash)
-                        const userShort = userNorm.split('\\').pop();
-                        const medewerkerShort = medewerkerNorm.split('\\').pop();
-                        if (userShort === medewerkerShort) return true;
-                        
-                        // Strategy 3: Email match
-                        if (currentUser.Email && medewerker.Email) {
-                            if (currentUser.Email.toLowerCase() === medewerker.Email.toLowerCase()) return true;
-                        }
-                        
-                        // Strategy 4: Title/Name match
-                        if (currentUser.Title && medewerker.Naam) {
-                            if (currentUser.Title.toLowerCase() === medewerker.Naam.toLowerCase()) return true;
-                        }
-                        
-                        return false;
-                    });
-
-                    if (matchedUser) {
-                        console.log('✅ User found in Medewerkers list:', {
-                            naam: matchedUser.Naam,
-                            username: matchedUser.Username,
-                            actief: matchedUser.Actief,
-                            redirecting: true
-                        });
-                        return true; // User found, should redirect
-                    } else {
-                        console.log('❌ User not found in Medewerkers list');
-                        
-                        // Debug mode: Allow SharePoint admins to bypass the check
-                        if (isAdmin) {
-                            console.log('🔧 DEBUG MODE: User is in "1. Sharepoint beheer" group, bypassing registration check');
-                            return false; // Don't redirect, let admin continue with registration
-                        }
-                        
-                        return false; // User not found, stay on registration page
-                    }
-                } catch (error) {
-                    console.error('❌ Error checking user in Medewerkers list:', error);
-                    
-                    // Debug mode: Allow admins to continue even if check fails
-                    if (isAdmin) {
-                        console.log('🔧 DEBUG MODE: Error occurred but user is admin, allowing registration');
-                        return false;
-                    }
-                    
-                    return false; // On error, stay on registration page
-                }
-            };
 
             // Handle loading state
             if (loading) {
@@ -332,10 +234,71 @@
 
             // Handle error state
             if (error) {
-                return h('div', { className: 'container' },
-                    h('div', { className: 'error' },
-                        h('h3', null, 'Er is een fout opgetreden'),
-                        h('p', null, error)
+                return h('div', { 
+                    style: {
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minHeight: '100vh',
+                        padding: '2rem',
+                        backgroundColor: '#f9fafb'
+                    }
+                },
+                    h('div', {
+                        style: {
+                            maxWidth: '600px',
+                            backgroundColor: 'white',
+                            borderRadius: '12px',
+                            padding: '2rem',
+                            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                            textAlign: 'center'
+                        }
+                    },
+                        h('div', {
+                            style: {
+                                width: '64px',
+                                height: '64px',
+                                backgroundColor: '#fee2e2',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                margin: '0 auto 1.5rem'
+                            }
+                        },
+                            h('i', {
+                                className: 'fas fa-exclamation-triangle',
+                                style: { fontSize: '24px', color: '#dc2626' }
+                            })
+                        ),
+                        h('h2', {
+                            style: {
+                                fontSize: '1.5rem',
+                                fontWeight: '600',
+                                color: '#111827',
+                                marginBottom: '0.75rem'
+                            }
+                        }, 'Registratie pagina kon niet laden'),
+                        h('p', {
+                            style: {
+                                color: '#6b7280',
+                                marginBottom: '1.5rem',
+                                lineHeight: '1.6'
+                            }
+                        }, error),
+                        h('button', {
+                            onClick: () => window.location.reload(),
+                            style: {
+                                backgroundColor: '#3b82f6',
+                                color: 'white',
+                                padding: '12px 24px',
+                                borderRadius: '8px',
+                                border: 'none',
+                                fontSize: '16px',
+                                fontWeight: '500',
+                                cursor: 'pointer'
+                            }
+                        }, 'Pagina vernieuwen')
                     )
                 );
             }

@@ -90,79 +90,40 @@ const matchMedewerkerToUser = (user, medewerkers) => {
  * @param {React.Component} props.children - Child components om te renderen na validatie
  */
 export const UserRegistrationCheck = ({ onUserValidated, children }) => {
-    console.log('🎬 [UserRegistrationCheck] Component function called');
-    console.log('🎬 [UserRegistrationCheck] Props:', { 
-        hasOnUserValidated: !!onUserValidated, 
-        hasChildren: !!children,
-        childrenType: children ? typeof children : 'null'
-    });
-    
     const [isValidating, setIsValidating] = useState(true);
     const [isRegistered, setIsRegistered] = useState(false);
     const [userInfo, setUserInfo] = useState(null);
-    const [hasPermission, setHasPermission] = useState(false);
-
-    console.log('🎬 [UserRegistrationCheck] State initialized:', {
-        isValidating,
-        isRegistered,
-        hasUserInfo: !!userInfo,
-        hasPermission
-    });
 
     useEffect(() => {
-        console.log('🎬 [UserRegistrationCheck] useEffect triggered');
         const validateUser = async () => {
             try {
-                console.log('🔍 [UserRegistrationCheck] Starting validation...');
-                console.log('🔍 [UserRegistrationCheck] Component mounted and running');
-                console.log('🔍 [UserRegistrationCheck] window.appConfiguratie exists:', !!window.appConfiguratie);
-                if (window.appConfiguratie) {
-                    console.log('🔍 [UserRegistrationCheck] siteUrl:', window.appConfiguratie.instellingen?.siteUrl);
-                }
                 
                 // Get current user info
                 const user = await getCurrentUserInfo();
                 if (!user) {
-                    console.error('❌ Could not get current user info');
+                    console.error('UserRegistrationCheck: Could not get current user info');
                     setIsValidating(false);
                     return;
                 }
                 
                 setUserInfo(user);
-                console.log('👤 Current user:', user.Title);
                 
                 // Check if user exists in Medewerkers list using robust matching
                 const medewerkers = await getSharePointListItems('Medewerkers');
                 const match = matchMedewerkerToUser(user, medewerkers);
                 const exists = match !== null;
                 
-                if (match) {
-                    console.log('✅ Matched user to medewerker:', match.Title, '(Username:', match.Username, ')');
-                } else {
-                    console.warn('⚠️ No medewerker match found for user:', user.Title, user.LoginName, user.Email);
-                }
-                
-                // Note: Permission checking can be added later if needed via permissionService
-                // For now, we just check if user is registered in Medewerkers
-                const hasPrivilegedAccess = false; // Placeholder
-                setHasPermission(hasPrivilegedAccess);
-                
                 setIsRegistered(exists);
-                console.log('🎯 [UserRegistrationCheck] User registration status:', exists ? 'REGISTERED' : 'NOT REGISTERED');
                 
                 if (exists && onUserValidated) {
-                    console.log('✅ [UserRegistrationCheck] User is registered, calling onUserValidated callback');
                     // Call with the expected signature: (isValid, currentUser, userPermissions)
-                    onUserValidated(true, user, hasPrivilegedAccess);
-                } else if (!exists) {
-                    console.log('⚠️ [UserRegistrationCheck] User is NOT registered, will show registration prompt');
+                    onUserValidated(true, user, false);
                 }
                 
             } catch (error) {
-                console.error('❌ [UserRegistrationCheck] Error validating user:', error);
+                console.error('UserRegistrationCheck: Error validating user:', error);
                 setIsRegistered(false);
             } finally {
-                console.log('🏁 [UserRegistrationCheck] Validation complete, setting isValidating to false');
                 setIsValidating(false);
             }
         };
@@ -170,18 +131,8 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
         validateUser();
     }, [onUserValidated]);
     
-    console.log('🎨 [UserRegistrationCheck] Render phase - Current state:', {
-        isValidating,
-        isRegistered,
-        hasUserInfo: !!userInfo,
-        willRenderLoading: isValidating,
-        willRenderPrompt: !isValidating && !isRegistered,
-        willRenderChildren: !isValidating && isRegistered
-    });
-    
     // Loading state
     if (isValidating) {
-        console.log('🔄 [UserRegistrationCheck] RETURNING: Loading state');
         return h('div', { 
             style: { 
                 display: 'flex', 
@@ -197,16 +148,12 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
         );
     }
     
-    // Not registered state - redirect to registration page
+    // Not registered state - AUTOMATICALLY redirect to registration page
     if (!isRegistered) {
-        console.log('⚠️ [UserRegistrationCheck] RETURNING: Registration prompt - user is NOT registered');
-        console.log('⚠️ [UserRegistrationCheck] User info for prompt:', userInfo);
+        // Automatically redirect without showing a prompt
+        window.location.href = 'pages/instellingenCentrum/registratieCentrumN.aspx';
         
-        const redirectToRegistration = () => {
-            console.log('🔗 [UserRegistrationCheck] Redirecting to registration page...');
-            window.location.href = 'pages/instellingenCentrum/registratieCentrumN.aspx';
-        };
-
+        // Show a brief message while redirecting
         return h('div', {
             style: {
                 position: 'fixed',
@@ -231,50 +178,31 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
                     textAlign: 'center'
                 }
             },
-                h('div', { style: { fontSize: '4rem', marginBottom: '20px' } }, '👤'),
-                h('h2', { style: { marginBottom: '20px', color: '#333' } }, 'Account Registratie Vereist'),
+                h('div', { style: { fontSize: '4rem', marginBottom: '20px' } }, '�'),
+                h('h2', { style: { marginBottom: '20px', color: '#333' } }, 'Doorverwijzen naar registratie...'),
                 h('p', { style: { marginBottom: '20px', color: '#666', lineHeight: '1.6' } },
-                    `Hallo ${userInfo?.Title || 'gebruiker'}! Om het verlofrooster te kunnen gebruiken, moet je eerst je account registreren en instellen.`
+                    `Je wordt automatisch doorverwezen naar de registratiepagina...`
                 ),
-                h('button', {
-                    onClick: redirectToRegistration,
+                h('div', { 
+                    className: 'loading-spinner',
                     style: {
-                        width: '100%',
-                        backgroundColor: '#3b82f6',
-                        color: 'white',
-                        fontWeight: '500',
-                        fontSize: '16px',
-                        padding: '12px 24px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        marginBottom: '16px',
-                        transition: 'background-color 0.2s'
-                    },
-                    onMouseEnter: (e) => e.target.style.backgroundColor = '#2563eb',
-                    onMouseLeave: (e) => e.target.style.backgroundColor = '#3b82f6'
-                }, '→ Ga naar Registratie'),
-                userInfo && h('div', {
+                        margin: '0 auto',
+                        width: '40px',
+                        height: '40px'
+                    }
+                }),
+                userInfo && h('p', {
                     style: {
                         marginTop: '24px',
-                        paddingTop: '16px',
-                        borderTop: '1px solid #e5e7eb'
+                        fontSize: '13px',
+                        color: '#9ca3af'
                     }
-                },
-                    h('p', {
-                        style: {
-                            fontSize: '12px',
-                            color: '#9ca3af'
-                        }
-                    }, `Ingelogd als: ${userInfo.LoginName}`)
-                )
+                }, `Ingelogd als: ${userInfo.Title || userInfo.LoginName}`)
             )
         );
     }
     
     // Registered - render children
-    console.log('✅ [UserRegistrationCheck] RETURNING: children (user is registered)');
-    console.log('✅ [UserRegistrationCheck] Children value:', children);
     return children;
 };
 

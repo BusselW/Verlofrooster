@@ -246,6 +246,22 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
     const isLoadingDataRef = React.useRef(false);
     // Ref to track the last loaded period (prevents redundant reloads)
     const lastLoadedPeriodRef = React.useRef(null);
+    
+    // Refs for period parameters to avoid dependency hell
+    const weergaveTypeRef = React.useRef(weergaveType);
+    const huidigJaarRef = React.useRef(huidigJaar);
+    const huidigMaandRef = React.useRef(huidigMaand);
+    const huidigWeekRef = React.useRef(huidigWeek);
+    const currentUserRef = React.useRef(currentUser);
+    
+    // Keep refs in sync with state
+    React.useEffect(() => {
+        weergaveTypeRef.current = weergaveType;
+        huidigJaarRef.current = huidigJaar;
+        huidigMaandRef.current = huidigMaand;
+        huidigWeekRef.current = huidigWeek;
+        currentUserRef.current = currentUser;
+    }, [weergaveType, huidigJaar, huidigMaand, huidigWeek, currentUser]);
 
     // Debug modal state changes
     useEffect(() => {
@@ -444,11 +460,11 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             // Load all data using the new unified service
             const transformedData = await DataLoader.loadAllData({
                 fetchFunction: fetchSharePointList,
-                weergaveType,
-                jaar: huidigJaar,
-                periode: weergaveType === 'week' ? huidigWeek : huidigMaand,
+                weergaveType: weergaveTypeRef.current,
+                jaar: huidigJaarRef.current,
+                periode: weergaveTypeRef.current === 'week' ? huidigWeekRef.current : huidigMaandRef.current,
                 forceReload,
-                currentUser
+                currentUser: currentUserRef.current
             });
 
             // Update all state with transformed data
@@ -465,7 +481,7 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
             hasInitialDataRef.current = true;
             
             // Track the loaded period
-            const periodKey = `${weergaveType}-${huidigJaar}-${weergaveType === 'week' ? huidigWeek : huidigMaand}`;
+            const periodKey = `${weergaveTypeRef.current}-${huidigJaarRef.current}-${weergaveTypeRef.current === 'week' ? huidigWeekRef.current : huidigMaandRef.current}`;
             lastLoadedPeriodRef.current = periodKey;
 
             console.log('✅ Data loading complete!');
@@ -495,7 +511,7 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
                 setBackgroundRefreshing(false);
             }
         }
-    }, [weergaveType, huidigJaar, huidigMaand, huidigWeek, currentUser]);
+    }, []); // EMPTY DEPENDENCIES - Use refs and state setters only
 
     // ==========================================
     // WRAPPER FUNCTIONS - Use unified loadData
@@ -523,10 +539,10 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
         // Only start loading data after user is validated, and only once
         if (isUserValidated && !hasTriggeredInitialLoadRef.current) {
             hasTriggeredInitialLoadRef.current = true;
-            // Use regular refreshData for initial load to show errors if needed
-            refreshData();
+            // Use regular loadData for initial load to show errors if needed
+            loadData({ showSpinner: true, forceReload: false });
         }
-    }, [isUserValidated]); // Only depend on isUserValidated, not refreshData
+    }, [isUserValidated, loadData]); // Keep loadData dependency since it's stable now
 
     // Effect to reload data when period changes (maand/week navigation)
     useEffect(() => {
@@ -551,7 +567,7 @@ const RoosterApp = ({ isUserValidated = true, currentUser, userPermissions }) =>
                 lastLoadedPeriodRef.current = currentPeriodKey;
             }
         }
-    }, [weergaveType, huidigJaar, huidigMaand, huidigWeek, isUserValidated, loadData]);
+    }, [weergaveType, huidigJaar, huidigMaand, huidigWeek, isUserValidated]); // Remove loadData dependency!
 
     // Form submission handlers
     const handleVerlofSubmit = useCallback(async (formData) => {

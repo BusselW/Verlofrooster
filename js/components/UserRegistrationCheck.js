@@ -150,8 +150,14 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
     
     // Not registered state - AUTOMATICALLY redirect to registration page
     if (!isRegistered) {
-        // Automatically redirect without showing a prompt
-        window.location.href = 'pages/instellingenCentrum/registratieCentrumN.aspx';
+        // Use useEffect to handle redirect and prevent render loop
+        React.useEffect(() => {
+            const redirectTimer = setTimeout(() => {
+                window.location.href = 'pages/instellingenCentrum/registratieCentrumN.aspx';
+            }, 100);
+            
+            return () => clearTimeout(redirectTimer);
+        }, []);
         
         // Show a brief message while redirecting
         return h('div', {

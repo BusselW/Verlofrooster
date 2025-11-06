@@ -96,7 +96,7 @@ const CreateAnnouncementForm = ({ onClose, onSave, teams = [] }) => {
                 UitzendenAan: formData.UitzendenAan
             };
 
-            await createSharePointListItem('Mededelingen', announcementData);
+            await createSharePointListItem('Mededeling', announcementData);
             
             if (onSave) await onSave();
             onClose();
@@ -451,7 +451,7 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
     const loadMededelingen = async () => {
         try {
             setLoading(true);
-            const data = await fetchSharePointList('Mededelingen');
+            const data = await fetchSharePointList('Mededeling');
             
             // Filter active announcements (between start and end date)
             const now = new Date();

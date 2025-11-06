@@ -9,7 +9,7 @@
     <!-- CSS bestanden -->
     <link href="css/verlofrooster_s.css" rel="stylesheet">
     <link href="css/verlofrooster_s1.css" rel="stylesheet">
-    <link href="css/mededelingen.css?v=7" rel="stylesheet">
+    <link href="css/mededelingen.css?v=8" rel="stylesheet">
     <link rel="icon" href="icons/favicon/favicon.svg" />
     
     <!-- ✨ Font Awesome voor iconen -->

@@ -866,7 +866,8 @@ const Mededelingen = ({ teams, medewerkers, showCreateForm, onCreateFormToggle }
                             }
                         },
                             h('i', { className: 'fas fa-users', style: { fontSize: '9px' } }),
-                            m.UitzendenAan
+                            // Strip HTML tags from UitzendenAan
+                            m.UitzendenAan.replace(/<[^>]*>/g, '').trim()
                         )
                     ) : null
                 );

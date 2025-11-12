@@ -70,6 +70,10 @@ async function createListItem(listName, itemData) {
     try {
         const url = `${spContext.siteUrl}/_api/web/lists/getbytitle('${listName}')/items`;
         
+        // Get the correct entity type for the list
+        const entityType = await getListItemType(listName);
+        console.log(`➕ Create ${listName} item with entity type:`, entityType);
+        
         const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -78,12 +82,14 @@ async function createListItem(listName, itemData) {
                 'X-RequestDigest': spContext.requestDigest
             },
             body: JSON.stringify({ 
-                '__metadata': { 'type': `SP.Data.${listName}ListItem` },
+                '__metadata': { 'type': entityType },
                 ...itemData
             })
         });
         
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Create failed with response:', errorText);
             throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
         
@@ -92,6 +98,35 @@ async function createListItem(listName, itemData) {
     } catch (error) {
         console.error(`Fout bij aanmaken item in ${listName}:`, error);
         throw error;
+    }
+}
+
+/**
+ * Get the proper list item entity type name for SharePoint REST API
+ * @param {string} listName - The name of the list
+ * @returns {Promise<string>} The entity type name
+ */
+async function getListItemType(listName) {
+    try {
+        const url = `${spContext.siteUrl}/_api/web/lists/getbytitle('${listName}')?$select=ListItemEntityTypeFullName`;
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json;odata=verbose'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        return data.d.ListItemEntityTypeFullName;
+    } catch (error) {
+        console.error(`Fout bij ophalen van entity type voor ${listName}:`, error);
+        // Fallback naar standaard naming
+        return `SP.Data.${listName}ListItem`;
     }
 }
 
@@ -106,6 +141,10 @@ async function updateListItem(listName, itemId, itemData) {
     try {
         const url = `${spContext.siteUrl}/_api/web/lists/getbytitle('${listName}')/items(${itemId})`;
         
+        // Get the correct entity type for the list
+        const entityType = await getListItemType(listName);
+        console.log(`📝 Update ${listName} item ${itemId} with entity type:`, entityType);
+        
         const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -116,12 +155,14 @@ async function updateListItem(listName, itemId, itemData) {
                 'X-HTTP-Method': 'MERGE'
             },
             body: JSON.stringify({
-                '__metadata': { 'type': `SP.Data.${listName}ListItem` },
+                '__metadata': { 'type': entityType },
                 ...itemData
             })
         });
         
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Update failed with response:', errorText);
             throw new Error(`Error ${response.status}: ${response.statusText}`);
         }
         
@@ -436,6 +477,7 @@ export {
     createListItem,
     updateListItem,
     deleteListItem,
+    getListItemType,
     getChoiceFieldOptions,
     getUserProfile,
     searchSiteUsers,

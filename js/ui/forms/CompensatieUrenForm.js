@@ -158,6 +158,7 @@ const CompensatieUrenForm = ({
     const [status, setStatus] = useState('Ingediend');
     const [urenTotaal, setUrenTotaal] = useState(0);
     const [canManageOthers, setCanManageOthers] = useState(Boolean(canManageOthersProp));
+    const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
         setCanManageOthers(Boolean(canManageOthersProp));
@@ -179,6 +180,9 @@ const CompensatieUrenForm = ({
     }, [startDate, startTime, endDate, endTime]);
 
     useEffect(() => {
+        // Only initialize once
+        if (isInitialized) return;
+        
         const initializeForm = () => {
             const userCanManageOthers = Boolean(canManageOthersProp);
             setCanManageOthers(userCanManageOthers);
@@ -260,18 +264,11 @@ const CompensatieUrenForm = ({
                 setOmschrijving(initialData.Omschrijving || '');
                 setStatus(initialData.Status || 'Ingediend');
             }
+            setIsInitialized(true);
         };
         initializeForm();
-    }, [
-        initialData,
-        medewerkers,
-        selection,
-        currentUser,
-        canManageOthersProp,
-        currentMedewerker,
-        medewerkersById,
-        medewerkersByUsername
-    ]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount
 
     const handleMedewerkerChange = (e) => {
         const selectedId = e.target.value;

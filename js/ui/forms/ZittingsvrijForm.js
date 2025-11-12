@@ -300,16 +300,8 @@ const ZittingsvrijForm = ({
         };
 
         initializeForm();
-    }, [
-        initialData,
-        medewerkers,
-        selection,
-        currentUser,
-        canManageOthersProp,
-        currentMedewerker,
-        medewerkersById,
-        medewerkersByUsername
-    ]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount
 
     const handleMedewerkerChange = (e) => {
         const selectedId = e.target.value;

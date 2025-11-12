@@ -123,12 +123,16 @@ const VerlofAanvraagForm = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [status, setStatus] = useState('Nieuw');
     const [canManageOthers, setCanManageOthers] = useState(Boolean(canManageOthersProp));
+    const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
         setCanManageOthers(Boolean(canManageOthersProp));
     }, [canManageOthersProp]);
 
     useEffect(() => {
+        // Only initialize once
+        if (isInitialized) return;
+        
         const initializeForm = () => {
             console.log('VerlofAanvraagForm initializing with:', { initialData, selection, medewerkers: medewerkers.length });
             
@@ -222,19 +226,11 @@ const VerlofAanvraagForm = ({
                 setOmschrijving(initialData.Omschrijving || '');
                 setStatus(initialData.Status || 'Nieuw');
             }
+            setIsInitialized(true);
         };
-
         initializeForm();
-    }, [
-        initialData,
-        medewerkers,
-        selection,
-        currentUser,
-        canManageOthersProp,
-        currentMedewerker,
-        medewerkersById,
-        medewerkersByUsername
-    ]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount
 
     const handleMedewerkerChange = (e) => {
         const selectedId = e.target.value;

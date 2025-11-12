@@ -157,12 +157,15 @@ const ZiekteMeldingForm = ({
     const [status, setStatus] = useState('Nieuw');
     const [redenId, setRedenId] = useState(1); // Fixed RedenID for Ziekte
     const [canManageOthers, setCanManageOthers] = useState(Boolean(canManageOthersProp));
+    const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
         setCanManageOthers(Boolean(canManageOthersProp));
     }, [canManageOthersProp]);
 
     useEffect(() => {
+        if (isInitialized) return;
+        
         const initializeForm = () => {
             const userCanManageOthers = Boolean(canManageOthersProp);
             setCanManageOthers(userCanManageOthers);
@@ -229,19 +232,12 @@ const ZiekteMeldingForm = ({
                 setOmschrijving(initialData.Omschrijving || '');
                 setStatus(initialData.Status || 'Nieuw');
             }
+            setIsInitialized(true);
         };
 
         initializeForm();
-    }, [
-        initialData,
-        medewerkers,
-        selection,
-        currentUser,
-        canManageOthersProp,
-        currentMedewerker,
-        medewerkersById,
-        medewerkersByUsername
-    ]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Only run once on mount
 
     const handleMedewerkerChange = (e) => {
         const selectedId = e.target.value;

@@ -109,6 +109,20 @@ export const SeniorsForm = ({ onSave, onCancel, initialData = {}, title }) => {
         loadTeamsData();
     }, []);
 
+    // Auto-populate TeamID when initialData has Team but no TeamID, or when teams are loaded
+    useEffect(() => {
+        if (teamsMap.size > 0 && formData.Team && !formData.TeamID) {
+            const teamId = teamsMap.get(formData.Team);
+            if (teamId) {
+                console.log('🔧 Auto-populating TeamID for existing Team:', formData.Team, '→', teamId);
+                setFormData(prev => ({
+                    ...prev,
+                    TeamID: teamId
+                }));
+            }
+        }
+    }, [teamsMap, formData.Team, formData.TeamID]);
+
     // Enhanced autocomplete search function
     const performAutocompleteSearch = async (query) => {
         console.log('🔍 Autocomplete search started with query:', query);

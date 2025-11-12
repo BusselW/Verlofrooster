@@ -104,6 +104,7 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
     const [isRegistered, setIsRegistered] = useState(false);
     const [userInfo, setUserInfo] = useState(null);
 
+    // Validatie useEffect - alleen bij mount
     useEffect(() => {
         const validateUser = async () => {
             try {
@@ -140,6 +141,18 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
         validateUser();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Alleen bij mount uitvoeren, onUserValidated kan wijzigen maar dat triggert geen hervalidatie
+
+    // Redirect useEffect - op top level met guard
+    useEffect(() => {
+        if (!isValidating && !isRegistered) {
+            console.log('🔄 Gebruiker niet geregistreerd, doorsturen naar registratie...');
+            const redirectTimer = setTimeout(() => {
+                window.location.href = 'pages/instellingenCentrum/registratieCentrumN.aspx';
+            }, 500); // Iets langere delay voor zichtbaarheid
+            
+            return () => clearTimeout(redirectTimer);
+        }
+    }, [isValidating, isRegistered]);
     
     // Laad status
     if (isValidating) {
@@ -158,18 +171,8 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
         );
     }
     
-    // Niet geregistreerd status - AUTOMATISCH doorsturen naar registratiepagina
+    // Niet geregistreerd status - toon bericht terwijl redirect gebeurt
     if (!isRegistered) {
-        // Gebruik useEffect om redirect te behandelen en render loop te voorkomen
-        React.useEffect(() => {
-            const redirectTimer = setTimeout(() => {
-                window.location.href = 'pages/instellingenCentrum/registratieCentrumN.aspx';
-            }, 100);
-            
-            return () => clearTimeout(redirectTimer);
-        }, []);
-        
-        // Toon een kort bericht tijdens doorsturen
         return h('div', {
             style: {
                 position: 'fixed',

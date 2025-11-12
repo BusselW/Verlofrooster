@@ -5,17 +5,21 @@
 
 import { getCurrentUserInfo, getSharePointListItems } from '../services/sharepointService.js';
 
-const { createElement: h, useState, useEffect } = window.React;
+const { createElement: h, useState, useEffect, useMemo } = window.React;
+
+// Debug mode - zet op false voor productie om console logs te verbergen
+const DEBUG_MODE = true;
 
 /**
- * Robust user-to-medewerker matching with multiple strategies
+ * Robuuste gebruiker-naar-medewerker matching met meerdere strategieën
  */
 const matchMedewerkerToUser = (user, medewerkers) => {
     if (!user || !Array.isArray(medewerkers) || medewerkers.length === 0) {
-        console.warn('matchMedewerkerToUser: Invalid input', { user: !!user, medewerkers: medewerkers?.length });
+        console.warn('matchMedewerkerToUser: Ongeldige invoer', { user: !!user, medewerkers: medewerkers?.length });
         return null;
     }
 
+    // Parse login naam en bereid kandidaten voor
     let loginName = user.LoginName || '';
     if (loginName.includes('|')) {
         loginName = loginName.split('|')[1];
@@ -41,20 +45,23 @@ const matchMedewerkerToUser = (user, medewerkers) => {
     const emailCandidate = user.Email ? user.Email.toLowerCase() : null;
     const titleCandidate = user.Title ? user.Title.toLowerCase() : null;
 
-    console.log('🔍 Matching user with candidates:', {
-        loginName,
-        domain,
-        account,
-        usernameCandidates: Array.from(usernameCandidates),
-        email: emailCandidate,
-        title: titleCandidate
-    });
+    if (DEBUG_MODE) {
+        console.log('🔍 Gebruiker matchen met kandidaten:', {
+            loginName,
+            domain,
+            account,
+            usernameCandidates: Array.from(usernameCandidates),
+            email: emailCandidate,
+            title: titleCandidate
+        });
+    }
 
+    // Matching strategieën in volgorde van betrouwbaarheid
     const strategyNames = [
-        'Direct Username Match',
-        'Short Username Match',
+        'Directe Username Match',
+        'Korte Username Match',
         'Email Match',
-        'Title Match'
+        'Titel Match'
     ];
 
     const strategies = [
@@ -69,16 +76,19 @@ const matchMedewerkerToUser = (user, medewerkers) => {
         (m) => titleCandidate && m.Title && m.Title.toLowerCase() === titleCandidate
     ];
 
+    // Zoek eerste match
     for (let i = 0; i < strategies.length; i++) {
         const strategy = strategies[i];
         const match = medewerkers.find(strategy);
         if (match) {
-            console.log(`✅ Strategy ${i + 1} (${strategyNames[i]}) matched:`, match.Title, match.Username);
+            if (DEBUG_MODE) {
+                console.log(`✅ Strategie ${i + 1} (${strategyNames[i]}) gevonden:`, match.Title, match.Username);
+            }
             return match;
         }
     }
 
-    console.warn('❌ No matching strategy found. Checked', medewerkers.length, 'medewerkers');
+    console.warn('❌ Geen matching strategie gevonden. Gecontroleerd:', medewerkers.length, 'medewerkers');
     return null;
 };
 
@@ -97,18 +107,17 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
     useEffect(() => {
         const validateUser = async () => {
             try {
-                
-                // Get current user info
+                // Haal huidige gebruiker info op
                 const user = await getCurrentUserInfo();
                 if (!user) {
-                    console.error('UserRegistrationCheck: Could not get current user info');
+                    console.error('UserRegistrationCheck: Kon gebruikersinfo niet ophalen');
                     setIsValidating(false);
                     return;
                 }
                 
                 setUserInfo(user);
                 
-                // Check if user exists in Medewerkers list using robust matching
+                // Controleer of gebruiker bestaat in Medewerkers lijst met robuuste matching
                 const medewerkers = await getSharePointListItems('Medewerkers');
                 const match = matchMedewerkerToUser(user, medewerkers);
                 const exists = match !== null;
@@ -116,12 +125,12 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
                 setIsRegistered(exists);
                 
                 if (exists && onUserValidated) {
-                    // Call with the expected signature: (isValid, currentUser, userPermissions)
+                    // Roep aan met de verwachte signature: (isValid, currentUser, userPermissions)
                     onUserValidated(true, user, false);
                 }
                 
             } catch (error) {
-                console.error('UserRegistrationCheck: Error validating user:', error);
+                console.error('UserRegistrationCheck: Fout bij valideren gebruiker:', error);
                 setIsRegistered(false);
             } finally {
                 setIsValidating(false);
@@ -129,9 +138,10 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
         };
         
         validateUser();
-    }, [onUserValidated]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Alleen bij mount uitvoeren, onUserValidated kan wijzigen maar dat triggert geen hervalidatie
     
-    // Loading state
+    // Laad status
     if (isValidating) {
         return h('div', { 
             style: { 
@@ -148,9 +158,9 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
         );
     }
     
-    // Not registered state - AUTOMATICALLY redirect to registration page
+    // Niet geregistreerd status - AUTOMATISCH doorsturen naar registratiepagina
     if (!isRegistered) {
-        // Use useEffect to handle redirect and prevent render loop
+        // Gebruik useEffect om redirect te behandelen en render loop te voorkomen
         React.useEffect(() => {
             const redirectTimer = setTimeout(() => {
                 window.location.href = 'pages/instellingenCentrum/registratieCentrumN.aspx';
@@ -159,7 +169,7 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
             return () => clearTimeout(redirectTimer);
         }, []);
         
-        // Show a brief message while redirecting
+        // Toon een kort bericht tijdens doorsturen
         return h('div', {
             style: {
                 position: 'fixed',
@@ -184,7 +194,7 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
                     textAlign: 'center'
                 }
             },
-                h('div', { style: { fontSize: '4rem', marginBottom: '20px' } }, '�'),
+                h('div', { style: { fontSize: '4rem', marginBottom: '20px' } }, '🔄'),
                 h('h2', { style: { marginBottom: '20px', color: '#333' } }, 'Doorverwijzen naar registratie...'),
                 h('p', { style: { marginBottom: '20px', color: '#666', lineHeight: '1.6' } },
                     `Je wordt automatisch doorverwezen naar de registratiepagina...`
@@ -208,9 +218,9 @@ export const UserRegistrationCheck = ({ onUserValidated, children }) => {
         );
     }
     
-    // Registered - render children
+    // Geregistreerd - render children
     return children;
 };
 
-// Also export as default for compatibility
+// Export ook als default voor compatibiliteit
 export default UserRegistrationCheck;

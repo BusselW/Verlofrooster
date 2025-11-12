@@ -79,21 +79,21 @@ export const SeniorsForm = ({ onSave, onCancel, initialData = {}, title }) => {
             try {
                 console.log('🔄 Loading teams data for SeniorsForm...');
                 
-                // Load teams - fetch Naam and Id fields
-                const teamsData = await getListItems('Teams', 'Naam,Id');
+                // Load teams - gebruik ID (hoofdletters) voor SharePoint OData query
+                const teamsData = await getListItems('Teams', 'Naam,ID');
                 console.log('✅ Teams data loaded:', teamsData);
                 
                 const teamOptions = teamsData.map(team => ({
                     value: team.Naam,
                     label: team.Naam,
-                    id: team.Id
+                    id: team.ID  // SharePoint retourneert ID in hoofdletters
                 }));
                 setTeams(teamOptions);
                 
                 // Create map for quick lookup: team name -> team ID
                 const teamMap = new Map();
                 teamsData.forEach(team => {
-                    teamMap.set(team.Naam, team.Id);
+                    teamMap.set(team.Naam, team.ID);  // Gebruik ID in hoofdletters
                 });
                 setTeamsMap(teamMap);
                 

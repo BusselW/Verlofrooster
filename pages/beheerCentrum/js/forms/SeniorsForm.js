@@ -117,7 +117,7 @@ export const SeniorsForm = ({ onSave, onCancel, initialData = {}, title }) => {
                 console.log('🔧 Auto-populating TeamID for existing Team:', formData.Team, '→', teamId);
                 setFormData(prev => ({
                     ...prev,
-                    TeamID: teamId
+                    TeamID: parseInt(teamId, 10)  // Converteer naar Number
                 }));
             }
         }
@@ -180,7 +180,7 @@ export const SeniorsForm = ({ onSave, onCancel, initialData = {}, title }) => {
         setFormData(prev => ({
             ...prev,
             Team: teamName,
-            TeamID: teamId || ''
+            TeamID: teamId ? parseInt(teamId, 10) : null  // Converteer naar Number
         }));
     };
 
@@ -301,7 +301,15 @@ export const SeniorsForm = ({ onSave, onCancel, initialData = {}, title }) => {
     };
 
     return h(EnhancedBaseForm, {
-        onSave,
+        onSave: (data) => {
+            // Converteer TeamID naar Number voordat we opslaan
+            const sanitizedData = {
+                ...data,
+                TeamID: data.TeamID ? parseInt(data.TeamID, 10) : null
+            };
+            console.log('💾 Saving senior with sanitized data:', sanitizedData);
+            return onSave(sanitizedData);
+        },
         onCancel,
         initialData: formData,
         config: seniorsConfig,

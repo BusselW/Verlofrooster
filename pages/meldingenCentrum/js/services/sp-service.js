@@ -131,11 +131,22 @@ const deleteRequest = async (endpoint) => {
     }
 };
 
+// Helper to get list item type
+const getListItemType = async (listTitle) => {
+    try {
+        const response = await getRequest(`lists/getbytitle('${listTitle}')?$select=ListItemEntityTypeFullName`);
+        return response.ListItemEntityTypeFullName;
+    } catch (error) {
+        console.error(`Error getting entity type for ${listTitle}:`, error);
+        return `SP.Data.${listTitle.charAt(0).toUpperCase() + listTitle.slice(1)}ListItem`;
+    }
+};
+
 // Get all feedback items with Author information
 export const getFeedbackItems = async () => {
     try {
         return await getRequest(
-            `lists/getbytitle('${config.listName}')/items?$select=Id,Title,FoutBeschrijving,Status,Reactie,Created,Modified,Author/Title,Editor/Title&$expand=Author,Editor&$orderby=Created desc`
+            `lists/getbytitle('${config.listName}')/items?$select=Id,Title,Beschrijving_x0020_fout,Status,Reactie,Created,Modified,Author/Title,Editor/Title&$expand=Author,Editor&$orderby=Created desc`
         );
     } catch (error) {
         console.error('Error fetching feedback items:', error);
@@ -147,8 +158,7 @@ export const getFeedbackItems = async () => {
 export const addFeedbackItem = async (title, beschrijving) => {
     try {
         const listTitle = config.listName;
-        // For MeldFouten list, the metadata type should be SP.Data.MeldFoutenListItem
-        const metadataType = `SP.Data.${listTitle}ListItem`;
+        const metadataType = await getListItemType(listTitle);
         
         return await postRequest(`lists/getbytitle('${listTitle}')/items`, {
             '__metadata': { 'type': metadataType },
@@ -167,7 +177,7 @@ export const addFeedbackItem = async (title, beschrijving) => {
 export const updateFeedbackItem = async (id, data) => {
     try {
         const listTitle = config.listName;
-        const metadataType = `SP.Data.${listTitle}ListItem`;
+        const metadataType = await getListItemType(listTitle);
         
         const payload = {
             '__metadata': { 'type': metadataType },

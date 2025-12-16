@@ -1635,11 +1635,10 @@ class BehandelcentrumApp {
     renderPagination(totalItems, currentPage, pageSize, onPageChange, onPageSizeChange) {
         const totalPages = Math.ceil(totalItems / pageSize);
         
-        if (totalPages <= 1) {
-            return null; // No pagination needed
-        }
-
-        const startItem = ((currentPage - 1) * pageSize) + 1;
+        // Always show pagination controls, even for single page
+        // This ensures users can see the total count and change page size
+        
+        const startItem = totalItems === 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
         const endItem = Math.min(currentPage * pageSize, totalItems);
 
         // Generate page numbers to show

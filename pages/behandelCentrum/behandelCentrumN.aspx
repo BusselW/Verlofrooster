@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="../../css/verlofrooster_s.css">
     <link rel="stylesheet" href="../../css/verlofrooster_s1.css">
     <link rel="stylesheet" href="css/behandelCentrumN.css">
+    <link rel="stylesheet" href="css/pagination.css">
 </head>
 <body class="light-theme">
     <!-- Hoofd Header -->

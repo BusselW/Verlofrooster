@@ -1030,6 +1030,7 @@ class BehandelcentrumApp {
         
         if (!employeeId) {
             return {
+                teamId: null,
                 teamNaam: 'Onbekend team',
                 teamleider: 'Onbekende teamleider',
                 teamleiderId: null,
@@ -1041,6 +1042,7 @@ class BehandelcentrumApp {
         const mapping = this.teamMappings.get(employeeId);
         if (mapping) {
             return {
+                teamId: mapping.team.ID || mapping.team.Id,
                 teamNaam: mapping.teamNaam,
                 teamleider: mapping.teamleider,
                 teamleiderId: mapping.teamleiderId,
@@ -1053,6 +1055,7 @@ class BehandelcentrumApp {
             if (key.toLowerCase().includes(employeeId.toLowerCase()) || 
                 employeeId.toLowerCase().includes(key.toLowerCase())) {
                 return {
+                    teamId: mapping.team.ID || mapping.team.Id,
                     teamNaam: mapping.teamNaam,
                     teamleider: mapping.teamleider,
                     teamleiderId: mapping.teamleiderId,
@@ -1062,6 +1065,7 @@ class BehandelcentrumApp {
         }
 
         return {
+            teamId: null,
             teamNaam: 'Onbekend team',
             teamleider: 'Onbekende teamleider',
             teamleiderId: null,
@@ -1136,7 +1140,8 @@ class BehandelcentrumApp {
         if (this.selectedTeam) {
             filteredData = filteredData.filter(item => {
                 const teamInfo = this.getTeamInfoForRequest(item);
-                return teamInfo.teamId === this.selectedTeam;
+                // Use loose equality to handle string/number mismatch (select value is string, ID is number)
+                return teamInfo.teamId == this.selectedTeam;
             });
         }
         

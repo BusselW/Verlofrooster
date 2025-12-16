@@ -294,16 +294,50 @@
         let baseUrl = null;
         let source = 'unknown';
         
-        // Method 1: Get the base URL from SharePoint configuration
-        if (window.appConfiguratie?.instellingen?.siteUrl) {
+        const currentUrl = window.location.href;
+
+        // Method 1: Try to determine root from known file structure (Most reliable for navigation)
+        // Check for /pages/ (e.g. .../Verlof/pages/admin/...)
+        const pagesIndex = currentUrl.toLowerCase().indexOf('/pages/');
+        if (pagesIndex !== -1) {
+            baseUrl = currentUrl.substring(0, pagesIndex);
+            source = 'derivedFromPages';
+        } 
+        // Check for verlofRooster.aspx (e.g. .../Verlof/verlofRooster.aspx)
+        else {
+            const rootFileIndex = currentUrl.toLowerCase().indexOf('/verlofrooster.aspx');
+            if (rootFileIndex !== -1) {
+                baseUrl = currentUrl.substring(0, rootFileIndex);
+                source = 'derivedFromRootFile';
+                
+                // Common SharePoint pattern: Pages are in SitePages or Pages library, 
+                // but app resources/subpages are in the web root.
+                // If we detect we are in a library, we might need to go up a level.
+                const lowerBase = baseUrl.toLowerCase();
+                if (lowerBase.endsWith('/sitepages')) {
+                    baseUrl = baseUrl.substring(0, baseUrl.length - 10);
+                    source += '+strippedSitePages';
+                } else if (lowerBase.endsWith('/pages')) {
+                    baseUrl = baseUrl.substring(0, baseUrl.length - 6);
+                    source += '+strippedPages';
+                }
+            }
+        }
+
+        // Method 2: Get the base URL from SharePoint configuration
+        if (!baseUrl && window.appConfiguratie?.instellingen?.siteUrl) {
             baseUrl = window.appConfiguratie.instellingen.siteUrl.replace(/\/$/, '');
             source = 'appConfiguratie';
+            
+            // Only append CPW/Rooster if the current URL actually suggests we are in that structure
+            if (currentUrl.includes('/CPW/Rooster') && !baseUrl.includes('/CPW/Rooster')) {
+                baseUrl = `${baseUrl}/CPW/Rooster`;
+                source = `${source}+cpwRooster`;
+            }
         }
         
-        // Method 2: Fallback to current location if configuration is not available
+        // Method 3: Fallback to regex
         if (!baseUrl) {
-            const currentUrl = window.location.href;
-            
             // Extract the base part up to the site collection
             // Expected pattern: https://som.org.om.local/sites/MulderT/CustomPW/Verlof/
             const baseUrlPattern = /^(https?:\/\/[^\/]+\/sites\/[^\/]+\/[^\/]+\/[^\/]+)/;
@@ -311,11 +345,17 @@
             
             if (match) {
                 baseUrl = match[1];
-                source = 'currentUrl';
+                source = 'currentUrlRegex';
+                
+                // Only append CPW/Rooster if the current URL actually suggests we are in that structure
+                if (currentUrl.includes('/CPW/Rooster') && !baseUrl.includes('/CPW/Rooster')) {
+                    baseUrl = `${baseUrl}/CPW/Rooster`;
+                    source = `${source}+cpwRooster`;
+                }
             }
         }
         
-        // Method 3: Last resort fallback
+        // Method 4: Last resort fallback
         if (!baseUrl) {
             baseUrl = 'https://som.org.om.local/sites/MulderT/CustomPW/Verlof';
             source = 'fallback';
